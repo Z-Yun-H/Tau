@@ -53,7 +53,7 @@ independent execution paths.)
 6. **Workspace hygiene**: packages import each other only through the declared
    `@tau/*` `workspace:*` dependencies (never relative paths across packages,
    never deep imports like `@tau/core/src/...`). Every package's public API is
-   its `app/cli/src/index.ts` barrel. Vitest aliases `@tau/*` to source; runtime uses
+   its `src/index.ts` barrel. Vitest aliases `@tau/*` to source; runtime uses
    each package's dist after `pnpm build`.
 7. **Run the gates before you claim done:**
    `pnpm lint && pnpm typecheck && pnpm test`
@@ -70,7 +70,7 @@ independent execution paths.)
 | Format                | `pnpm format`                                                 |
 | Tests (watch)         | `pnpm test:watch`                                             |
 | Tests (CI) + coverage | `pnpm test:cov`                                               |
-| Build all packages    | `pnpm build` (topological: deps first)                        |
+| Build all packages    | `pnpm build` (unified tsdown workspace build)                 |
 | Full pre-PR gate      | `pnpm lint && pnpm typecheck && pnpm test:cov`                |
 
 ## Repo map — pnpm monorepo

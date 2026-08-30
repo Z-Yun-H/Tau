@@ -37,7 +37,7 @@
   },
   "scripts": {
     "dev": "tsx --conditions=development app/cli/src/index.ts",
-    "build": "pnpm -r build",
+    "build": "tsdown",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint packages app",
     "lint:fix": "oxlint --fix packages app",

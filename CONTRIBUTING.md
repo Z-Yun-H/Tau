@@ -61,7 +61,7 @@ authors never add the block.
 
 ```bash
 pnpm install
-pnpm build                          # build every workspace package (topological)
+pnpm build                          # unified tsdown workspace build (all packages)
 pnpm dev -- file find "*.ts"        # run the CLI from source
 pnpm --filter @tau/tui dev          # interactive TUI from source
 pnpm --filter @tau/webui dev        # web UI from source

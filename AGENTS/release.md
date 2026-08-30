@@ -54,8 +54,9 @@ versions, but must be called out in CHANGELOG under a **Breaking** header.
 2. Update CHANGELOG.md: move **Unreleased** → new version + date (today)
 3. Bump `version` in package.json (`npm version <major|minor|patch>` makes
    the commit + tag)
-4. `npm run build` — confirm dist/index.js starts with
-   `#!/usr/bin/env node` and `node dist/index.js --help` works
+4. `pnpm build` (unified tsdown workspace build) — confirm
+   `app/cli/dist/index.js` starts with `#!/usr/bin/env node` and
+   `node app/cli/dist/index.js --help` works
 5. Smoke test the packed artifact:
    `npm pack` then in a scratch dir `npm install -g tau-tool-<ver>.tgz`,
    run `tau --version`, `tau skill list`, `tau ask "find ts files" --yes`

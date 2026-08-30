@@ -16,6 +16,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Changed
 
+- **Unified tsdown workspace build.** `pnpm build` now runs a single tsdown
+  process in workspace mode (root `tsdown.config.ts`,
+  `workspace: ["packages/*", "app/*"]`) instead of a `pnpm -r build` fan-out.
+  Per-feature-area `tsdown.config.ts` files are untouched and still merge on
+  top of the shared base (`@tau/ai` / `@tau/plugins` neverBundle their
+  optional SDKs, `@tau/webui` keeps its second `server.ts` entry), and
+  `pnpm --filter <pkg> build` still builds a single package. All 24 build
+  outputs are byte-identical to the per-package build; bin shebangs and
+  execute bits preserved.
+
 - **Flattened the workspace file structure.** The monorepo migration had left
   every package with a redundant folder duplicating its own name
   (`packages/ai/src/ai/...`, `packages/tools/src/tools/...`,
@@ -51,7 +61,8 @@ deepseek.ts`, `packages/engine/src/safety.ts`, `app/cli/src/ask.ts`. The
     dependencies and package barrels; relative escapes are gone. Bundled
     skills/templates moved with `@tau/skills`; `packageRoot()` asset
     resolution moved from `@tau/core` to `@tau/skills`
-  - Tooling: `pnpm build` builds all packages topologically; `packageManager`
+  - Tooling: `pnpm build` is a unified tsdown workspace build (one process,
+    per-package configs still merged); `packageManager`
     pins pnpm; devcontainer post-create uses corepack + pnpm; gates are
     `pnpm lint && pnpm typecheck && pnpm test:cov` (216 → 233 tests)
   - Author attribution cleaned up: remaining `ZHYun` strings in READMEs and

@@ -10,8 +10,8 @@ Run the build pipeline in order. Each step must pass before the next:
 ```bash
 npm run typecheck   # tsc --noEmit — all TypeScript in src/ and tests/
 npm run lint        # oxlint (.oxlintrc.json)
-npm run build       # tsdown -> dist/index.js with shebang
-node dist/index.js --help   # verify the bundle actually runs
+pnpm build          # unified tsdown workspace build (all 11 packages)
+node app/cli/dist/index.js --help   # verify the bundle actually runs
 ```
 
 ## Expectations
