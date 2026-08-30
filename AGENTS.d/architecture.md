@@ -55,12 +55,14 @@ pipeline, add a command family, or add a module.
 | add a bundled skill                         | new dir `skills/<name>/SKILL.md` (spec: AGENTS.d/skills.md) — no TS code required for declarative commands                                                                               |
 | change the plan schema                      | `src/ai/prompt.ts planSchema` + safety reviewer expectations + tests + this diagram                                                                                                      |
 | change config keys                          | `src/types.ts TauConfig` + `src/config/store.ts` (defaults + VALID_KEYS) + READMEs                                                                                                       |
+| add model discovery to a provider           | optional `listModels()` on the provider (throw on failure) + `src/ai/models.ts` handles caching; UI via `tau provider` (src/cli/provider.ts); contract in AGENTS.d/ai-integration.md     |
 
 ## Runtime data layout ($TAU_HOME, default ~/.tau)
 
 ```
 $TAU_HOME/
   config.json      TauConfig (provider, timeout, aliases, plugins[], providers.*)
+                   — may hold providers.<name>.apiKey; chmod 0600, keys masked in CLI output
   history.jsonl    append-only HistoryEntry per line
   skills/<name>/   user skills (highest precedence for name conflicts)
 ```
@@ -75,5 +77,6 @@ $TAU_HOME/
 - `SafetyReview` — verdict allow/review/deny + issues; from reviewPlan()
 - `ToolDefinition` — name/description/params/risk/run; dual-use unit
 - `PluginConfig` — one MCP server (transport stdio|http, endpoint, env/headers)
+- `ModelInfo` — one discovered model id (+owner); served by `src/ai/models.ts`
 - `SkillMeta` — parsed SKILL.md frontmatter
 - `RiskLevel` — low < medium < high < blocked (RISK_ORDER)

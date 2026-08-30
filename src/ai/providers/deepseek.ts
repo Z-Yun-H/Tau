@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import { loadConfig } from "../../config/store.js";
 import { buildSystemPrompt, validatePlanResponse } from "../prompt.js";
-import type { AIProvider, Plan, PlanningContext } from "../../types.js";
+import type { AIProvider, ModelInfo, Plan, PlanningContext } from "../../types.js";
 // Type-only imports from the optional @deepseek-ai/dsh-llm package: the
 // compiler erases them, so they are safe even when the package is absent at
 // runtime. Runtime access goes exclusively through the dynamic loader below.
@@ -651,7 +651,10 @@ export class DeepSeekProvider implements AIProvider {
   readonly name = "deepseek";
   readonly label = "DeepSeek";
 
+  /** Config key (`tau provider set-key deepseek`) wins; env var is the fallback. */
   apiKey(): string | undefined {
+    const fromConfig = loadConfig().providers["deepseek"]?.["apiKey"];
+    if (typeof fromConfig === "string" && fromConfig.trim().length > 0) return fromConfig;
     return process.env.DEEPSEEK_API_KEY;
   }
 
@@ -660,7 +663,10 @@ export class DeepSeekProvider implements AIProvider {
   }
 
   unavailableReason(): string {
-    return "Missing DEEPSEEK_API_KEY environment variable.";
+    return (
+      "Missing DeepSeek API key — run `tau provider set-key deepseek <key>` " +
+      "or set the DEEPSEEK_API_KEY environment variable."
+    );
   }
 
   private baseUrl(): string {
@@ -668,6 +674,36 @@ export class DeepSeekProvider implements AIProvider {
       /\/$/,
       "",
     );
+  }
+
+  /**
+   * Live model discovery: GET {baseUrl}/models (OpenAI-compatible shape,
+   * documented in DeepSeek's "List Models" endpoint). Auth/network failures
+   * throw — the model-catalog service owns caching and degradation.
+   */
+  async listModels(): Promise<ModelInfo[]> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15_000);
+    timer.unref?.();
+    try {
+      const doFetch = globalThis.fetch;
+      const response = await doFetch(`${this.baseUrl()}/models`, {
+        headers: { authorization: `Bearer ${this.apiKey() ?? ""}` },
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        const bodyText = await response.text().catch(() => "");
+        throw new Error(apiErrorMessage(response.status, bodyText));
+      }
+      const parsed = (await response.json()) as {
+        data?: Array<{ id?: string; owned_by?: string }>;
+      };
+      return (parsed.data ?? [])
+        .filter((entry): entry is { id: string; owned_by?: string } => typeof entry.id === "string")
+        .map((entry) => ({ id: entry.id, ...(entry.owned_by ? { ownedBy: entry.owned_by } : {}) }));
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   private timeoutMs(): number {

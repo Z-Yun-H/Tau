@@ -47,7 +47,7 @@ export function registerAsk(program: Command): void {
         );
         console.error(
           theme.muted(
-            "Tip: start with the offline mock (tau config set provider mock), or configure a real provider — see README > AI providers.",
+            "Tip: configure a key with `tau provider set-key <provider> <key>` — the model catalog then refreshes automatically; or stay offline with `tau config set provider mock`.",
           ),
         );
         process.exitCode = 1;

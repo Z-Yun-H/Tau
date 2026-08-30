@@ -22,6 +22,11 @@ export function providerNames(): string[] {
   return [...providers.keys()].sort();
 }
 
+/** Look up one registered provider by name (undefined when unknown). */
+export function getProvider(name: string): AIProvider | undefined {
+  return providers.get(name);
+}
+
 export function resetProviders(): void {
   providers.clear();
 }

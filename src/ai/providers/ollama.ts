@@ -1,7 +1,7 @@
 import { loadConfig } from "../../config/store.js";
 import { buildSystemPrompt, validatePlanResponse } from "../prompt.js";
 import { chatJSON } from "./mock.js";
-import type { AIProvider, Plan, PlanningContext } from "../../types.js";
+import type { AIProvider, ModelInfo, Plan, PlanningContext } from "../../types.js";
 
 /** Ollama (local models). Available when the local server responds. */
 export class OllamaProvider implements AIProvider {
@@ -28,6 +28,28 @@ export class OllamaProvider implements AIProvider {
   private host(): string {
     const cfg = loadConfig();
     return String(cfg.providers["ollama"]?.["host"] ?? "http://localhost:11434");
+  }
+
+  /** Live model discovery: GET {host}/api/tags (installed local models). */
+  async listModels(): Promise<ModelInfo[]> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    try {
+      const doFetch = globalThis.fetch;
+      const res = await doFetch(`${this.host()}/api/tags`, { signal: controller.signal });
+      if (!res.ok) {
+        throw new Error(`Ollama model listing failed (HTTP ${res.status})`);
+      }
+      const parsed = (await res.json()) as {
+        models?: Array<{ name?: string; model?: string }>;
+      };
+      return (parsed.models ?? [])
+        .map((entry) => entry.name ?? entry.model)
+        .filter((name): name is string => typeof name === "string" && name.length > 0)
+        .map((name) => ({ id: name }));
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   async plan(ctx: PlanningContext): Promise<Plan> {

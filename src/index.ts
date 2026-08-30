@@ -11,6 +11,7 @@
  *   tau skill <list|show|new|validate>
  *   tau history <list|show|replay|clear>
  *   tau alias  <list|add|remove>
+ *   tau provider <list|set-key|models|use>
  *   tau config <get|set|list|path>
  *   tau plugin <list|add|remove|enable|disable|tools>
  *
@@ -32,6 +33,7 @@ import { registerTextCommands } from "./cli/text.js";
 import { registerSkillCommands } from "./cli/skill.js";
 import { registerHistoryCommands } from "./cli/history.js";
 import { registerAliasCommands, expandAliasArgv } from "./cli/alias.js";
+import { registerProviderCommands } from "./cli/provider.js";
 import { registerConfigCommands } from "./cli/config.js";
 import { registerPluginCommands } from "./cli/plugin.js";
 
@@ -100,6 +102,7 @@ export function buildProgram(): Command {
   registerSkillCommands(program);
   registerHistoryCommands(program);
   registerAliasCommands(program);
+  registerProviderCommands(program);
   registerConfigCommands(program);
   registerPluginCommands(program);
 

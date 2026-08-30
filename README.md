@@ -4,7 +4,7 @@
 
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-172%20passing-success)](vitest.config.ts)
+[![Tests](https://img.shields.io/badge/tests-211%20passing-success)](vitest.config.ts)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 [![中文文档](https://img.shields.io/badge/docs-中文-red)](README.zh-CN.md)
 
@@ -39,18 +39,19 @@ around: **the AI proposes, deterministic code disposes.**
 
 ## Features
 
-| Area          | What you get                                                                       |
-| ------------- | ---------------------------------------------------------------------------------- |
-| `tau ask`     | NL intent → provider plan → safety review → confirm UI → execution → history       |
-| `tau file`    | glob find (prunes node_modules), tree, stat, regex batch rename (dry-run default)  |
-| `tau sys`     | OS/CPU/memory info, disk usage, top processes                                      |
-| `tau net`     | TCP port check, ping, SSRF-guarded fetch, local IPs                                |
-| `tau text`    | regex search, project-wide replace (dry-run default), line/word stats              |
-| `tau skill`   | SKILL.md command packs: list/show/new/validate                                     |
-| `tau plugin`  | MCP servers as tool sources: dsh, VS Code, filesystem, ... (list/add/remove/tools) |
-| `tau history` | everything runs are recorded; inspect, replay, clear                               |
-| `tau alias`   | persistent command aliases (`tau ll` → anything)                                   |
-| `tau config`  | provider, timeout, risk policy — stored under `$TAU_HOME`                          |
+| Area           | What you get                                                                        |
+| -------------- | ----------------------------------------------------------------------------------- |
+| `tau ask`      | NL intent → provider plan → safety review → confirm UI → execution → history        |
+| `tau file`     | glob find (prunes node_modules), tree, stat, regex batch rename (dry-run default)   |
+| `tau sys`      | OS/CPU/memory info, disk usage, top processes                                       |
+| `tau net`      | TCP port check, ping, SSRF-guarded fetch, local IPs                                 |
+| `tau text`     | regex search, project-wide replace (dry-run default), line/word stats               |
+| `tau skill`    | SKILL.md command packs: list/show/new/validate                                      |
+| `tau plugin`   | MCP servers as tool sources: dsh, VS Code, filesystem, ... (list/add/remove/tools)  |
+| `tau history`  | everything runs are recorded; inspect, replay, clear                                |
+| `tau alias`    | persistent command aliases (`tau ll` → anything)                                    |
+| `tau provider` | API keys + live model discovery: set a key, models auto-refresh, pick interactively |
+| `tau config`   | provider, timeout, risk policy — stored under `$TAU_HOME`                           |
 
 ## Install
 
@@ -67,11 +68,16 @@ Requires Node.js ≥ 20.
 # 1. Works offline out of the box (mock provider)
 tau ask "find all ts files"
 
-# 2. Point it at a real model
-tau config set provider openai          # + export OPENAI_API_KEY=...
-tau config set provider deepseek        # + export DEEPSEEK_API_KEY=...
-tau config set provider ollama          # local models, no key needed
-tau config set provider zai             # optional z-ai-web-dev-sdk
+# 2. Point it at a real model — the key unlocks a live model catalog
+tau provider set-key deepseek sk-...     # stores the key (config, chmod 600)
+                                         # -> model catalog auto-refreshes
+tau provider use deepseek                # pick a model from the refreshed list
+tau provider models deepseek             # or just browse it
+
+# Prefer env vars? They still work as fallback:
+tau config set provider openai           # + export OPENAI_API_KEY=...
+tau config set provider ollama           # local models, no key needed
+tau config set provider zai              # optional z-ai-web-dev-sdk
 
 # 3. Tools you'll actually use
 tau sys info
@@ -110,6 +116,28 @@ intent ──► provider.plan() ──► validatePlanResponse() ──► revi
 
 Selection precedence: `--provider` flag > `TAU_PROVIDER` env > `config.provider`.
 Unknown → safe fallback to `mock`.
+
+API keys resolve in the order **config (`providers.<name>.apiKey`) → environment
+variable** — so `tau provider set-key` sticks even when an env var is exported
+for other tools, and CI setups can keep using env-only.
+
+### Model selection: keys refresh the catalog
+
+Providers expose live model discovery (`GET /models` for openai/deepseek,
+`/api/tags` for ollama). As soon as a key is configured, Tau fetches the
+catalog, caches it (`providers.<name>.availableModels`, 24 h TTL) and serves
+model choices from it:
+
+```bash
+tau provider list                        # key source, active model, cache age
+tau provider set-key deepseek sk-...     # stores key -> auto-refreshes catalog
+tau provider models [--refresh|--offline]
+tau provider use deepseek [model]        # interactive arrow-key picker on a TTY
+```
+
+Catalog display never leaks keys, a failed refresh degrades to the cached
+list, and providers without discovery (zai) fall back to manual
+`providers.<name>.model`.
 
 ## Skills: teach Tau new tricks with one markdown file
 

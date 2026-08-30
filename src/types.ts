@@ -132,6 +132,14 @@ export interface SkillIssue {
 
 /** ---------- AI providers ---------- */
 
+/** One model offered by a provider's discovery endpoint (GET /models, /api/tags, ...). */
+export interface ModelInfo {
+  /** Model id exactly as the API expects it, e.g. "deepseek-chat". */
+  id: string;
+  /** Optional owner/creator label from the API (e.g. "deepseek", "openai"). */
+  ownedBy?: string;
+}
+
 /** Context handed to a provider so it can plan against the real tool catalog. */
 export interface PlanningContext {
   intent: string;
@@ -143,7 +151,7 @@ export interface PlanningContext {
 
 /** Provider interface. Implement this to add a new AI backend. */
 export interface AIProvider {
-  /** Registry key, e.g. "mock" | "ollama" | "openai" | "zai". */
+  /** Registry key, e.g. "mock" | "ollama" | "openai" | "deepseek" | "zai". */
   readonly name: string;
   /** Human-readable label used in CLI output. */
   readonly label: string;
@@ -153,6 +161,13 @@ export interface AIProvider {
   unavailableReason?(): string;
   /** Turn a natural-language intent into a validated Plan. */
   plan(ctx: PlanningContext): Promise<Plan>;
+  /**
+   * Optional live model discovery (GET /models or equivalent). Providers
+   * without a discovery endpoint omit this; `tau provider` then reports the
+   * catalog as unsupported instead of pretending. Implementations must throw
+   * on auth/network failures — the caller owns caching and degradation.
+   */
+  listModels?(): Promise<ModelInfo[]>;
 }
 
 /** ---------- History ---------- */

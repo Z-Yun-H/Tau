@@ -7,6 +7,26 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Added
 
+- **Provider model-selection mode** (`tau provider list/set-key/models/use`):
+  providers now expose live model discovery (`GET /models` for
+  openai/deepseek, `/api/tags` for ollama, a demo catalog for mock). As soon
+  as an API key is configured, the model catalog is fetched automatically
+  and cached (`providers.<name>.availableModels` + `modelsRefreshedAt`,
+  24 h TTL), so model choices are always real and current:
+  `tau provider set-key deepseek <key>` stores the key (config file chmod 0600) **and auto-refreshes the catalog in the same command**;
+  `tau provider models [--refresh|--offline]` browses it;
+  `tau provider use <provider> [model]` selects provider + model with an
+  interactive arrow-key picker on a TTY (numbered fallback otherwise; CI
+  sessions never hang on stdin). API keys resolve config-first with env vars
+  as fallback, every CLI surface masks them, and a failed refresh degrades
+  to the cached list instead of failing. New `src/ai/models.ts` catalog
+  service, `src/ui/picker.ts` zero-dependency selector, `src/cli/provider.ts`
+  command family.
+- Dotted config keys: `tau config get/set providers.<name>.<field>`
+  (`apiKey`, `baseUrl`, `host`, `model`, `timeoutMs`) with per-provider
+  deep-merge of bundled defaults, `chmod 0600` on the config file, and
+  `maskSecret`/`redactConfig` so `tau config get/list` never prints a raw
+  API key.
 - **DeepSeek provider** (`deepseek`): official DeepSeek chat-completions
   streaming wire format, enabled by `DEEPSEEK_API_KEY`; model/baseUrl/timeout
   via `providers.deepseek`. The provider is now a genuine DeepSeek Harness
@@ -46,11 +66,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Changed
 
-- Tests grew from 108 to 172 (SSE wire parsing, provider request shaping,
-  plugin config CRUD, MCP tool mapping, real InMemory + spawned-stdio MCP
-  integration, plugin CLI flows).
+- Tests grew from 172 to 211 (model-catalog service: live/cache/unsupported
+  paths, TTL staleness and cache degradation; provider `listModels` request
+  shaping and parsing; dotted config keys and secret masking; the
+  `tau provider` CLI flow; the TTY arrow-key picker and hidden key prompt
+  driven through injectable streams).
+- `tau ask` unavailable-provider tips now point at
+  `tau provider set-key <provider> <key>`.
+- Config file permissions tighten to 0600 on every write (it may hold API
+  keys now).
 
-### Changed (toolchain, previously unreleased note)
+### Changed (prior work, same release)
 
 - **Dev toolchain migrated to the oxc ecosystem** (zero runtime impact on the
   published CLI): bundler `tsup` → `tsdown` (rolldown/oxc; shebang and exec

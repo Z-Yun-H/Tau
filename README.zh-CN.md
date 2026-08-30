@@ -4,7 +4,7 @@
 
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-172%20passing-success)](vitest.config.ts)
+[![Tests](https://img.shields.io/badge/tests-211%20passing-success)](vitest.config.ts)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 
 Tau 把自然语言意图（中文/英文）变成**经过审查、确认后执行的计划**。它用一个
@@ -35,18 +35,19 @@ tau file find "*.ts"                    # 也可以直接用工具
 
 ## 功能总览
 
-| 命令族        | 能力                                                                             |
-| ------------- | -------------------------------------------------------------------------------- |
-| `tau ask`     | 自然语言 → Provider 计划 → 安全审查 → 确认 UI → 执行 → 历史                      |
-| `tau file`    | glob 查找（自动跳过 node_modules）、目录树、stat、正则批量重命名（默认 dry-run） |
-| `tau sys`     | 系统/CPU/内存信息、磁盘用量、CPU 排行进程                                        |
-| `tau net`     | TCP 端口检测、ping、防 SSRF 的 fetch、本机 IP                                    |
-| `tau text`    | 正则搜索、全项目替换（默认 dry-run）、行/词统计                                  |
-| `tau skill`   | SKILL.md 命令包：list/show/new/validate                                          |
-| `tau plugin`  | MCP 工具服务器接入：dsh、VS Code、文件系统……（list/add/remove/tools）            |
-| `tau history` | 所有执行都有记录：查看、重放、清空                                               |
-| `tau alias`   | 持久化命令别名（`tau ll` → 任何命令）                                            |
-| `tau config`  | Provider、超时、风险策略 —— 存在 `$TAU_HOME` 下                                  |
+| 命令族         | 能力                                                                             |
+| -------------- | -------------------------------------------------------------------------------- |
+| `tau ask`      | 自然语言 → Provider 计划 → 安全审查 → 确认 UI → 执行 → 历史                      |
+| `tau file`     | glob 查找（自动跳过 node_modules）、目录树、stat、正则批量重命名（默认 dry-run） |
+| `tau sys`      | 系统/CPU/内存信息、磁盘用量、CPU 排行进程                                        |
+| `tau net`      | TCP 端口检测、ping、防 SSRF 的 fetch、本机 IP                                    |
+| `tau text`     | 正则搜索、全项目替换（默认 dry-run）、行/词统计                                  |
+| `tau skill`    | SKILL.md 命令包：list/show/new/validate                                          |
+| `tau plugin`   | MCP 工具服务器接入：dsh、VS Code、文件系统……（list/add/remove/tools）            |
+| `tau history`  | 所有执行都有记录：查看、重放、清空                                               |
+| `tau alias`    | 持久化命令别名（`tau ll` → 任何命令）                                            |
+| `tau provider` | API key 管理 + 在线模型发现：配好 key 自动刷新模型列表，交互式选型               |
+| `tau config`   | Provider、超时、风险策略 —— 存在 `$TAU_HOME` 下                                  |
 
 ## 安装
 
@@ -63,11 +64,16 @@ cd tau && npm install && npm run build && npm link   # 提供 `tau` 命令
 # 1. 开箱即用（mock provider，完全离线）
 tau ask "查找所有 ts 文件"
 
-# 2. 接入真实模型
-tau config set provider openai          # + export OPENAI_API_KEY=...
-tau config set provider deepseek        # + export DEEPSEEK_API_KEY=...
-tau config set provider ollama          # 本地模型，无需 key
-tau config set provider zai             # 可选 z-ai-web-dev-sdk
+# 2. 接入真实模型 —— 配好 key 即解锁在线模型目录
+tau provider set-key deepseek sk-...     # 存 key（写入配置，chmod 600）
+                                         # -> 模型列表自动刷新
+tau provider use deepseek                # 从刷新后的列表中选型
+tau provider models deepseek             # 或者先浏览一遍
+
+# 偏好环境变量？依旧支持（作为回退）：
+tau config set provider openai           # + export OPENAI_API_KEY=...
+tau config set provider ollama           # 本地模型，无需 key
+tau config set provider zai              # 可选 z-ai-web-dev-sdk
 
 # 3. 日常工具
 tau sys info
@@ -106,6 +112,26 @@ tau file rename " IMG_([0-9]+)" " -photo-$1" -e  # 确认后执行
 
 选择优先级：`--provider` 参数 > `TAU_PROVIDER` 环境变量 > `config.provider`。
 未知值 → 安全回落到 `mock`。
+
+API key 解析顺序为 **配置文件（`providers.<name>.apiKey`）→ 环境变量**：
+`tau provider set-key` 写入的 key 优先于为其他工具导出的同名环境变量，
+CI 场景也可以继续只用环境变量。
+
+### 模型选型：配置 key 后自动刷新目录
+
+各 Provider 内置在线模型发现（openai/deepseek 走 `GET /models`，ollama 走
+`/api/tags`）。一旦配置了 key，Tau 会立即拉取模型目录并缓存
+（`providers.<name>.availableModels`，24 小时 TTL），选型始终基于真实可用的模型：
+
+```bash
+tau provider list                        # key 来源、当前模型、缓存年龄
+tau provider set-key deepseek sk-...     # 存 key -> 自动刷新目录
+tau provider models [--refresh|--offline]
+tau provider use deepseek [model]        # TTY 下方向键交互选型
+```
+
+目录展示永不泄漏 key；刷新失败自动降级到缓存列表；
+不支持发现端点的 Provider（zai）回退到手工 `providers.<name>.model`。
 
 ## Skills：一个 markdown 文件教会 Tau 新本事
 

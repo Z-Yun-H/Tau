@@ -1,6 +1,6 @@
 import { theme } from "../../ui/theme.js";
 import { validatePlanResponse } from "../prompt.js";
-import type { AIProvider, Plan, PlanningContext } from "../../types.js";
+import type { AIProvider, ModelInfo, Plan, PlanningContext } from "../../types.js";
 
 /**
  * Mock provider — deterministic, zero-network.
@@ -13,6 +13,14 @@ export class MockProvider implements AIProvider {
 
   async isAvailable(): Promise<boolean> {
     return true;
+  }
+
+  /** Fake catalog so the `tau provider` flow is fully demonstrable offline. */
+  async listModels(): Promise<ModelInfo[]> {
+    return [
+      { id: "mock-chat", ownedBy: "tau" },
+      { id: "mock-reasoner", ownedBy: "tau" },
+    ];
   }
 
   async plan(ctx: PlanningContext): Promise<Plan> {

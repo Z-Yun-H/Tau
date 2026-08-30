@@ -9,6 +9,7 @@ interface AIProvider {
   isAvailable(): Promise<boolean>;
   unavailableReason?(): string;
   plan(ctx: PlanningContext): Promise<Plan>;
+  listModels?(): Promise<ModelInfo[]>; // optional live model discovery
 }
 ```
 
@@ -19,6 +20,30 @@ Selection precedence: `--provider` flag > `TAU_PROVIDER` env > `config.provider`
 
 > mock fallback. An unknown name silently falls back to mock — intentional:
 > the CLI must never hard-fail on config drift.
+
+## Model discovery and selection (src/ai/models.ts)
+
+- `listModels()` is OPTIONAL: implement it only when the backend has a real
+  discovery endpoint (`GET /models` for openai/deepseek, `/api/tags` for
+  ollama; mock serves a fake catalog for offline demos; zai deliberately
+  omits it). It must THROW on auth/network failure — caching and degradation
+  belong to the catalog service, not the provider.
+- The catalog service (`refreshProviderModels`) persists ids in
+  `providers.<name>.availableModels` + `modelsRefreshedAt` (24 h TTL,
+  `MODELS_TTL_MS`). Serving rules: fresh cache → cache (zero network); stale
+  or forced → live; live failure with cache → cache + warning; live failure
+  without cache → throw.
+- The UX contract: configuring a key (`tau provider set-key`) immediately
+  auto-refreshes the catalog, so `tau provider use` always picks from real,
+  current models. A failed refresh degrades to the cache and NEVER fails the
+  `set-key` command itself.
+- API key resolution: `providers.<name>.apiKey` (config) FIRST, env var
+  (`DEEPSEEK_API_KEY` / `OPENAI_API_KEY`) as fallback. `set-key` stores into
+  config; `saveConfig` chmods the file 0600. CLI output always masks keys
+  (`maskSecret` / `redactConfig`) — never print a full key.
+- Non-interactive sessions must never hang on stdin: `tau provider use <p>`
+  without a model only opens the picker on a TTY; otherwise it prints the
+  explicit-model hint.
 
 ## The plan contract
 
@@ -94,8 +119,10 @@ chat-completions STREAMING wire contract (`stream: true` +
    with zero dependencies. Error text (`apiErrorMessage`) and request
    shape are identical across both paths, so tests and UX don't fork.
 
-Config: `providers.deepseek.model | baseUrl | timeoutMs`; key via
-`DEEPSEEK_API_KEY`. Test seams: stub `globalThis.fetch` (never a real
+Config: `providers.deepseek.model | baseUrl | timeoutMs | apiKey`; key via
+`providers.deepseek.apiKey` (preferred, `tau provider set-key`) or
+`DEEPSEEK_API_KEY` env (fallback). Model discovery hits `GET {baseUrl}/models`.
+Test seams: stub `globalThis.fetch` (never a real
 endpoint); `setDshLlmLoaderForTests(loader)` forces either path without
 touching node_modules; `resetDshLlmCache()` between tests.
 
@@ -114,7 +141,10 @@ touching node_modules; `resetDshLlmCache()` between tests.
 
 ## Secret hygiene
 
-- API keys come from environment (OPENAI_API_KEY, ZAI config) — never stored
-  in config.json by Tau itself, never logged, never echoed into prompts.
+- API keys resolve config-first (`providers.<name>.apiKey`, written by
+  `tau provider set-key`, file chmod 0600) with env vars as fallback
+  (`OPENAI_API_KEY`, `DEEPSEEK_API_KEY`). Keys are never logged, never
+  echoed into prompts, and masked (`sk-***last4`) in every CLI surface that
+  prints config (`config get/list`, `provider list`, `set-key` output).
 - Provider errors may contain server messages: truncate to ~300 chars before
   displaying (chatJSON already does).

@@ -64,7 +64,16 @@ reviewer independently re-verifies that. `validatePlanResponse()` is strict
 about content (zod `.strict()`), tolerant about wrapping (code fences, prose).
 
 Providers: `mock` (offline keyword matching), `ollama` (local HTTP), `openai`
-(any OpenAI-compatible endpoint), `zai` (optional SDK, dynamically imported).
+(any OpenAI-compatible endpoint), `deepseek` (official streaming wire format,
+harness adapter with zero-dep fallback), `zai` (optional SDK, dynamically
+imported).
+
+Providers may also implement `listModels()` for live model discovery. The
+catalog service (`src/ai/models.ts`) caches ids per provider (24 h TTL) and
+the `tau provider` command family (set-key / models / use) turns it into the
+model-selection UX: configuring an API key auto-refreshes the catalog, then
+you pick from real models. Keys live in config (chmod 0600) with env vars as
+fallback and are masked in every CLI output.
 
 ### src/skills/ — markdown as a plugin format
 
@@ -77,7 +86,8 @@ wins precedence: bundled → user ($TAU_HOME/skills) → workspace (./skills,
 ### src/config/ — where state lives
 
 `$TAU_HOME` (default `~/.tau`, XDG-aware, overridable for tests):
-`config.json` (provider, timeout, aliases, per-provider settings),
+`config.json` (provider, timeout, aliases, per-provider settings — may hold
+API keys, so it is written with chmod 0600 and keys are masked on display),
 `history.jsonl` (append-only, one `HistoryEntry` per line).
 
 ## Invariants

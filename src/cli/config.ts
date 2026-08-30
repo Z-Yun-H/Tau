@@ -4,6 +4,8 @@ import {
   DEFAULT_CONFIG,
   getConfigValue,
   loadConfig,
+  maskSecret,
+  redactConfig,
   saveConfig,
   setConfigValue,
 } from "../config/store.js";
@@ -17,12 +19,17 @@ export function registerConfigCommands(program: Command): void {
 
   config
     .command("get")
-    .description("Get one config value")
-    .argument("<key>", "e.g. provider | timeout | allowMediumAutoApprove")
+    .description("Get one config value (top-level keys or providers.<name>.<field>)")
+    .argument("<key>", "e.g. provider | timeout | providers.deepseek.model")
     .action((key: string) => {
       try {
         const value = getConfigValue(key);
-        console.log(typeof value === "string" ? value : JSON.stringify(value, null, 2));
+        // Secret hygiene: apiKey values are always masked on display.
+        const masked =
+          typeof value === "string" && (key === "apiKey" || key.endsWith(".apiKey"))
+            ? maskSecret(value)
+            : value;
+        console.log(typeof masked === "string" ? masked : JSON.stringify(masked, null, 2));
       } catch (error) {
         console.error(theme.error((error as Error).message));
         process.exitCode = 1;
@@ -31,13 +38,17 @@ export function registerConfigCommands(program: Command): void {
 
   config
     .command("set")
-    .description("Set one config value")
-    .argument("<key>", "key name")
+    .description("Set one config value (top-level keys or providers.<name>.<field>)")
+    .argument("<key>", "key name, e.g. provider | providers.openai.model")
     .argument("<value>", "raw value (true/false/number/JSON)")
     .action((key: string, value: string) => {
       try {
         setConfigValue(key, value);
-        console.log(theme.ok(`${key} = ${value}`));
+        console.log(
+          theme.ok(
+            `${key} = ${key.endsWith(".apiKey") || key === "apiKey" ? maskSecret(value) : value}`,
+          ),
+        );
       } catch (error) {
         console.error(theme.error((error as Error).message));
         process.exitCode = 1;
@@ -46,9 +57,9 @@ export function registerConfigCommands(program: Command): void {
 
   config
     .command("list")
-    .description("Show the effective config")
+    .description("Show the effective config (API keys masked)")
     .action(() => {
-      const effective = loadConfig();
+      const effective = redactConfig(loadConfig());
       console.log(JSON.stringify(effective, null, 2));
       console.log(theme.muted(`\navailable providers: ${providerNames().join(", ")}`));
     });
