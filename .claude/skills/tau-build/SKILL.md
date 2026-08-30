@@ -1,0 +1,31 @@
+---
+name: tau-build
+description: Build and typecheck the Tau CLI project. Use whenever you changed TypeScript source and need to verify it compiles and bundles before committing.
+---
+
+# Build Tau
+
+Run the build pipeline in order. Each step must pass before the next:
+
+```bash
+npm run typecheck   # tsc --noEmit — all TypeScript in src/ and tests/
+npm run lint        # eslint (flat config)
+npm run build       # tsup -> dist/index.js with shebang
+node dist/index.js --help   # verify the bundle actually runs
+```
+
+## Expectations
+
+- `dist/index.js` starts with `#!/usr/bin/env node`.
+- Build is clean: no warnings that reference missing externals other than
+  the intentional `z-ai-web-dev-sdk` external.
+- If typecheck fails on `noUncheckedIndexedAccess`, fix the code (add `??`
+  fallbacks) — do NOT loosen tsconfig.
+
+## Common fixes
+
+| Symptom                                | Fix                                                             |
+| -------------------------------------- | --------------------------------------------------------------- |
+| `Cannot find module './x.js'`          | relative import missing `.js` extension (repo convention)       |
+| typecheck passes, runtime import error | check tsup `external` and package `type: module`                |
+| chalk colors in tests                  | provider/tool code must return plain text; color only in cli/ui |

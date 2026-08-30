@@ -1,0 +1,7 @@
+# Markdown with YAML frontmatter templates: prettier reformats {{placeholders}}
+# into "{ { ... } }" which breaks the skill template engine.
+templates/
+dist/
+coverage/
+node_modules/
+package-lock.json

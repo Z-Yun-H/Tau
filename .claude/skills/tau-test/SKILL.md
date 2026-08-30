@@ -1,0 +1,42 @@
+---
+name: tau-test
+description: Run the Tau test suite with proper isolation (TAU_HOME sandboxing) and interpret failures. Use after any code change, before every commit/PR.
+---
+
+# Test Tau
+
+## Commands
+
+```bash
+npm test            # full suite once
+npm run test:watch  # filtered dev loop: npm run test:watch -- safety
+npm run test:cov    # with coverage thresholds (pre-PR gate)
+```
+
+## Rules the suite depends on
+
+- Tests set `TAU_HOME` to tmp dirs; NEVER run tests with your real `~/.tau`
+  in the environment — history/config tests would write to it.
+- Coverage thresholds are 55/55/55/55. Failing threshold = failing build.
+  Add tests; do not lower thresholds.
+- No test may open network sockets. Providers are tested through MockProvider
+  or mocked fetch.
+
+## Reading failures
+
+1. **safety.test.ts failures** — you (or someone) changed DENY_PATTERNS or
+   the reviewer. This is the most important file in the repo; restore
+   behavior or add the missing benign-lookalike test.
+2. **integration/cli.test.ts timeouts** — likely a confirm() prompt waiting
+   on stdin; the test env is non-TTY so runPlan must be called with
+   `assumeYes` or `autoApproveAll`.
+3. **skills tests failing after schema edits** — update the fixture
+   SKILL.md files AND the spec in AGENTS.d/skills.md together.
+
+## Before you say "done"
+
+```bash
+npm run lint && npm run typecheck && npm run test:cov
+```
+
+All green, coverage at or above thresholds, no skipped tests added.

@@ -1,0 +1,67 @@
+{
+  "name": "tau-tool",
+  "version": "0.1.0",
+  "description": "Tau — AI-powered unified terminal assistant. Natural language in, safe commands out.",
+  "license": "MIT",
+  "author": "ZHYun",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Z-Yun-H/Tau.git"
+  },
+  "keywords": [
+    "cli",
+    "terminal",
+    "ai",
+    "assistant",
+    "agent",
+    "skills",
+    "developer-tools"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "bin": {
+    "tau": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "skills",
+    "templates",
+    "AGENTS.md",
+    "README.md"
+  ],
+  "main": "./dist/index.js",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests",
+    "lint:fix": "eslint src tests --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "yaml": "^2.4.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.0",
+    "prettier": "^3.3.3",
+    "tsup": "^8.2.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.0.0",
+    "@vitest/coverage-v8": "^3.0.0",
+    "eslint": "^9.9.0",
+    "@eslint/js": "^9.9.0",
+    "globals": "^15.9.0"
+  }
+}

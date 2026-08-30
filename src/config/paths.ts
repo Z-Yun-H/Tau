@@ -1,0 +1,72 @@
+import path from "node:path";
+import os from "node:os";
+import fs from "node:fs";
+
+/**
+ * Path resolution for Tau's runtime data.
+ *
+ * Precedence for the Tau home directory:
+ *   1. $TAU_HOME (used by tests and dev containers)
+ *   2. $XDG_STATE_HOME/tau  (Linux convention, when set)
+ *   3. ~/.tau
+ */
+export function tauHome(): string {
+  const fromEnv = process.env.TAU_HOME;
+  if (fromEnv && fromEnv.trim().length > 0) {
+    return path.resolve(fromEnv);
+  }
+  const xdg = process.env.XDG_STATE_HOME;
+  if (xdg && xdg.trim().length > 0) {
+    return path.join(path.resolve(xdg), "tau");
+  }
+  return path.join(os.homedir(), ".tau");
+}
+
+export function configPath(): string {
+  return path.join(tauHome(), "config.json");
+}
+
+export function historyPath(): string {
+  return path.join(tauHome(), "history.jsonl");
+}
+
+export function userSkillsDir(): string {
+  return path.join(tauHome(), "skills");
+}
+
+/** Directory of the running tau package (where bundled skills/templates live). */
+export function packageRoot(): string {
+  // dist/index.js -> package root; src via tsx -> project root.
+  const here = path.dirname(fileURLToPathSafe());
+  let dir = here;
+  for (let i = 0; i < 4; i++) {
+    if (fs.existsSync(path.join(dir, "package.json"))) return dir;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return process.cwd();
+}
+
+export function bundledSkillsDir(): string {
+  return path.join(packageRoot(), "skills");
+}
+
+export function templatesDir(): string {
+  return path.join(packageRoot(), "templates");
+}
+
+/** Minimal URL import so this module stays testable under vitest and tsx. */
+function fileURLToPathSafe(): string {
+  try {
+    return new URL(import.meta.url).pathname;
+  } catch {
+    return process.cwd();
+  }
+}
+
+export function ensureHome(): string {
+  const home = tauHome();
+  fs.mkdirSync(home, { recursive: true });
+  return home;
+}

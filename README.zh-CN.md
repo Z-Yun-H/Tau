@@ -1,0 +1,176 @@
+# Tau
+
+**AI 驱动的统一终端助手 —— 自然语言进，安全命令出。**
+
+[![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
+[![Tests](https://img.shields.io/badge/tests-108%20passing-success)](vitest.config.ts)
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
+
+Tau 把自然语言意图（中文/英文）变成**经过审查、确认后执行的计划**。它用一个
+命令统一了日常终端工作 —— 文件、系统、网络、文本 —— 并让每个 AI 提议的动作
+都必须先通过确定性的安全门，才能碰你的机器。
+
+```bash
+tau ask "找出所有 TODO 的地方"          # 意图 -> 计划 -> 确认 -> 完成
+tau ask "how much disk is left?" --yes  # 仅自动批准低/中风险
+tau file find "*.ts"                    # 也可以直接用工具
+```
+
+---
+
+## 为什么是 Tau
+
+大多数 AI 终端工具选择"相信模型，然后祈祷"。Tau 反其道而行：
+**AI 只负责提议，确定性代码负责裁决。**
+
+- **要计划，不要感觉** —— 模型必须输出严格 JSON（zod 校验），垃圾输出根本到不了 shell。
+- **AI 永远不给自己打分** —— 一个经过完整测试的确定性 SafetyReviewer
+  （黑名单 + 风险分级 + 步数上限）横亘在每个计划和执行之间。
+- **默认 dry-run** —— 所有会改数据的操作（`file.rename`、`text.replace`）先预览，
+  真正生效永远需要显式参数。
+- **没有删除原语** —— Tau 的一方工具不能删除；危险 shell 命令要么被黑名单拦截，
+  要么经过交互确认，否则不执行。
+- **离线优先** —— 没有任何 API key 时，`tau` 依然是完整的工具箱（内置 `mock` Provider）。
+
+## 功能总览
+
+| 命令族        | 能力                                                                             |
+| ------------- | -------------------------------------------------------------------------------- |
+| `tau ask`     | 自然语言 → Provider 计划 → 安全审查 → 确认 UI → 执行 → 历史                      |
+| `tau file`    | glob 查找（自动跳过 node_modules）、目录树、stat、正则批量重命名（默认 dry-run） |
+| `tau sys`     | 系统/CPU/内存信息、磁盘用量、CPU 排行进程                                        |
+| `tau net`     | TCP 端口检测、ping、防 SSRF 的 fetch、本机 IP                                    |
+| `tau text`    | 正则搜索、全项目替换（默认 dry-run）、行/词统计                                  |
+| `tau skill`   | SKILL.md 插件系统：list/show/new/validate                                        |
+| `tau history` | 所有执行都有记录：查看、重放、清空                                               |
+| `tau alias`   | 持久化命令别名（`tau ll` → 任何命令）                                            |
+| `tau config`  | Provider、超时、风险策略 —— 存在 `$TAU_HOME` 下                                  |
+
+## 安装
+
+```bash
+git clone https://github.com/Z-Yun-H/Tau.git
+cd tau && npm install && npm run build && npm link   # 提供 `tau` 命令
+```
+
+需要 Node.js ≥ 20。
+
+## 快速上手
+
+```bash
+# 1. 开箱即用（mock provider，完全离线）
+tau ask "查找所有 ts 文件"
+
+# 2. 接入真实模型
+tau config set provider openai          # + export OPENAI_API_KEY=...
+tau config set provider ollama          # 本地模型，无需 key
+tau config set provider zai             # 可选 z-ai-web-dev-sdk
+
+# 3. 日常工具
+tau sys info
+tau net port 3000 --host localhost
+tau text search "TODO" --glob "*.ts"
+tau file rename " IMG_([0-9]+)" " -photo-$1"     # 先预览
+tau file rename " IMG_([0-9]+)" " -photo-$1" -e  # 确认后执行
+```
+
+## 安全模型 30 秒版
+
+```
+意图 ──► provider.plan() ──► validatePlanResponse() ──► reviewPlan() ──┬─► deny   （exit 2，什么都没跑）
+                                    严格 JSON             │           ├─► review（高风险：强制交互确认，
+                                    zod 校验             黑名单       │        --yes 也绝不自动执行）
+                                                                       └─► allow （低风险：直接跑 / --yes）
+```
+
+- **黑名单**：`sudo`、`rm -rf /`、`curl | sh`、`dd of=/dev/*`、fork 炸弹、
+  force-push、`DROP TABLE`…… 计划在确认之前就被拒绝。
+- ** caution 名单**：`rm`、`chmod`、`kill`、`git reset --hard`…… 高风险，
+  必须交互确认。
+- **`--yes` 是诚实的**：它只自动批准低风险（配置 `allowMediumAutoApprove true`
+  后含中风险）—— 永不碰高风险与 blocked。
+- 完整策略与设计动机：[docs/safety.md](docs/safety.md)。
+
+## AI Provider
+
+| Provider       | 依赖                    | 配置                                             |
+| -------------- | ----------------------- | ------------------------------------------------ |
+| `mock`（默认） | 无                      | 离线可用，关键词匹配的演示计划                   |
+| `ollama`       | 本地 ollama             | `ollama serve`，模型见 `providers.ollama.model`  |
+| `openai`       | `OPENAI_API_KEY`        | 任意 OpenAI 兼容端点：`providers.openai.baseUrl` |
+| `zai`          | 可选 `z-ai-web-dev-sdk` | 未安装时优雅提示 unavailable + 修复方法          |
+
+选择优先级：`--provider` 参数 > `TAU_PROVIDER` 环境变量 > `config.provider`。
+未知值 → 安全回落到 `mock`。
+
+## Skills：一个 markdown 文件教会 Tau 新本事
+
+把 `SKILL.md` 放进 `~/.tau/skills/<name>/` 或项目的 `skills/` 目录：
+
+```markdown
+---
+name: git-helper
+version: 0.1.0
+description: 只读的 git 工作流快捷方式
+risk: low
+triggers: [git, commit, branch]
+commands:
+  - name: status
+    description: 查看工作区状态
+    command: git status --short --branch
+---
+
+使用文档 —— 人和 AI 规划器都会读这段。
+```
+
+```bash
+tau skill list                 # bundled + user + workspace 三个作用域
+tau skill new my-skill "..."   # 从模板生成到 ~/.tau/skills
+tau skill validate my-skill    # frontmatter + 黑名单扫描
+tau git-helper status          # 声明式命令自动成为 CLI + AI 可调用工具
+```
+
+内置示例：[`skills/git-helper`](skills/git-helper/SKILL.md)、
+[`skills/docker-helper`](skills/docker-helper/SKILL.md)。
+编写指南：[docs/skills-authoring.md](docs/skills-authoring.md)。
+
+## 为 AI 协作而生
+
+Tau 从设计上就是"给人用、给 AI 维护"的双端项目：
+
+- **[`AGENTS.md`](AGENTS.md)** —— 60 秒项目认知 + 黄金法则 + 提交前门禁
+- **[`AGENTS.d/`](AGENTS.d/)** —— 分子系统规则书：[架构](AGENTS.d/architecture.md)、
+  [规范](AGENTS.d/conventions.md)、[测试](AGENTS.d/testing.md)、
+  [技能](AGENTS.d/skills.md)、[AI 集成](AGENTS.d/ai-integration.md)、[发布](AGENTS.d/release.md)
+- **[`.claude/skills/`](.claude/skills)** —— 开发工作流技能（tau-build / tau-test / tau-release / tau-skill-new）
+- **`CLAUDE.md`** 指针文件供 Claude Code 自动发现；安全模块完全确定性且有 1:1 测试覆盖
+- 108 个测试、82% 覆盖率、严格 TypeScript，`npm run lint && npm run typecheck && npm test` 就是 agent 门禁
+
+## 项目结构
+
+```
+src/
+  index.ts        CLI 入口（commander）       core/      会话流水线、安全、执行器
+  ai/             Provider + Prompt + 计划校验  tools/     注册表 + file/sys/net/text
+  skills/         SKILL.md 加载器 + 管理器     config/    TAU_HOME、配置、历史
+  cli/            各命令族接线                  ui/        主题 + 确认交互
+skills/           内置技能                      templates/ `tau skill new` 模板
+tests/            单元 + 集成测试（vitest）     AGENTS.d/  agent 规则书
+```
+
+## 文档
+
+- [架构详解](docs/architecture.md) —— 流水线图、不变量、如何添加工具/Provider
+- [安全模型](docs/safety.md) —— 黑白名单、风险语义、为什么没有删除工具
+- [技能编写](docs/skills-authoring.md) —— frontmatter 契约、示例、校验规则
+- [English README](README.md)
+
+## 参与贡献
+
+欢迎 PR —— 从 [CONTRIBUTING.md](CONTRIBUTING.md) 和 [AGENTS.md](AGENTS.md) 开始。
+提交前门禁：`npm run lint && npm run typecheck && npm run test:cov`。
+
+## 许可证
+
+[MIT](LICENSE) © 2026 ZHYun

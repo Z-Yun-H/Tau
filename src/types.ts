@@ -1,0 +1,191 @@
+/**
+ * Tau core domain types.
+ *
+ * These types are the shared vocabulary of the whole project:
+ * CLI, tools, AI planner, safety reviewer and skills all speak this language.
+ * When you change something here, run `npm run typecheck` and update
+ * AGENTS.d/architecture.md if the data flow changes.
+ */
+
+/** Risk classification used by the safety reviewer and every tool definition. */
+export type RiskLevel = "low" | "medium" | "high" | "blocked";
+
+export const RISK_ORDER: Record<RiskLevel, number> = {
+  low: 0,
+  medium: 1,
+  high: 2,
+  blocked: 3,
+};
+
+/** A single action inside an AI-generated or replayed plan. */
+export interface PlanStep {
+  /**
+   * Either a registered tool name (e.g. "file.find") or "shell" for a
+   * raw shell command. Tool steps are preferred; shell steps are always
+   * subject to stricter review.
+   */
+  kind: "tool" | "shell";
+  /** Tool name ("file.find") when kind === "tool". */
+  tool?: string;
+  /** Raw shell command when kind === "shell". */
+  command?: string;
+  /** Structured arguments for tool steps. */
+  args?: Record<string, unknown>;
+  /** Human readable explanation of why this step exists. */
+  reason: string;
+}
+
+/** A plan produced by an AI provider (or mock) for a natural language intent. */
+export interface Plan {
+  /** Short summary of what the plan does. */
+  explanation: string;
+  steps: PlanStep[];
+  /** Provider's own opinion of the risk, reviewer has the final say. */
+  selfAssessedRisk?: RiskLevel;
+}
+
+/** Structured issue raised while reviewing a plan or step. */
+export interface SafetyIssue {
+  level: RiskLevel;
+  message: string;
+  /** Which step index raised this (absent for plan-level issues). */
+  stepIndex?: number;
+}
+
+/** Result of reviewing a whole plan. */
+export interface SafetyReview {
+  verdict: "allow" | "review" | "deny";
+  overallRisk: RiskLevel;
+  issues: SafetyIssue[];
+}
+
+/** JSON-schema-ish description of a tool's parameters (kept simple, zod-backed). */
+export interface ToolParamSpec {
+  name: string;
+  type: "string" | "number" | "boolean" | "string[]";
+  description: string;
+  required: boolean;
+  default?: unknown;
+}
+
+/**
+ * A built-in or skill-provided tool. Tools are dual-use:
+ * - bound to CLI subcommands (humans call them directly)
+ * - exposed to the AI planner as a catalog (AI calls them safely)
+ */
+export interface ToolDefinition {
+  /** Dotted name, e.g. "file.find", "git-helper.status". */
+  name: string;
+  /** One-line description shown to both humans and the AI planner. */
+  description: string;
+  params: ToolParamSpec[];
+  /** Intrinsic risk of running this tool with any arguments. */
+  risk: RiskLevel;
+  /** Module that owns this tool ("core" for built-ins, skill name otherwise). */
+  owner: string;
+  run: (args: Record<string, unknown>) => Promise<ToolResult>;
+}
+
+export interface ToolResult {
+  /** Human-readable output (already plain text, no ANSI). */
+  text: string;
+  /** Optional structured payload for tests and AI consumption. */
+  data?: unknown;
+}
+
+/** ---------- Skills ---------- */
+
+/** Command exposed by a skill (declarative, low-risk by design). */
+export interface SkillCommand {
+  name: string;
+  description: string;
+  /** Shell command template; {args} placeholders are filled positionally. */
+  command: string;
+  risk?: RiskLevel;
+}
+
+/** Parsed frontmatter of a SKILL.md file. */
+export interface SkillMeta {
+  name: string;
+  version: string;
+  description: string;
+  author?: string;
+  tags: string[];
+  /** Highest intrinsic risk among the skill's commands. */
+  risk: RiskLevel;
+  /** Keywords that make the skill discoverable by the offline matcher / AI. */
+  triggers: string[];
+  commands: SkillCommand[];
+  /** Absolute path of the SKILL.md file. */
+  sourcePath: string;
+  /** Directory containing the SKILL.md file. */
+  dir: string;
+  /** Where this skill was discovered from. */
+  origin: "bundled" | "user" | "workspace";
+}
+
+/** Validation problem found in a SKILL.md file. */
+export interface SkillIssue {
+  path: string;
+  message: string;
+}
+
+/** ---------- AI providers ---------- */
+
+/** Context handed to a provider so it can plan against the real tool catalog. */
+export interface PlanningContext {
+  intent: string;
+  toolCatalog: string;
+  skillCatalog: string;
+  platform: string;
+  cwd: string;
+}
+
+/** Provider interface. Implement this to add a new AI backend. */
+export interface AIProvider {
+  /** Registry key, e.g. "mock" | "ollama" | "openai" | "zai". */
+  readonly name: string;
+  /** Human-readable label used in CLI output. */
+  readonly label: string;
+  /** True when the provider has what it needs (key, host, sdk...) to run. */
+  isAvailable(): Promise<boolean>;
+  /** Where the missing configuration is, when isAvailable() is false. */
+  unavailableReason?(): string;
+  /** Turn a natural-language intent into a validated Plan. */
+  plan(ctx: PlanningContext): Promise<Plan>;
+}
+
+/** ---------- History ---------- */
+
+export type HistoryKind = "direct" | "plan";
+
+export interface HistoryEntry {
+  id: string;
+  ts: string;
+  kind: HistoryKind;
+  /** Original user input: CLI argv or natural language intent. */
+  input: string;
+  steps: PlanStep[];
+  status: "ok" | "failed" | "cancelled" | "denied";
+  exitCode?: number;
+  /** Provider that generated the plan, when applicable. */
+  provider?: string;
+}
+
+/** ---------- Aliases & config ---------- */
+
+export interface TauConfig {
+  provider: string;
+  /** Timeout in seconds for executed commands. */
+  timeout: number;
+  /** When true, `--yes` may auto-approve medium risk too (never high/blocked). */
+  allowMediumAutoApprove: boolean;
+  aliases: Record<string, string[]>;
+  /** Provider-specific settings (model names, hosts...). */
+  providers: Record<string, Record<string, unknown>>;
+}
+
+export interface ProviderChoice {
+  provider: AIProvider;
+  source: "flag" | "env" | "config" | "default";
+}
