@@ -8,7 +8,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { loadConfig, saveConfig, tauHome } from "@tau/core";
-import { expandAliasArgv } from "../src/cli/alias.js";
+import { expandAliasArgv } from "../src/alias.js";
 
 let tmp = "";
 

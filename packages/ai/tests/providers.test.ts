@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { MockProvider } from "../src/ai/providers/mock.js";
-import { OllamaProvider } from "../src/ai/providers/ollama.js";
-import { OpenAIProvider } from "../src/ai/providers/openai.js";
-import { planningContext } from "../src/ai/prompt.js";
+import { MockProvider } from "../src/providers/mock.js";
+import { OllamaProvider } from "../src/providers/ollama.js";
+import { OpenAIProvider } from "../src/providers/openai.js";
+import { planningContext } from "../src/prompt.js";
 import { registerCoreTools } from "@tau/tools";
 
 registerCoreTools();

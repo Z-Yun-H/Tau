@@ -2,11 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import {
-  DeepSeekProvider,
-  apiErrorMessage,
-  collectStreamText,
-} from "../src/ai/providers/deepseek.js";
+import { DeepSeekProvider, apiErrorMessage, collectStreamText } from "../src/providers/deepseek.js";
 import type { PlanningContext } from "@tau/core";
 
 function sseStream(chunks: string[]): ReadableStream<Uint8Array> {

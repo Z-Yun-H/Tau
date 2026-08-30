@@ -31,11 +31,11 @@ independent execution paths.)
 ## Golden rules for agents
 
 1. **The safety reviewer is sacred.** Never weaken
-   `packages/engine/src/core/safety.ts` (deny list, risk escalation, step caps)
+   `packages/engine/src/safety.ts` (deny list, risk escalation, step caps)
    to make a feature easier. If a test around it fails, fix the feature, not
    the reviewer.
 2. **The AI never grades itself.** Any code path that executes an AI-generated
-   plan must go through `runPlan()` in `packages/engine/src/core/session.ts`.
+   plan must go through `runPlan()` in `packages/engine/src/session.ts`.
    No bypasses.
 3. **Dry-run by default** for anything that mutates (`file.rename`,
    `text.replace`). `execute:true` is always an explicit, visible choice.
@@ -78,22 +78,22 @@ independent execution paths.)
 ```
 app/                        UI layer (thin front doors, no engine logic)
   cli/src/index.ts          bin `tau`: builds commander program, registers tools+skills
-  cli/src/cli/              thin commander wiring per command family
-  tui/app/cli/src/index.ts          bin `tau-tui`: interactive REPL (slash commands + intents)
+  cli/src/<family>.ts       thin commander wiring per command family (ask, file, sys, ...)
+  tui/src/index.ts          bin `tau-tui`: interactive REPL (slash commands + intents)
   webui/src/server.ts       zero-dependency HTTP API over the engine + static UI
-packages/                   engine layer (each with a public app/cli/src/index.ts barrel)
-  core/packages/core/src/types.ts         shared domain vocabulary (Plan, ToolDefinition, RiskLevel...)
-  core/packages/core/src/config/          TAU_HOME paths, config store, JSONL history
-  engine/packages/engine/src/core/          session pipeline (runPlan), safety reviewer, executor
-  ai/packages/ai/src/ai/                provider registry + prompt builder + plan schema + models
-  ai/packages/ai/src/ai/providers/      mock | ollama | openai | deepseek | zai
-  tools/packages/tools/src/tools/          registry + file/sys/net/text tool modules
-  plugins/packages/plugins/src/plugins/      MCP client seam, plugin manager, tool registration
-  skills/packages/skills/src/skills/        SKILL.md loader, schema, manager + bundled asset paths
-  skills/skills/            bundled skills (git-helper, docker-helper)
+packages/                   engine layer (each with a public src/index.ts barrel)
+  core/src/types.ts         shared domain vocabulary (Plan, ToolDefinition, RiskLevel...)
+  core/src/config/          TAU_HOME paths, config store, JSONL history
+  engine/src/               session pipeline (runPlan), safety reviewer, executor
+  ai/src/                   provider registry + prompt builder + plan schema + models
+  ai/src/providers/         mock | ollama | openai | deepseek | zai
+  tools/src/                registry + file/sys/net/text tool modules (+ bootstrap.ts)
+  plugins/src/              MCP client seam, plugin manager, tool registration
+  skills/src/               SKILL.md loader, schema, manager + bundled asset paths
+  skills/bundled/           bundled skills (git-helper, docker-helper)
   skills/templates/         `tau skill new` scaffold source
-  agent/src/agent/          catalog prep + intent->plan pipeline shared by all UIs
-  ui/packages/ui/src/ui/                chalk theme, confirm prompt, list picker
+  agent/src/                catalog prep + intent->plan pipeline shared by all UIs
+  ui/src/                   chalk theme, confirm prompt, list picker
 tests                       live INSIDE each package: <pkg>/tests/*.test.ts
 AGENTS/                     deep-dive rulebooks for agents (see below)
 docs/                       human-facing deep dives (architecture, safety, skills, plugins)
@@ -101,22 +101,22 @@ docs/                       human-facing deep dives (architecture, safety, skill
 
 ## AGENTS index — read the relevant file BEFORE touching that subsystem
 
-| File                                                   | Read it when...                                                         |
-| ------------------------------------------------------ | ----------------------------------------------------------------------- |
-| [AGENTS/architecture.md](./AGENTS/architecture.md)     | you add/modify any module, command, or the plan pipeline                |
-| [AGENTS/conventions.md](./AGENTS/conventions.md)       | you write any TypeScript in this repo                                   |
-| [AGENTS/testing.md](./AGENTS/testing.md)               | you write or run tests                                                  |
-| [AGENTS/skills.md](./AGENTS/skills.md)                 | you touch skills/, templates/, or the SKILL.md parser                   |
-| [AGENTS/plugins.md](./AGENTS/plugins.md)               | you touch packages/plugins/src/plugins/, MCP integration, or plugin CLI |
-| [AGENTS/ai-integration.md](./AGENTS/ai-integration.md) | you touch packages/ai/src/ai/, safety, or provider code                 |
-| [AGENTS/release.md](./AGENTS/release.md)               | you cut a release or bump versions                                      |
+| File                                                   | Read it when...                                                 |
+| ------------------------------------------------------ | --------------------------------------------------------------- |
+| [AGENTS/architecture.md](./AGENTS/architecture.md)     | you add/modify any module, command, or the plan pipeline        |
+| [AGENTS/conventions.md](./AGENTS/conventions.md)       | you write any TypeScript in this repo                           |
+| [AGENTS/testing.md](./AGENTS/testing.md)               | you write or run tests                                          |
+| [AGENTS/skills.md](./AGENTS/skills.md)                 | you touch skills/, templates/, or the SKILL.md parser           |
+| [AGENTS/plugins.md](./AGENTS/plugins.md)               | you touch packages/plugins/src/, MCP integration, or plugin CLI |
+| [AGENTS/ai-integration.md](./AGENTS/ai-integration.md) | you touch packages/ai/src/, safety, or provider code            |
+| [AGENTS/release.md](./AGENTS/release.md)               | you cut a release or bump versions                              |
 
 ## Change checklist (every PR)
 
 - [ ] `pnpm lint && pnpm typecheck && pnpm test` green
 - [ ] New behavior has tests (see AGENTS/testing.md for patterns)
 - [ ] New user-facing flags/commands documented in both READMEs
-- [ ] Tool added? → registered in `packages/tools/src/tools/<module>.ts`,
+- [ ] Tool added? → registered in `packages/tools/src/<module>.ts`,
       catalog renders, risk level reviewed, docs table updated
 - [ ] Skill-related change? → AGENTS/skills.md checklist
 - [ ] Plugin-related change? → AGENTS/plugins.md checklist

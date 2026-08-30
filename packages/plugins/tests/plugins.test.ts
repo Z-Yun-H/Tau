@@ -10,8 +10,8 @@ import {
   setPluginEnabled,
   validatePlugin,
   validatePluginName,
-} from "../src/plugins/manager.js";
-import { jsonTypeToParamType, mcpResultToText, mcpToolsToDefinitions } from "../src/plugins/mcp.js";
+} from "../src/manager.js";
+import { jsonTypeToParamType, mcpResultToText, mcpToolsToDefinitions } from "../src/mcp.js";
 import { loadConfig } from "@tau/core";
 import type { PluginConfig } from "@tau/core";
 

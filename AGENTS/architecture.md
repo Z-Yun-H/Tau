@@ -18,20 +18,20 @@ package and run by the single root vitest config (aliases `@tau/*` → source).
 
 ```
                  ┌──────────────────────────────────────────────────────────────────┐
- user intent ──► │ tau ask (app/cli/src/cli/ask.ts)                                 │
-                 │   1. resolveProvider()      packages/ai/src/ai/registry.ts       │
-                 │   2. planningContext()      packages/ai/src/ai/prompt.ts         │
+ user intent ──► │ tau ask (app/cli/src/ask.ts)                                 │
+                 │   1. resolveProvider()      packages/ai/src/registry.ts       │
+                 │   2. planningContext()      packages/ai/src/prompt.ts         │
                  │      ├─ registerPluginTools()  packages/plugins/.../runtime.ts   │
                  │      │    (MCP discovery; failures → warnings)                   │
-                 │      ├─ tool catalog  ←─ packages/tools/src/tools/registry.ts    │
-                 │      └─ skill catalog ←─ packages/skills/src/skills/loader.ts    │
-                 │   3. provider.plan()        packages/ai/src/ai/providers/*       │
+                 │      ├─ tool catalog  ←─ packages/tools/src/registry.ts    │
+                 │      └─ skill catalog ←─ packages/skills/src/loader.ts    │
+                 │   3. provider.plan()        packages/ai/src/providers/*       │
                  │      └─ validatePlanResponse()  zod, STRICT JSON                 │
-                 │   4. runPlan()              packages/engine/src/core/session.ts  │
-                 │      ├─ reviewPlan()        packages/engine/src/core/safety.ts   │
+                 │   4. runPlan()              packages/engine/src/session.ts  │
+                 │      ├─ reviewPlan()        packages/engine/src/safety.ts   │
                  │      │    deny / review / allow                                  │
-                 │      ├─ confirm UI          packages/ui/src/ui/confirm.ts        │
-                 │      ├─ executeStep()       packages/engine/src/core/executor.ts │
+                 │      ├─ confirm UI          packages/ui/src/confirm.ts        │
+                 │      ├─ executeStep()       packages/engine/src/executor.ts │
                  │      │    tool steps → registry.run                              │
                  │      │    shell steps → spawn (shell:true)                       │
                  │      └─ appendHistory()     packages/core/src/config/history.ts  │
@@ -58,16 +58,16 @@ package and run by the single root vitest config (aliases `@tau/*` → source).
 
 ## Where to add things (the "I want to..." table)
 
-| I want to...                                | Do this                                                                                                                                                                                                                      |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| add a built-in tool op (e.g. `file.dedupe`) | implement in `packages/tools/src/tools/<family>.ts` as ToolDefinition + register in the family array + add CLI wiring in `app/cli/src/cli/<family>.ts` + tests. Consider dry-run default if it mutates.                      |
-| add a command family (e.g. `tau pkg`)       | new `packages/tools/src/tools/pkg.ts` + `app/cli/src/cli/pkg.ts` + register both in `app/cli/src/index.ts buildProgram()` + update this file + both READMEs                                                                  |
-| add an AI provider                          | implement AIProvider in `packages/ai/src/ai/providers/<name>.ts` + register in `packages/ai/src/ai/registry.ts` + config defaults in `packages/core/src/config/store.ts DEFAULT_CONFIG.providers` + AGENTS/ai-integration.md |
-| integrate an external tool server (MCP)     | nothing to code — `tau plugin add`; changing the MCP layer itself → `packages/plugins/src/plugins/*` + AGENTS/plugins.md (plugin tools are ALWAYS medium risk)                                                               |
-| add a bundled skill                         | new dir `skills/<name>/SKILL.md` (spec: AGENTS/skills.md) — no TS code required for declarative commands                                                                                                                     |
-| change the plan schema                      | `packages/ai/src/ai/prompt.ts planSchema` + safety reviewer expectations + tests + this diagram                                                                                                                              |
-| change config keys                          | `packages/core/src/types.ts TauConfig` + `packages/core/src/config/store.ts` (defaults + VALID_KEYS) + READMEs                                                                                                               |
-| add model discovery to a provider           | optional `listModels()` on the provider (throw on failure) + `packages/ai/src/ai/models.ts` handles caching; UI via `tau provider` (app/cli/src/cli/provider.ts); contract in AGENTS/ai-integration.md                       |
+| I want to...                                | Do this                                                                                                                                                                                                                |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| add a built-in tool op (e.g. `file.dedupe`) | implement in `packages/tools/src/<family>.ts` as ToolDefinition + register in the family array + add CLI wiring in `app/cli/src/<family>.ts` + tests. Consider dry-run default if it mutates.                          |
+| add a command family (e.g. `tau pkg`)       | new `packages/tools/src/pkg.ts` + `app/cli/src/pkg.ts` + register both in `app/cli/src/index.ts buildProgram()` + update this file + both READMEs                                                                      |
+| add an AI provider                          | implement AIProvider in `packages/ai/src/providers/<name>.ts` + register in `packages/ai/src/registry.ts` + config defaults in `packages/core/src/config/store.ts DEFAULT_CONFIG.providers` + AGENTS/ai-integration.md |
+| integrate an external tool server (MCP)     | nothing to code — `tau plugin add`; changing the MCP layer itself → `packages/plugins/src/*` + AGENTS/plugins.md (plugin tools are ALWAYS medium risk)                                                                 |
+| add a bundled skill                         | new dir `skills/<name>/SKILL.md` (spec: AGENTS/skills.md) — no TS code required for declarative commands                                                                                                               |
+| change the plan schema                      | `packages/ai/src/prompt.ts planSchema` + safety reviewer expectations + tests + this diagram                                                                                                                           |
+| change config keys                          | `packages/core/src/types.ts TauConfig` + `packages/core/src/config/store.ts` (defaults + VALID_KEYS) + READMEs                                                                                                         |
+| add model discovery to a provider           | optional `listModels()` on the provider (throw on failure) + `packages/ai/src/models.ts` handles caching; UI via `tau provider` (app/cli/src/provider.ts); contract in AGENTS/ai-integration.md                        |
 
 ## Runtime data layout ($TAU_HOME, default ~/.tau)
 
@@ -89,6 +89,6 @@ $TAU_HOME/
 - `SafetyReview` — verdict allow/review/deny + issues; from reviewPlan()
 - `ToolDefinition` — name/description/params/risk/run; dual-use unit
 - `PluginConfig` — one MCP server (transport stdio|http, endpoint, env/headers)
-- `ModelInfo` — one discovered model id (+owner); served by `packages/ai/src/ai/models.ts`
+- `ModelInfo` — one discovered model id (+owner); served by `packages/ai/src/models.ts`
 - `SkillMeta` — parsed SKILL.md frontmatter
 - `RiskLevel` — low < medium < high < blocked (RISK_ORDER)

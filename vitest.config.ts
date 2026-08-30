@@ -27,7 +27,7 @@ export default defineConfig({
         "app/cli/src/index.ts",
         "app/tui/src/index.ts",
         "app/webui/src/index.ts",
-        "packages/ai/src/ai/providers/zai.ts",
+        "packages/ai/src/providers/zai.ts",
         "**/dist/**",
       ],
       thresholds: {

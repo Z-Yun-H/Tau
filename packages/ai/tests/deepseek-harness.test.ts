@@ -13,8 +13,8 @@ import {
   mapWireUsage,
   resetDshLlmCache,
   setDshLlmLoaderForTests,
-} from "../src/ai/providers/deepseek.js";
-import type { DshLlmBundle, HarnessConnection } from "../src/ai/providers/deepseek.js";
+} from "../src/providers/deepseek.js";
+import type { DshLlmBundle, HarnessConnection } from "../src/providers/deepseek.js";
 import type { PlanningContext } from "@tau/core";
 
 function sseStream(chunks: string[]): ReadableStream<Uint8Array> {

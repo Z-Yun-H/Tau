@@ -3,4 +3,4 @@
  * built-in file/sys/net/text tools. AI plans may only call tools that live
  * here (or skill/plugin tools registered into the same registry).
  */
-export * from "./tools/index.js";
+export * from "./bootstrap.js";

@@ -21,7 +21,7 @@ export function packageRoot(): string {
 }
 
 export function bundledSkillsDir(): string {
-  return path.join(packageRoot(), "skills");
+  return path.join(packageRoot(), "bundled");
 }
 
 export function templatesDir(): string {

@@ -8,7 +8,7 @@ import {
   listMcpTools,
   loadMcpSdk,
   mcpToolsToDefinitions,
-} from "../src/plugins/mcp.js";
+} from "../src/mcp.js";
 import type { PluginConfig } from "@tau/core";
 
 /**
@@ -141,7 +141,7 @@ await server.connect(new StdioServerTransport());
     env: { TAU_PLUGIN_E2E: "env-var-flows" },
   };
 
-  const { connectPluginClient } = await import("../src/plugins/mcp.js");
+  const { connectPluginClient } = await import("../src/mcp.js");
   const sdk = await loadMcpSdk();
   expect(sdk).not.toBeNull();
   if (!sdk) return;

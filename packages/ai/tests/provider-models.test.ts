@@ -18,10 +18,10 @@ import {
   isCatalogStale,
   refreshProviderModels,
   resolveModel,
-} from "../src/ai/models.js";
-import { DeepSeekProvider } from "../src/ai/providers/deepseek.js";
-import { OllamaProvider } from "../src/ai/providers/ollama.js";
-import { OpenAIProvider } from "../src/ai/providers/openai.js";
+} from "../src/models.js";
+import { DeepSeekProvider } from "../src/providers/deepseek.js";
+import { OllamaProvider } from "../src/providers/ollama.js";
+import { OpenAIProvider } from "../src/providers/openai.js";
 
 const ORIGINAL_CWD = process.cwd();
 let tmp = "";
@@ -260,7 +260,7 @@ describe("model catalog degradation", () => {
   it("falls back to the cache when the live refresh fails", async () => {
     await refreshProviderModels("mock", { force: true });
     // Break discovery to simulate a network/API failure.
-    const provider = (await import("../src/ai/registry.js")).getProvider("mock");
+    const provider = (await import("../src/registry.js")).getProvider("mock");
     const original = provider?.listModels;
     if (provider)
       provider.listModels = async () => {

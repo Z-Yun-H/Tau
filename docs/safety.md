@@ -32,7 +32,7 @@ passing a deterministic, tested gate that the AI does not control.**
 
 ## Deny list (verdict: deny, before any confirmation)
 
-Highlights — see `packages/engine/src/core/safety.ts DENY_PATTERNS` for the full list:
+Highlights — see `packages/engine/src/safety.ts DENY_PATTERNS` for the full list:
 
 - `rm -rf /` and home-directory recursive deletes
 - `sudo`, `su` in any position

@@ -28,17 +28,17 @@ import { scanSkills } from "@tau/skills";
 import { buildSkillTools } from "@tau/agent";
 import { registerTuiCommand } from "@tau/tui";
 import { registerWebCommand } from "@tau/webui";
-import { registerAsk } from "./cli/ask.js";
-import { registerFileCommands } from "./cli/file.js";
-import { registerSysCommands } from "./cli/sys.js";
-import { registerNetCommands } from "./cli/net.js";
-import { registerTextCommands } from "./cli/text.js";
-import { registerSkillCommands } from "./cli/skill.js";
-import { registerHistoryCommands } from "./cli/history.js";
-import { registerAliasCommands, expandAliasArgv } from "./cli/alias.js";
-import { registerProviderCommands } from "./cli/provider.js";
-import { registerConfigCommands } from "./cli/config.js";
-import { registerPluginCommands } from "./cli/plugin.js";
+import { registerAsk } from "./ask.js";
+import { registerFileCommands } from "./file.js";
+import { registerSysCommands } from "./sys.js";
+import { registerNetCommands } from "./net.js";
+import { registerTextCommands } from "./text.js";
+import { registerSkillCommands } from "./skill.js";
+import { registerHistoryCommands } from "./history.js";
+import { registerAliasCommands, expandAliasArgv } from "./alias.js";
+import { registerProviderCommands } from "./provider.js";
+import { registerConfigCommands } from "./config.js";
+import { registerPluginCommands } from "./plugin.js";
 
 const require = createRequire(import.meta.url);
 

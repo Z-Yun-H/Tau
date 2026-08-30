@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { reviewPlan, scanShellCommand } from "../src/core/safety.js";
+import { reviewPlan, scanShellCommand } from "../src/safety.js";
 import { registerCoreTools } from "@tau/tools";
 import type { Plan, PlanStep } from "@tau/core";
 

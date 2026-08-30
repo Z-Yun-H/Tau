@@ -29,7 +29,7 @@ commands: # optional, declarative tools
 Markdown body — usage docs, guidance for AI agents, examples.
 ```
 
-Validation lives in `packages/skills/src/skills/schema.ts` (zod + safety scan). A skill whose
+Validation lives in `packages/skills/src/schema.ts` (zod + safety scan). A skill whose
 command matches any `DENY_PATTERNS` entry still loads but is flagged as an
 issue by `tau skill validate` — never silently dropped.
 
@@ -51,7 +51,7 @@ issue by `tau skill validate` — never silently dropped.
 5. Name conflicts: workspace > user > bundled wins. `registerTools` throws on
    duplicates — that's a bug signal, not something to catch and ignore.
 
-## tau skill subcommands (packages/skills/src/skills/manager.ts)
+## tau skill subcommands (packages/skills/src/manager.ts)
 
 | Command                           | Purpose                                                   |
 | --------------------------------- | --------------------------------------------------------- |
