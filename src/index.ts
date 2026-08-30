@@ -12,6 +12,7 @@
  *   tau history <list|show|replay|clear>
  *   tau alias  <list|add|remove>
  *   tau config <get|set|list|path>
+ *   tau plugin <list|add|remove|enable|disable|tools>
  *
  * (Line 1 is the #!/usr/bin/env node shebang; tsdown preserves it in the
  * bundle and marks the output executable.)
@@ -32,6 +33,7 @@ import { registerSkillCommands } from "./cli/skill.js";
 import { registerHistoryCommands } from "./cli/history.js";
 import { registerAliasCommands, expandAliasArgv } from "./cli/alias.js";
 import { registerConfigCommands } from "./cli/config.js";
+import { registerPluginCommands } from "./cli/plugin.js";
 
 const require = createRequire(import.meta.url);
 
@@ -86,7 +88,7 @@ export function buildProgram(): Command {
     .name("tau")
     .description("AI-powered unified terminal assistant — natural language in, safe commands out.")
     .version(readVersion())
-    .option("--provider <name>", "AI provider for this run (mock|ollama|openai|zai)")
+    .option("--provider <name>", "AI provider for this run (mock|ollama|openai|deepseek|zai)")
     .option("--yes", "auto-approve low/medium risk steps (never high/blocked)")
     .option("--json", "machine-readable output where supported");
 
@@ -99,6 +101,7 @@ export function buildProgram(): Command {
   registerHistoryCommands(program);
   registerAliasCommands(program);
   registerConfigCommands(program);
+  registerPluginCommands(program);
 
   return program;
 }

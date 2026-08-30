@@ -4,7 +4,7 @@
 
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-108%20passing-success)](vitest.config.ts)
+[![Tests](https://img.shields.io/badge/tests-147%20passing-success)](vitest.config.ts)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 
 Tau 把自然语言意图（中文/英文）变成**经过审查、确认后执行的计划**。它用一个
@@ -42,7 +42,8 @@ tau file find "*.ts"                    # 也可以直接用工具
 | `tau sys`     | 系统/CPU/内存信息、磁盘用量、CPU 排行进程                                        |
 | `tau net`     | TCP 端口检测、ping、防 SSRF 的 fetch、本机 IP                                    |
 | `tau text`    | 正则搜索、全项目替换（默认 dry-run）、行/词统计                                  |
-| `tau skill`   | SKILL.md 插件系统：list/show/new/validate                                        |
+| `tau skill`   | SKILL.md 命令包：list/show/new/validate                                          |
+| `tau plugin`  | MCP 工具服务器接入：dsh、VS Code、文件系统……（list/add/remove/tools）            |
 | `tau history` | 所有执行都有记录：查看、重放、清空                                               |
 | `tau alias`   | 持久化命令别名（`tau ll` → 任何命令）                                            |
 | `tau config`  | Provider、超时、风险策略 —— 存在 `$TAU_HOME` 下                                  |
@@ -64,6 +65,7 @@ tau ask "查找所有 ts 文件"
 
 # 2. 接入真实模型
 tau config set provider openai          # + export OPENAI_API_KEY=...
+tau config set provider deepseek        # + export DEEPSEEK_API_KEY=...
 tau config set provider ollama          # 本地模型，无需 key
 tau config set provider zai             # 可选 z-ai-web-dev-sdk
 
@@ -94,12 +96,13 @@ tau file rename " IMG_([0-9]+)" " -photo-$1" -e  # 确认后执行
 
 ## AI Provider
 
-| Provider       | 依赖                    | 配置                                             |
-| -------------- | ----------------------- | ------------------------------------------------ |
-| `mock`（默认） | 无                      | 离线可用，关键词匹配的演示计划                   |
-| `ollama`       | 本地 ollama             | `ollama serve`，模型见 `providers.ollama.model`  |
-| `openai`       | `OPENAI_API_KEY`        | 任意 OpenAI 兼容端点：`providers.openai.baseUrl` |
-| `zai`          | 可选 `z-ai-web-dev-sdk` | 未安装时优雅提示 unavailable + 修复方法          |
+| Provider       | 依赖                    | 配置                                                                |
+| -------------- | ----------------------- | ------------------------------------------------------------------- |
+| `mock`（默认） | 无                      | 离线可用，关键词匹配的演示计划                                      |
+| `ollama`       | 本地 ollama             | `ollama serve`，模型见 `providers.ollama.model`                     |
+| `openai`       | `OPENAI_API_KEY`        | 任意 OpenAI 兼容端点：`providers.openai.baseUrl`                    |
+| `deepseek`     | `DEEPSEEK_API_KEY`      | 官方流式 wire 协议；model/baseUrl/timeoutMs 见 `providers.deepseek` |
+| `zai`          | 可选 `z-ai-web-dev-sdk` | 未安装时优雅提示 unavailable + 修复方法                             |
 
 选择优先级：`--provider` 参数 > `TAU_PROVIDER` 环境变量 > `config.provider`。
 未知值 → 安全回落到 `mock`。
@@ -135,6 +138,29 @@ tau git-helper status          # 声明式命令自动成为 CLI + AI 可调用�
 [`skills/docker-helper`](skills/docker-helper/SKILL.md)。
 编写指南：[docs/skills-authoring.md](docs/skills-authoring.md)。
 
+## Plugins：通过 MCP 驱动外部工具
+
+Skills 给 Tau 加**命令**；**Plugins 给 Tau 接**[模型上下文协议
+](https://modelcontextprotocol.io)（MCP）**工具服务器**。任何 MCP 服务器 ——
+[DeepSeek Harness（`dsh`）](https://github.com/deepseek-ai/deepseek-harness)、
+VS Code 桥接器、文件系统/GitHub/数据库服务器 —— 都能以与内置工具完全相同的
+计划 → 审查 → 确认流水线接入：
+
+```bash
+tau plugin add files -- npx -y @modelcontextprotocol/server-filesystem ./project
+tau plugin add dsh --url http://127.0.0.1:8787/mcp     # http 传输
+tau plugin list                                        # 已配置哪些
+tau plugin tools files                                 # 连接检查 + 工具发现
+
+# 工具以 plugin.files.list_directory [risk:medium] 进入 AI 目录
+tau ask "在项目里找所有超过 1MB 的文件"
+```
+
+插件工具**永远是中风险**（强制交互确认；`--yes` 尊重 `allowMediumAutoApprove`）
+—— 第三方能力绝不走快速通道。传输方式：`stdio`（本地进程）与 `http`
+（Streamable HTTP 端点）。指南与食谱（dsh / VS Code 接入、安全模型）：
+[docs/plugins.md](docs/plugins.md)。
+
 ## 为 AI 协作而生
 
 Tau 从设计上就是"给人用、给 AI 维护"的双端项目：
@@ -142,10 +168,11 @@ Tau 从设计上就是"给人用、给 AI 维护"的双端项目：
 - **[`AGENTS.md`](AGENTS.md)** —— 60 秒项目认知 + 黄金法则 + 提交前门禁
 - **[`AGENTS.d/`](AGENTS.d/)** —— 分子系统规则书：[架构](AGENTS.d/architecture.md)、
   [规范](AGENTS.d/conventions.md)、[测试](AGENTS.d/testing.md)、
-  [技能](AGENTS.d/skills.md)、[AI 集成](AGENTS.d/ai-integration.md)、[发布](AGENTS.d/release.md)
+  [技能](AGENTS.d/skills.md)、[插件](AGENTS.d/plugins.md)、
+  [AI 集成](AGENTS.d/ai-integration.md)、[发布](AGENTS.d/release.md)
 - **[`.claude/skills/`](.claude/skills)** —— 开发工作流技能（tau-build / tau-test / tau-release / tau-skill-new）
 - **`CLAUDE.md`** 指针文件供 Claude Code 自动发现；安全模块完全确定性且有 1:1 测试覆盖
-- 108 个测试、82% 覆盖率、严格 TypeScript，`npm run lint && npm run typecheck && npm test` 就是 agent 门禁
+- 147 个测试、严格 TypeScript，`npm run lint && npm run typecheck && npm test` 就是 agent 门禁
 
 ## 项目结构
 
@@ -153,8 +180,9 @@ Tau 从设计上就是"给人用、给 AI 维护"的双端项目：
 src/
   index.ts        CLI 入口（commander）       core/      会话流水线、安全、执行器
   ai/             Provider + Prompt + 计划校验  tools/     注册表 + file/sys/net/text
-  skills/         SKILL.md 加载器 + 管理器     config/    TAU_HOME、配置、历史
-  cli/            各命令族接线                  ui/        主题 + 确认交互
+  plugins/        MCP 客户端 + 插件管理器      skills/    SKILL.md 加载器 + 管理器
+  config/         TAU_HOME、配置、历史         cli/       各命令族接线
+  ui/             主题 + 确认交互
 skills/           内置技能                      templates/ `tau skill new` 模板
 tests/            单元 + 集成测试（vitest）     AGENTS.d/  agent 规则书
 ```
@@ -164,6 +192,7 @@ tests/            单元 + 集成测试（vitest）     AGENTS.d/  agent 规则�
 - [架构详解](docs/architecture.md) —— 流水线图、不变量、如何添加工具/Provider
 - [安全模型](docs/safety.md) —— 黑白名单、风险语义、为什么没有删除工具
 - [技能编写](docs/skills-authoring.md) —— frontmatter 契约、示例、校验规则
+- [MCP 插件](docs/plugins.md) —— 接入 dsh / VS Code / 任意 MCP 服务器，安全模型
 - [English README](README.md)
 
 ## 参与贡献

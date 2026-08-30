@@ -4,7 +4,7 @@
 
 ```ts
 interface AIProvider {
-  readonly name: string; // registry key: "mock" | "ollama" | "openai" | "zai"
+  readonly name: string; // registry key: "mock" | "ollama" | "openai" | "deepseek" | "zai"
   readonly label: string; // CLI display
   isAvailable(): Promise<boolean>;
   unavailableReason?(): string;
@@ -42,6 +42,11 @@ mock provider + tests + this file + README example.
 - Injects the REAL tool catalog (renderToolCatalog) and skill catalog — the
   planner can only propose tools that actually exist, and the reviewer
   independently enforces that. Keep both sides in sync.
+- The catalog also includes MCP plugin tools: `src/cli/ask.ts` calls
+  `registerPluginTools()` BEFORE building the planning context, so
+  `plugin.<name>.<tool>` entries are first-class planner targets (and the
+  reviewer grades them via their intrinsic `medium` risk). Plugin failures
+  degrade to warnings and shrink the catalog, never break the run.
 - Explicit rules: prefer tools over shell, prefer dry-run first, no invented
   tool names, ≤10 steps, JSON only.
 - Keep the prompt deterministic for a given catalog (no timestamps, no
@@ -58,6 +63,26 @@ mock provider + tests + this file + README example.
    Never hit real endpoints in CI.
 5. Update README (both languages) provider table + `tau config list` output
    if it changes.
+
+## Provider notes — deepseek (streaming wire format)
+
+`src/ai/providers/deepseek.ts` implements the official DeepSeek
+chat-completions STREAMING wire contract with zero dependencies (global
+fetch + hand-rolled SSE in `collectStreamText`):
+
+- `stream: true` + `stream_options.include_usage` always on; `data: [DONE]`
+  terminates; `reasoning_content` deltas (thinking models) are collected
+  separately and never leak into plan text.
+- Error mapping mirrors the harness adapter's stable codes
+  (auth 401/403, rate-limit 429, server 5xx) with actionable hints.
+- No `temperature`, no `response_format`: deepseek-reasoner rejects them and
+  `validatePlanResponse` already tolerates fences/prose.
+- Why not `@deepseek-ai/dsh-llm-deepseek`? It is harness-coupled (7 rc-stage
+  peers incl. one unpublished package — uninstallable standalone today).
+  Revisit if/when the DeepSeek Harness stack ships installable.
+
+Test seam: the provider reads `globalThis.fetch` lazily — stub it (never a
+real endpoint) for request-shape and SSE-parsing tests.
 
 ## Safety boundary — the part you must not weaken
 

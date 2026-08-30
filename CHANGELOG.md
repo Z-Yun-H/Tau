@@ -5,7 +5,34 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+### Added
+
+- **DeepSeek provider** (`deepseek`): self-contained streaming client for the
+  official DeepSeek chat-completions wire format (SSE, `include_usage`,
+  `reasoning_content` handling, stable error codes) with zero dependencies —
+  enabled by `DEEPSEEK_API_KEY`; model/baseUrl/timeout via
+  `providers.deepseek`. Note: DeepSeek's own harness adapter
+  (`@deepseek-ai/dsh-llm-deepseek`) is currently uninstallable standalone
+  (unpublished rc peers), so Tau implements the same wire contract natively.
+- **MCP plugin system** (`tau plugin list/add/remove/enable/disable/tools`):
+  connect external tool servers — dsh (DeepSeek Harness), VS Code bridges,
+  filesystem/GitHub servers — via `stdio` or Streamable `http` transports.
+  Discovered tools join the AI planner catalog as
+  `plugin.<name>.<tool>` and execute through the same plan → review →
+  confirm pipeline. Plugin tools are always **medium risk**; connect
+  handshake 10 s, tool call cap 120 s, 64 KB argument budget; env extras
+  layered over the SDK's safe default allowlist. New `src/plugins/` module,
+  `docs/plugins.md` guide, AGENTS.d/plugins.md rulebook.
+- `@modelcontextprotocol/sdk` joins as an `optionalDependency` (dynamically
+  imported, never bundled; Tau degrades gracefully without it).
+
 ### Changed
+
+- Tests grew from 108 to 147 (SSE wire parsing, provider request shaping,
+  plugin config CRUD, MCP tool mapping, real InMemory + spawned-stdio MCP
+  integration, plugin CLI flows).
+
+### Changed (toolchain, previously unreleased note)
 
 - **Dev toolchain migrated to the oxc ecosystem** (zero runtime impact on the
   published CLI): bundler `tsup` → `tsdown` (rolldown/oxc; shebang and exec

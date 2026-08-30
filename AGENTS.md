@@ -18,7 +18,8 @@ safe commands out. One `tau` binary with:
   review → interactive confirmation → execution → history
 - `tau file | sys | net | text` — built-in tool modules (dual-use: human CLI +
   the catalog the AI planner plans against)
-- `tau skill` — SKILL.md plugin system (bundled / user / workspace scopes)
+- `tau skill` — SKILL.md command packs (bundled / user / workspace scopes)
+- `tau plugin` — MCP servers as tool sources (dsh, VS Code, filesystem, ...)
 - `tau history | alias | config` — session memory and configuration
 
 Non-goals: shell replacement, TUI dashboard, daemon/server, secret management.
@@ -34,7 +35,10 @@ Non-goals: shell replacement, TUI dashboard, daemon/server, secret management.
    `text.replace`). `execute:true` is always an explicit, visible choice.
 4. **No new runtime dependencies** without updating AGENTS.d/architecture.md
    and justifying it in the PR description. Current runtime deps: commander,
-   chalk, yaml, zod.
+   chalk, yaml, zod. The only sanctioned exceptions are optionalDependencies
+   (`@modelcontextprotocol/sdk` for plugins; provider SDKs stay out of
+   package.json entirely) — they must be dynamically imported, never bundled,
+   and the CLI must degrade gracefully when they are absent.
 5. **Bilingual docs**: user-facing README changes go to both README.md
    (English) and README.zh-CN.md (Chinese). AGENTS.md/AGENTS.d stay English.
 6. **Run the gates before you claim done:**
@@ -62,8 +66,9 @@ src/
   types.ts          shared domain vocabulary (Plan, ToolDefinition, RiskLevel...)
   core/             session pipeline, safety reviewer, executor
   ai/               provider registry + prompt builder + plan schema
-  ai/providers/     mock | ollama | openai | zai
+  ai/providers/     mock | ollama | openai | deepseek | zai
   tools/            registry + file/sys/net/text tool modules
+  plugins/          MCP client seam, plugin manager, tool registration
   skills/           SKILL.md loader, schema, manager (list/show/new/validate)
   config/           TAU_HOME paths, config store, JSONL history
   cli/              thin commander wiring per command family
@@ -72,7 +77,7 @@ skills/             bundled skills (git-helper, docker-helper)
 templates/          tau skill new scaffold source
 tests/              vitest unit + CLI integration tests
 AGENTS.d/           deep-dive rulebooks for agents (see below)
-docs/               human-facing deep dives (architecture, safety, skills)
+docs/               human-facing deep dives (architecture, safety, skills, plugins)
 ```
 
 ## AGENTS.d index — read the relevant file BEFORE touching that subsystem
@@ -83,6 +88,7 @@ docs/               human-facing deep dives (architecture, safety, skills)
 | [AGENTS.d/conventions.md](./AGENTS.d/conventions.md)       | you write any TypeScript in this repo                    |
 | [AGENTS.d/testing.md](./AGENTS.d/testing.md)               | you write or run tests                                   |
 | [AGENTS.d/skills.md](./AGENTS.d/skills.md)                 | you touch skills/, templates/, or the SKILL.md parser    |
+| [AGENTS.d/plugins.md](./AGENTS.d/plugins.md)               | you touch src/plugins/, MCP integration, or plugin CLI   |
 | [AGENTS.d/ai-integration.md](./AGENTS.d/ai-integration.md) | you touch src/ai/, safety, or provider code              |
 | [AGENTS.d/release.md](./AGENTS.d/release.md)               | you cut a release or bump versions                       |
 
@@ -94,6 +100,7 @@ docs/               human-facing deep dives (architecture, safety, skills)
 - [ ] Tool added? → registered in `src/tools/<module>.ts`, catalog renders,
       risk level reviewed, docs table updated
 - [ ] Skill-related change? → AGENTS.d/skills.md checklist
+- [ ] Plugin-related change? → AGENTS.d/plugins.md checklist
 - [ ] `docs/safety.md` still truthful after your change
 - [ ] CHANGELOG.md entry under **Unreleased**
 

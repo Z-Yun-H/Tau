@@ -4,7 +4,7 @@
 
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-108%20passing-success)](vitest.config.ts)
+[![Tests](https://img.shields.io/badge/tests-147%20passing-success)](vitest.config.ts)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 [![中文文档](https://img.shields.io/badge/docs-中文-red)](README.zh-CN.md)
 
@@ -39,17 +39,18 @@ around: **the AI proposes, deterministic code disposes.**
 
 ## Features
 
-| Area          | What you get                                                                      |
-| ------------- | --------------------------------------------------------------------------------- |
-| `tau ask`     | NL intent → provider plan → safety review → confirm UI → execution → history      |
-| `tau file`    | glob find (prunes node_modules), tree, stat, regex batch rename (dry-run default) |
-| `tau sys`     | OS/CPU/memory info, disk usage, top processes                                     |
-| `tau net`     | TCP port check, ping, SSRF-guarded fetch, local IPs                               |
-| `tau text`    | regex search, project-wide replace (dry-run default), line/word stats             |
-| `tau skill`   | SKILL.md plugin system: list/show/new/validate                                    |
-| `tau history` | everything runs are recorded; inspect, replay, clear                              |
-| `tau alias`   | persistent command aliases (`tau ll` → anything)                                  |
-| `tau config`  | provider, timeout, risk policy — stored under `$TAU_HOME`                         |
+| Area          | What you get                                                                       |
+| ------------- | ---------------------------------------------------------------------------------- |
+| `tau ask`     | NL intent → provider plan → safety review → confirm UI → execution → history       |
+| `tau file`    | glob find (prunes node_modules), tree, stat, regex batch rename (dry-run default)  |
+| `tau sys`     | OS/CPU/memory info, disk usage, top processes                                      |
+| `tau net`     | TCP port check, ping, SSRF-guarded fetch, local IPs                                |
+| `tau text`    | regex search, project-wide replace (dry-run default), line/word stats              |
+| `tau skill`   | SKILL.md command packs: list/show/new/validate                                     |
+| `tau plugin`  | MCP servers as tool sources: dsh, VS Code, filesystem, ... (list/add/remove/tools) |
+| `tau history` | everything runs are recorded; inspect, replay, clear                               |
+| `tau alias`   | persistent command aliases (`tau ll` → anything)                                   |
+| `tau config`  | provider, timeout, risk policy — stored under `$TAU_HOME`                          |
 
 ## Install
 
@@ -68,6 +69,7 @@ tau ask "find all ts files"
 
 # 2. Point it at a real model
 tau config set provider openai          # + export OPENAI_API_KEY=...
+tau config set provider deepseek        # + export DEEPSEEK_API_KEY=...
 tau config set provider ollama          # local models, no key needed
 tau config set provider zai             # optional z-ai-web-dev-sdk
 
@@ -98,12 +100,13 @@ intent ──► provider.plan() ──► validatePlanResponse() ──► revi
 
 ## AI providers
 
-| Provider         | Needs                       | Setup                                                         |
-| ---------------- | --------------------------- | ------------------------------------------------------------- |
-| `mock` (default) | nothing                     | works offline, keyword-matched demo plans                     |
-| `ollama`         | local ollama                | `ollama serve`, config: `providers.ollama.model`              |
-| `openai`         | `OPENAI_API_KEY`            | any OpenAI-compatible base URL via `providers.openai.baseUrl` |
-| `zai`            | optional `z-ai-web-dev-sdk` | graceful "unavailable + how to fix" when missing              |
+| Provider         | Needs                       | Setup                                                                            |
+| ---------------- | --------------------------- | -------------------------------------------------------------------------------- |
+| `mock` (default) | nothing                     | works offline, keyword-matched demo plans                                        |
+| `ollama`         | local ollama                | `ollama serve`, config: `providers.ollama.model`                                 |
+| `openai`         | `OPENAI_API_KEY`            | any OpenAI-compatible base URL via `providers.openai.baseUrl`                    |
+| `deepseek`       | `DEEPSEEK_API_KEY`          | official streaming wire format; model/baseUrl/timeoutMs via `providers.deepseek` |
+| `zai`            | optional `z-ai-web-dev-sdk` | graceful "unavailable + how to fix" when missing                                 |
 
 Selection precedence: `--provider` flag > `TAU_PROVIDER` env > `config.provider`.
 Unknown → safe fallback to `mock`.
@@ -139,6 +142,29 @@ Bundled examples: [`skills/git-helper`](skills/git-helper/SKILL.md),
 [`skills/docker-helper`](skills/docker-helper/SKILL.md).
 Authoring guide: [docs/skills-authoring.md](docs/skills-authoring.md).
 
+## Plugins: drive external tools over MCP
+
+Skills add _commands_ to Tau; **plugins add _tool servers_**. Tau speaks the
+[Model Context Protocol](https://modelcontextprotocol.io) (MCP), so any MCP
+server — the [DeepSeek Harness (`dsh`)](https://github.com/deepseek-ai/deepseek-harness),
+VS Code bridges, filesystem/GitHub/database servers — plugs into the same
+plan → review → confirm pipeline as built-in tools:
+
+```bash
+tau plugin add files -- npx -y @modelcontextprotocol/server-filesystem ./project
+tau plugin add dsh --url http://127.0.0.1:8787/mcp     # http transport
+tau plugin list                                          # what is configured
+tau plugin tools files                                   # live discovery check
+
+# tools appear in the AI catalog as plugin.files.list_directory [risk:medium]
+tau ask "在项目里找所有超过 1MB 的文件"
+```
+
+Plugin tools are **always medium risk** (interactive confirm; `--yes` honors
+`allowMediumAutoApprove`) — third-party capabilities never ride the fast
+path. transports: `stdio` (spawn a local server) and `http` (Streamable HTTP
+endpoint). Guide + recipes: [docs/plugins.md](docs/plugins.md).
+
 ## AI-friendly by construction
 
 Tau is designed to be _maintained by AI agents_ as much as used by humans:
@@ -146,10 +172,11 @@ Tau is designed to be _maintained by AI agents_ as much as used by humans:
 - **[`AGENTS.md`](AGENTS.md)** — 60-second orientation + golden rules + pre-PR gate
 - **[`AGENTS.d/`](AGENTS.d/)** — per-subsystem rulebooks: [architecture](AGENTS.d/architecture.md),
   [conventions](AGENTS.d/conventions.md), [testing](AGENTS.d/testing.md),
-  [skills](AGENTS.d/skills.md), [ai-integration](AGENTS.d/ai-integration.md), [release](AGENTS.d/release.md)
+  [skills](AGENTS.d/skills.md), [plugins](AGENTS.d/plugins.md),
+  [ai-integration](AGENTS.d/ai-integration.md), [release](AGENTS.d/release.md)
 - **[`.claude/skills/`](.claude/skills)** — dev-workflow skills (tau-build, tau-test, tau-release, tau-skill-new)
 - **`CLAUDE.md`** pointer for Claude Code; deterministic safety module with 1:1 test coverage
-- 108 tests, 82% coverage, strict TypeScript, `npm run lint && npm run typecheck && npm test` as the agent gate
+- 147 tests, strict TypeScript, `npm run lint && npm run typecheck && npm test` as the agent gate
 
 ## Project layout
 
@@ -157,8 +184,9 @@ Tau is designed to be _maintained by AI agents_ as much as used by humans:
 src/
   index.ts        CLI entry (commander)      core/      session pipeline, safety, executor
   ai/             providers + prompt + plan schema      tools/     registry + file/sys/net/text
-  skills/         SKILL.md loader + manager             config/    TAU_HOME, config, history
-  cli/            per-family command wiring             ui/        theme + confirm
+  plugins/        MCP client + plugin manager           skills/    SKILL.md loader + manager
+  config/         TAU_HOME, config, history             cli/       per-family command wiring
+  ui/             theme + confirm
 skills/           bundled skills                        templates/ `tau skill new` scaffold
 tests/            unit + integration (vitest)           AGENTS.d/  agent rulebooks
 ```
@@ -168,6 +196,7 @@ tests/            unit + integration (vitest)           AGENTS.d/  agent ruleboo
 - [Architecture deep-dive](docs/architecture.md) — pipeline diagram, invariants, how to add a tool/provider
 - [Safety model](docs/safety.md) — deny/caution lists, risk semantics, why there is no delete tool
 - [Skill authoring](docs/skills-authoring.md) — frontmatter contract, examples, validation
+- [MCP plugins](docs/plugins.md) — connect dsh / VS Code / any MCP server, security model
 - [中文文档](README.zh-CN.md)
 
 ## Contributing

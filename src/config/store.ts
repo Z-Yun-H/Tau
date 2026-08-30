@@ -7,9 +7,11 @@ export const DEFAULT_CONFIG: TauConfig = {
   timeout: 30,
   allowMediumAutoApprove: false,
   aliases: {},
+  plugins: [],
   providers: {
     ollama: { host: "http://localhost:11434", model: "llama3.1" },
     openai: { model: "gpt-4o-mini" },
+    deepseek: { model: "deepseek-chat" },
     zai: { model: "glm-4-flash" },
   },
 };
@@ -19,6 +21,7 @@ const VALID_KEYS = new Set<string>([
   "timeout",
   "allowMediumAutoApprove",
   "aliases",
+  "plugins",
   "providers",
 ]);
 
@@ -31,6 +34,7 @@ export function loadConfig(): TauConfig {
       ...DEFAULT_CONFIG,
       ...parsed,
       aliases: { ...DEFAULT_CONFIG.aliases, ...parsed.aliases },
+      plugins: Array.isArray(parsed.plugins) ? parsed.plugins : [],
       providers: { ...DEFAULT_CONFIG.providers, ...parsed.providers },
     };
   } catch {

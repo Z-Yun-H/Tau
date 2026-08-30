@@ -1,5 +1,6 @@
 import { loadConfig } from "../config/store.js";
 import type { AIProvider, ProviderChoice } from "../types.js";
+import { DeepSeekProvider } from "./providers/deepseek.js";
 import { MockProvider } from "./providers/mock.js";
 import { OllamaProvider } from "./providers/ollama.js";
 import { OpenAIProvider } from "./providers/openai.js";
@@ -44,4 +45,5 @@ export function resolveProvider(flag?: string): ProviderChoice {
 registerProvider(new MockProvider());
 registerProvider(new OllamaProvider());
 registerProvider(new OpenAIProvider());
+registerProvider(new DeepSeekProvider());
 registerProvider(new ZaiProvider());

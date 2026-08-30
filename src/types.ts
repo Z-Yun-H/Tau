@@ -172,6 +172,37 @@ export interface HistoryEntry {
   provider?: string;
 }
 
+/** ---------- Plugins (MCP servers) ---------- */
+
+/**
+ * One configured MCP (Model Context Protocol) server. Plugins are the
+ * escape hatch that lets Tau drive external tools (dsh, VS Code, GitHub,
+ * filesystems, ...) through the same plan -> review -> confirm pipeline as
+ * built-in tools. See docs/plugins.md and AGENTS.d/plugins.md.
+ */
+export interface PluginConfig {
+  /** Local alias; tool names become "plugin.<name>.<tool>". kebab-case. */
+  name: string;
+  /** stdio spawns a local server command; http connects to a Streamable HTTP endpoint. */
+  transport: "stdio" | "http";
+  /** stdio transport: executable to spawn (resolved via PATH). */
+  command?: string;
+  /** stdio transport: argument list. */
+  args?: string[];
+  /** stdio transport: extra environment variables layered over process.env. */
+  env?: Record<string, string>;
+  /** stdio transport: working directory (default: current directory). */
+  cwd?: string;
+  /** http transport: endpoint URL speaking MCP Streamable HTTP. */
+  url?: string;
+  /** http transport: static request headers (e.g. auth tokens). */
+  headers?: Record<string, string>;
+  /** Disabled plugins stay configured but are never connected (default true). */
+  enabled?: boolean;
+  /** Human description shown by `tau plugin list`. */
+  description?: string;
+}
+
 /** ---------- Aliases & config ---------- */
 
 export interface TauConfig {
@@ -181,6 +212,8 @@ export interface TauConfig {
   /** When true, `--yes` may auto-approve medium risk too (never high/blocked). */
   allowMediumAutoApprove: boolean;
   aliases: Record<string, string[]>;
+  /** MCP servers whose tools join the AI planner catalog. */
+  plugins: PluginConfig[];
   /** Provider-specific settings (model names, hosts...). */
   providers: Record<string, Record<string, unknown>>;
 }

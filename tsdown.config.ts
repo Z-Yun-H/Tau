@@ -10,7 +10,12 @@ export default defineConfig({
   sourcemap: true,
   dts: false,
   deps: {
-    neverBundle: ["z-ai-web-dev-sdk"],
+    neverBundle: [
+      // optional, dynamically imported SDKs — resolved from node_modules at
+      // runtime; never dragged into the bundle
+      "z-ai-web-dev-sdk",
+      /^@modelcontextprotocol\//,
+    ],
   },
   outExtensions: () => ({ js: ".js" }),
 });

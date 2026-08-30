@@ -10,6 +10,8 @@ pipeline, add a command family, or add a module.
  user intent ──► │ tau ask (src/cli/ask.ts)                           │
                  │   1. resolveProvider()      src/ai/registry.ts     │
                  │   2. planningContext()      src/ai/prompt.ts       │
+                 │      ├─ registerPluginTools()  src/plugins/runtime │
+                 │      │    (MCP discovery; failures → warnings)     │
                  │      ├─ tool catalog  ←─ src/tools/registry.ts     │
                  │      └─ skill catalog ←─ src/skills/loader.ts      │
                  │   3. provider.plan()        ai/providers/*         │
@@ -49,6 +51,7 @@ pipeline, add a command family, or add a module.
 | add a built-in tool op (e.g. `file.dedupe`) | implement in `src/tools/<family>.ts` as ToolDefinition + register in the family array + add CLI wiring in `src/cli/<family>.ts` + tests. Consider dry-run default if it mutates.         |
 | add a command family (e.g. `tau pkg`)       | new `src/tools/pkg.ts` + `src/cli/pkg.ts` + register both in `src/index.ts buildProgram()` + update this file + both READMEs                                                             |
 | add an AI provider                          | implement AIProvider in `src/ai/providers/<name>.ts` + register in `src/ai/registry.ts` + config defaults in `src/config/store.ts DEFAULT_CONFIG.providers` + AGENTS.d/ai-integration.md |
+| integrate an external tool server (MCP)     | nothing to code — `tau plugin add`; changing the MCP layer itself → `src/plugins/*` + AGENTS.d/plugins.md (plugin tools are ALWAYS medium risk)                                          |
 | add a bundled skill                         | new dir `skills/<name>/SKILL.md` (spec: AGENTS.d/skills.md) — no TS code required for declarative commands                                                                               |
 | change the plan schema                      | `src/ai/prompt.ts planSchema` + safety reviewer expectations + tests + this diagram                                                                                                      |
 | change config keys                          | `src/types.ts TauConfig` + `src/config/store.ts` (defaults + VALID_KEYS) + READMEs                                                                                                       |
@@ -57,7 +60,7 @@ pipeline, add a command family, or add a module.
 
 ```
 $TAU_HOME/
-  config.json      TauConfig (provider, timeout, aliases, providers.*)
+  config.json      TauConfig (provider, timeout, aliases, plugins[], providers.*)
   history.jsonl    append-only HistoryEntry per line
   skills/<name>/   user skills (highest precedence for name conflicts)
 ```
@@ -71,5 +74,6 @@ $TAU_HOME/
 - `Plan` — explanation + steps; what providers return and runPlan executes
 - `SafetyReview` — verdict allow/review/deny + issues; from reviewPlan()
 - `ToolDefinition` — name/description/params/risk/run; dual-use unit
+- `PluginConfig` — one MCP server (transport stdio|http, endpoint, env/headers)
 - `SkillMeta` — parsed SKILL.md frontmatter
 - `RiskLevel` — low < medium < high < blocked (RISK_ORDER)

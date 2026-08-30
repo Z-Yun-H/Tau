@@ -4,6 +4,7 @@ import { resolveProvider } from "../ai/registry.js";
 import { buildSystemPrompt, planningContext } from "../ai/prompt.js";
 import { scanSkills, renderSkillCatalog } from "../skills/loader.js";
 import { runPlan } from "../core/session.js";
+import { registerPluginTools } from "../plugins/runtime.js";
 import { globalOptions, timeoutSec } from "./util.js";
 import { loadConfig } from "../config/store.js";
 
@@ -23,6 +24,13 @@ export function registerAsk(program: Command): void {
       const globals = globalOptions(command);
 
       const scan = scanSkills();
+
+      // MCP plugin tools join the catalog before planning; failures degrade
+      // to warnings so an unreachable server never blocks the CLI.
+      for (const warning of await registerPluginTools()) {
+        console.log(theme.warn(`plugin: ${warning}`));
+      }
+
       const ctx = planningContext(intent, renderSkillCatalog(scan.skills));
 
       if (options.explain) {
