@@ -7,6 +7,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Added
 
+- **Per-package READMEs.** Every workspace package (`@tau/core`, `@tau/tools`,
+  `@tau/engine`, `@tau/ai`, `@tau/skills`, `@tau/plugins`, `@tau/agent`,
+  `@tau/ui`) and every app (`@tau/cli`, `@tau/tui`, `@tau/webui`) now ships
+  its own README: public API surface, dependencies, asset notes (where
+  relevant), dev commands and links to the matching AGENTS rulebooks. Root
+  READMEs point to them from the project-layout section.
+
 - **AI commit declaration.** Commits authored by AI agents must never be
   silent: the agent presents the declaration before committing and the commit
   message ends with a grep-able `AI-declaration:` trailer block (agent, scope,
