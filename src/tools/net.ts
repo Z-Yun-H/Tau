@@ -67,8 +67,12 @@ async function fetchTool(args: Record<string, unknown>): Promise<ToolResult> {
     hostname === "0.0.0.0" ||
     hostname.endsWith(".local") ||
     hostname.endsWith(".internal") ||
+    // SSRF guard: anchored literals kept as regexes on purpose — the range set
+    // is security-reviewed as a whole (see docs/safety.md). Do not rewrite.
+    // oxlint-disable unicorn/prefer-string-starts-ends-with
     /^10\./.test(hostname) ||
     /^192\.168\./.test(hostname) ||
+    // oxlint-enable unicorn/prefer-string-starts-ends-with
     /^172\.(1[6-9]|2\d|3[01])\./.test(hostname);
   if (isPrivate && !allowPrivate) {
     throw new Error(

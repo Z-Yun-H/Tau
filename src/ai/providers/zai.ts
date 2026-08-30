@@ -23,8 +23,9 @@ async function loadSDK(): Promise<ZaiSDK | null> {
   if (cached !== undefined) return cached;
   try {
     // Dynamic, variable-specifier import: the SDK is an OPTIONAL peer that is
-    // not installed in this repo (kept in tsup external). A static import
-    // would hard-fail typecheck/bundle for everyone who does not have it.
+    // not installed in this repo (kept out of the bundle via tsdown's
+    // deps.neverBundle). A static import would hard-fail typecheck/bundle
+    // for everyone who does not have it.
     const specifier = "z-ai-web-dev-sdk";
     const mod = (await import(specifier)) as unknown as {
       default?: { create?: () => Promise<ZaiSDK> };

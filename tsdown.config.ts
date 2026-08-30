@@ -1,14 +1,16 @@
-import { defineConfig } from "tsup";
+import { defineConfig } from "tsdown";
 
 export default defineConfig({
   entry: ["src/index.ts"],
   format: ["esm"],
   target: "node20",
   platform: "node",
-  banner: { js: "#!/usr/bin/env node" },
   clean: true,
   minify: false,
   sourcemap: true,
-  splitting: false,
-  external: ["z-ai-web-dev-sdk"],
+  dts: false,
+  deps: {
+    neverBundle: ["z-ai-web-dev-sdk"],
+  },
+  outExtensions: () => ({ js: ".js" }),
 });

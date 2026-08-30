@@ -2,8 +2,13 @@
 
 ## Style baseline
 
-- Prettier owns formatting (`npm run format`); do not hand-format.
-- ESLint flat config (`eslint.config.js`); `npm run lint:fix` before pushing.
+- oxfmt owns formatting (`.oxfmtrc.json`, `npm run format`); do not
+  hand-format. `templates/` is in its `ignorePatterns` so `{{placeholders}}`
+  survive — never remove that entry.
+- oxlint owns linting (`.oxlintrc.json`, Rust-based, single binary);
+  `npm run lint:fix` before pushing. Safety-critical regexes may carry an
+  inline `// oxlint-disable <rule>` block with a WHY comment — see
+  `src/tools/net.ts` (SSRF guard) for the pattern.
 - 2-space indent, double quotes, trailing commas, LF, 100 cols.
 - `strict: true` + `noUncheckedIndexedAccess: true` — code accordingly:
   - array access returns `T | undefined`: use `arr[i] ?? fallback`, never `!`
@@ -12,11 +17,11 @@
 - `verbatimModuleSyntax: true` — type-only imports MUST use
   `import type { X } from ...`.
 - ESM only. Relative imports keep the `.js` extension pattern for runtime
-  clarity under tsup (`.js` resolves to compiled output; esbuild rewrites).
+  clarity under tsdown (`.js` resolves to compiled output; rolldown rewrites).
   Wait — we build with `moduleResolution: "Bundler"`, so relative imports
   WITHOUT extension also typecheck. Convention in this repo: **keep the
   `.js` extension** on relative imports (matches tsc NodeNext muscle memory
-  and works fine under esbuild/vitest).
+  and works fine under rolldown/vitest).
 
 ## Naming
 

@@ -34,7 +34,7 @@ destructive must stay OUT of skills and rely on reviewed shell plans instead.
 ```yaml
 commands:
   - name: lint
-    description: Run ESLint over src/ and tests/
+    description: Run oxlint over src/ and tests/
     command: npm run lint --silent
     risk: low
 ```

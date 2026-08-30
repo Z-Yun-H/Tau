@@ -37,8 +37,10 @@ npm run dev -- file find "*.ts"     # run from source
 npm run test:watch                  # focused loop
 ```
 
-Environment: Node ≥ 20. VS Code / Codex users: open the repo in a Dev
-Container (`.devcontainer/`) for a pre-configured environment.
+Environment: Node **>= 22.18** to develop (the oxc toolchain enforces it via
+`devEngines`; the published CLI itself runs on Node >= 20.19). VS Code /
+Codex users: open the repo in a Dev Container (`.devcontainer/`) for a
+pre-configured environment.
 
 ## Reporting bugs
 

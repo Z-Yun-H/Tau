@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * Tau CLI entry point.
  *
@@ -12,7 +13,8 @@
  *   tau alias  <list|add|remove>
  *   tau config <get|set|list|path>
  *
- * (The #!/usr/bin/env node shebang is added by tsup banner at build time.)
+ * (Line 1 is the #!/usr/bin/env node shebang; tsdown preserves it in the
+ * bundle and marks the output executable.)
  */
 import { Command } from "commander";
 import { createRequire } from "node:module";

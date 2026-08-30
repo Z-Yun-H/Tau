@@ -30,8 +30,8 @@ export function loadConfig(): TauConfig {
     return {
       ...DEFAULT_CONFIG,
       ...parsed,
-      aliases: { ...DEFAULT_CONFIG.aliases, ...(parsed.aliases ?? {}) },
-      providers: { ...DEFAULT_CONFIG.providers, ...(parsed.providers ?? {}) },
+      aliases: { ...DEFAULT_CONFIG.aliases, ...parsed.aliases },
+      providers: { ...DEFAULT_CONFIG.providers, ...parsed.providers },
     };
   } catch {
     return structuredClone(DEFAULT_CONFIG);

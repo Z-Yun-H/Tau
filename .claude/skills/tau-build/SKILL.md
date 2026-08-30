@@ -9,8 +9,8 @@ Run the build pipeline in order. Each step must pass before the next:
 
 ```bash
 npm run typecheck   # tsc --noEmit — all TypeScript in src/ and tests/
-npm run lint        # eslint (flat config)
-npm run build       # tsup -> dist/index.js with shebang
+npm run lint        # oxlint (.oxlintrc.json)
+npm run build       # tsdown -> dist/index.js with shebang
 node dist/index.js --help   # verify the bundle actually runs
 ```
 
@@ -27,5 +27,5 @@ node dist/index.js --help   # verify the bundle actually runs
 | Symptom                                | Fix                                                             |
 | -------------------------------------- | --------------------------------------------------------------- |
 | `Cannot find module './x.js'`          | relative import missing `.js` extension (repo convention)       |
-| typecheck passes, runtime import error | check tsup `external` and package `type: module`                |
+| typecheck passes, runtime import error | check tsdown `deps.neverBundle` and package `type: module`      |
 | chalk colors in tests                  | provider/tool code must return plain text; color only in cli/ui |

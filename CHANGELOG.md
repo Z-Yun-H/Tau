@@ -5,6 +5,21 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+### Changed
+
+- **Dev toolchain migrated to the oxc ecosystem** (zero runtime impact on the
+  published CLI): bundler `tsup` → `tsdown` (rolldown/oxc; shebang and exec
+  bit preserved automatically), linter ESLint 9 flat config → `oxlint`
+  (`.oxlintrc.json`, ~15 ms over 45 files), formatter Prettier → `oxfmt`
+  (`.oxfmtrc.json`, prettier-compatible — byte-stable on the existing tree;
+  `templates/` kept in `ignorePatterns` so `{{placeholders}}` survive).
+- Contributor Node requirement raised to **>= 22.18** (declared via
+  `devEngines.runtime`); the published CLI still targets and runs on
+  Node >= 20.19.
+- VS Code / Dev Container switched to the official `oxc.oxc-vscode`
+  extension (lint + format on save); Dev Container image bumped to
+  Node 24.
+
 ## 0.1.0 - 2026-08-30
 
 Initial public build of Tau — AI-powered unified terminal assistant.
