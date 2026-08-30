@@ -14,6 +14,30 @@
 
 Hotfixes follow the same path — a fast-track PR is still a PR.
 
+## AI commit declaration (mandatory)
+
+**No silent AI commits.** When a commit is authored by an AI agent:
+
+1. **Before committing**, the agent must PRESENT the declaration to the human
+   in the session — the human sees exactly what will be recorded before it
+   lands.
+2. The commit message MUST end with the declaration block (the template lives
+   in `.gitmessage`, wired via `git config commit.template`):
+
+   ```
+   AI-declaration: this commit was authored by an AI agent under human direction.
+   AI-agent: <agent name and model, e.g. Super Z (GLM)>
+   AI-scope: <one line — exactly what the AI did in this commit>
+   AI-gate: lint=pass typecheck=pass test=pass (<N> tests)
+   ```
+
+3. `AI-gate` must reflect the real, just-run gate result — never copy a stale
+   status into it.
+4. Human authors never include the block.
+
+The trailers are grep-able history: `git log --grep '^AI-declaration:' -E`
+lists every AI-touched commit.
+
 ## Versioning
 
 Semantic versioning. Tau is pre-1.0: breaking CLI behavior may land in MINOR

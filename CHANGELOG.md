@@ -5,6 +5,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+### Added
+
+- **AI commit declaration.** Commits authored by AI agents must never be
+  silent: the agent presents the declaration before committing and the commit
+  message ends with a grep-able `AI-declaration:` trailer block (agent, scope,
+  real gate status). Convention codified in AGENTS/release.md and
+  CONTRIBUTING.md, with a commit template in `.gitmessage` (wired via
+  `git config commit.template`) and a checklist item in the PR template.
+
 ### Changed
 
 - **Flattened the workspace file structure.** The monorepo migration had left

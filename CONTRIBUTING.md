@@ -32,6 +32,14 @@ refactors — land through pull requests:
 Direct pushes to `main` are reserved for maintainers' exceptional housekeeping
 (e.g. reverting a broken merge) and should be avoided all the same.
 
+## AI-assisted commits
+
+Commits authored by an AI agent are welcome but must never be silent: the
+agent presents an **AI commit declaration** before committing and the commit
+message ends with the `AI-declaration:` trailer block (format in
+[AGENTS/release.md](AGENTS/release.md), template in `.gitmessage`). Human
+authors never add the block.
+
 ## Ground rules
 
 1. **Never weaken the safety reviewer** (`packages/engine/src/safety.ts`)

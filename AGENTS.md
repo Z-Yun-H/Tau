@@ -122,6 +122,9 @@ docs/                       human-facing deep dives (architecture, safety, skill
 - [ ] Plugin-related change? → AGENTS/plugins.md checklist
 - [ ] `docs/safety.md` still truthful after your change
 - [ ] CHANGELOG.md entry under **Unreleased**
+- [ ] Commit authored by an AI agent? → `AI-declaration:` block in the
+      commit message, presented to the human BEFORE committing
+      (AGENTS/release.md)
 
 ## Commit style
 

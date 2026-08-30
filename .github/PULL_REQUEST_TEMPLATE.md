@@ -31,3 +31,5 @@
 - [ ] User-facing changes documented in BOTH `README.md` and `README.zh-CN.md`
 - [ ] `CHANGELOG.md` entry under **Unreleased**
 - [ ] Affected `AGENTS/*.md` / `docs/*.md` rulebooks updated
+- [ ] AI-authored commits carry the `AI-declaration:` block
+      (see [AGENTS/release.md](../AGENTS/release.md))
