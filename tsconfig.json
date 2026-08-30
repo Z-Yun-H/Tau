@@ -17,6 +17,6 @@
     "verbatimModuleSyntax": true,
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts", "vitest.config.ts", "tsdown.config.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["app", "packages", "vitest.config.ts"],
+  "exclude": ["**/node_modules/**", "**/dist/**", "**/coverage/**", "**/templates/**"]
 }

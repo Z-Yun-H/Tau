@@ -1,14 +1,35 @@
 # AGENTS/conventions.md — TypeScript rules for this repo
 
+## Workspace rules (pnpm monorepo)
+
+- The repo is a pnpm workspace: UI apps in `app/*`, engine packages in
+  `packages/*` (see `pnpm-workspace.yaml`). Cross-package imports use the
+  `@tau/*` name of a package declared in that package.json with `workspace:*`
+  and import from its barrel (`@tau/core`), never deep paths.
+- Each package exports its public API from `app/cli/src/index.ts`. Its package.json
+  `exports` maps `types`/`development` to TypeScript source (so tsc and
+  `tsx --conditions=development` run from source) and `import`/`default` to
+  `dist/index.js` (so built apps resolve real artifacts).
+- Dependency direction (no cycles): `core ← tools ← engine ← skills`;
+  `core+tools ← ai|plugins`; all of the above feed `@tau/agent`; apps
+  (`@tau/cli`, `@tau/tui`, `@tau/webui`) sit on top. Adding an import that
+  would create a cycle means the code is in the wrong package — move it.
+- Runtime deps belong in the package that imports them (see AGENTS.md rule 4);
+  test-only deps are devDependencies of that same package.
+- Build: `pnpm build` runs tsdown in every package in topological order. tsdown
+  externalizes all declared deps (workspace siblings are never bundled into
+  each other); optional SDKs (`@modelcontextprotocol/*`, `@deepseek-ai/*`) are
+  pinned via that package's `deps.neverBundle`.
+
 ## Style baseline
 
-- oxfmt owns formatting (`.oxfmtrc.json`, `npm run format`); do not
+- oxfmt owns formatting (`.oxfmtrc.json`, `pnpm format`); do not
   hand-format. `templates/` is in its `ignorePatterns` so `{{placeholders}}`
   survive — never remove that entry.
 - oxlint owns linting (`.oxlintrc.json`, Rust-based, single binary);
-  `npm run lint:fix` before pushing. Safety-critical regexes may carry an
+  `pnpm lint:fix` before pushing. Safety-critical regexes may carry an
   inline `// oxlint-disable <rule>` block with a WHY comment — see
-  `src/tools/net.ts` (SSRF guard) for the pattern.
+  `packages/tools/src/tools/net.ts` (SSRF guard) for the pattern.
 - 2-space indent, double quotes, trailing commas, LF, 100 cols.
 - `strict: true` + `noUncheckedIndexedAccess: true` — code accordingly:
   - array access returns `T | undefined`: use `arr[i] ?? fallback`, never `!`
@@ -46,7 +67,7 @@
 
 ## Output
 
-- All user-facing color goes through `src/ui/theme.ts` — never raw chalk in
+- All user-facing color goes through `packages/ui/src/ui/theme.ts` — never raw chalk in
   modules below `ui/` (providers return plain text; the CLI adds color).
 - Tools return PLAIN text (no ANSI). History stores plain text.
 - Tables/lists: simple padded strings are fine; no table dependency.
@@ -56,7 +77,7 @@
 - Comments explain WHY, not WHAT. If you need a WHAT comment, the code is
   probably fine without it.
 - Every public function in `core/`, `ai/`, `tools/` gets a 1-3 line doc
-  comment. `src/types.ts` doc comments are the API reference — keep them true.
+  comment. `packages/core/src/types.ts` doc comments are the API reference — keep them true.
 - Comments may be English; keep one language per file.
 
 ## Dependency policy

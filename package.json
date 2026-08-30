@@ -1,6 +1,7 @@
 {
   "name": "tau-tool",
   "version": "0.1.0",
+  "private": true,
   "description": "Tau — AI-powered unified terminal assistant. Natural language in, safe commands out.",
   "license": "MIT",
   "author": "Z-Yun-H",
@@ -19,9 +20,12 @@
     "mcp",
     "deepseek",
     "model-context-protocol",
-    "plugins"
+    "plugins",
+    "monorepo",
+    "pnpm"
   ],
   "type": "module",
+  "packageManager": "pnpm@11.24.0",
   "engines": {
     "node": ">=20.19.0"
   },
@@ -31,48 +35,27 @@
       "version": ">=22.18.0"
     }
   },
-  "bin": {
-    "tau": "./dist/index.js"
-  },
-  "files": [
-    "dist",
-    "skills",
-    "templates",
-    "AGENTS.md",
-    "README.md"
-  ],
-  "main": "./dist/index.js",
   "scripts": {
-    "dev": "tsx src/index.ts",
-    "build": "tsdown",
+    "dev": "tsx --conditions=development app/cli/src/index.ts",
+    "build": "pnpm -r build",
     "typecheck": "tsc --noEmit",
-    "lint": "oxlint src tests",
-    "lint:fix": "oxlint --fix src tests",
+    "lint": "oxlint packages app",
+    "lint:fix": "oxlint --fix packages app",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
-    "prepack": "npm run build"
+    "dev:tui": "tsx --conditions=development app/tui/src/index.ts",
+    "dev:web": "tsx --conditions=development app/webui/src/index.ts"
   },
   "devDependencies": {
     "@types/node": "^26.4.0",
     "@vitest/coverage-v8": "^4.1.11",
     "oxfmt": "^0.65.0",
     "oxlint": "^1.80.0",
-    "tsdown": "^0.22.14",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",
     "vitest": "^4.1.11"
-  },
-  "dependencies": {
-    "chalk": "^6.0.0",
-    "commander": "^15.0.0",
-    "yaml": "^2.9.0",
-    "zod": "^4.5.4"
-  },
-  "optionalDependencies": {
-    "@deepseek-ai/dsh-llm": "^0.0.1-rc.1",
-    "@modelcontextprotocol/sdk": "^1.30.0"
   }
 }

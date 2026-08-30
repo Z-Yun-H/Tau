@@ -4,7 +4,8 @@
 
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-211%20passing-success)](vitest.config.ts)
+[![Tests](https://img.shields.io/badge/tests-233%20passing-success)](vitest.config.ts)
+[![pnpm](https://img.shields.io/badge/pnpm-monorepo-F69220)](pnpm-workspace.yaml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 
 Tau 把自然语言意图（中文/英文）变成**经过审查、确认后执行的计划**。它用一个
@@ -53,10 +54,10 @@ tau file find "*.ts"                    # 也可以直接用工具
 
 ```bash
 git clone https://github.com/Z-Yun-H/Tau.git
-cd tau && npm install && npm run build && npm link   # 提供 `tau` 命令
+cd tau && pnpm install && pnpm build && pnpm --filter @tau/cli link   # 提供 `tau` 命令
 ```
 
-需要 Node.js ≥ 20。
+需要 Node.js ≥ 20 与 pnpm ≥ 10（corepack 可自动管理：`corepack enable pnpm`）。
 
 ## 快速上手
 
@@ -202,20 +203,33 @@ Tau 从设计上就是"给人用、给 AI 维护"的双端项目：
   [AI 集成](AGENTS/ai-integration.md)、[发布](AGENTS/release.md)
 - **[`.claude/skills/`](.claude/skills)** —— 开发工作流技能（tau-build / tau-test / tau-release / tau-skill-new）
 - **`CLAUDE.md`** 指针文件供 Claude Code 自动发现；安全模块完全确定性且有 1:1 测试覆盖
-- 172 个测试、严格 TypeScript，`npm run lint && npm run typecheck && npm test` 就是 agent 门禁
+- 233 个测试、严格 TypeScript，`pnpm lint && pnpm typecheck && pnpm test` 就是 agent 门禁
 
-## 项目结构
+## 项目结构 —— pnpm monorepo
+
+UI 应用在 `app/`，可复用引擎在 `packages/`。每个工作区包独立声明依赖、
+用 tsdown 构建、通过 `workspace:*` 互相引用；CLI（`@tau/cli`）不打包兄弟包，
+运行时由工作区解析。
 
 ```
-src/
-  index.ts        CLI 入口（commander）       core/      会话流水线、安全、执行器
-  ai/             Provider + Prompt + 计划校验  tools/     注册表 + file/sys/net/text
-  plugins/        MCP 客户端 + 插件管理器      skills/    SKILL.md 加载器 + 管理器
-  config/         TAU_HOME、配置、历史         cli/       各命令族接线
-  ui/             主题 + 确认交互
-skills/           内置技能                      templates/ `tau skill new` 模板
-tests/            单元 + 集成测试（vitest）     AGENTS/  agent 规则书
+app/
+  cli/            @tau/cli    —— bin `tau`：commander 应用 + `tau tui` / `tau web` 桥接
+  tui/            @tau/tui    —— bin `tau-tui`：交互式终端会话（REPL）
+  webui/          @tau/webui  —— bin `tau-web`：零依赖本地 Web 界面
+packages/
+  core/           @tau/core    —— 领域类型、配置存储、历史、TAU_HOME 路径
+  tools/          @tau/tools   —— 注册表 + file/sys/net/text 工具
+  engine/         @tau/engine  —— 安全审查、执行器、runPlan（唯一执行通道）
+  ai/             @tau/ai      —— Provider（mock/ollama/openai/deepseek/zai）、prompt、模型目录
+  skills/         @tau/skills  —— SKILL.md 校验/加载/管理 + 内置技能与模板
+  plugins/        @tau/plugins —— MCP 插件系统
+  agent/          @tau/agent   —— 所有 UI 共用的编排层（目录组装 + 意图→计划）
+  ui/             @tau/ui      —— 主题、确认、列表选择（终端原语）
+AGENTS/           agent 规则书                 docs/  深度文档
 ```
+
+依赖方向（由包边界强制）：`core ← tools ← engine`，`core+engine+ui ← skills`，
+`core+tools ← ai|plugins`，全部汇入 `agent`，应用依赖所有包。无循环——测试期也一样。
 
 ## 文档
 
@@ -228,8 +242,8 @@ tests/            单元 + 集成测试（vitest）     AGENTS/  agent 规则书
 ## 参与贡献
 
 欢迎 PR —— 从 [CONTRIBUTING.md](CONTRIBUTING.md) 和 [AGENTS.md](AGENTS.md) 开始。
-提交前门禁：`npm run lint && npm run typecheck && npm run test:cov`。
+提交前门禁：`pnpm lint && pnpm typecheck && pnpm test:cov`。
 
 ## 许可证
 
-[MIT](LICENSE) © 2026 ZHYun
+[MIT](LICENSE) © 2026 Z-Yun-H

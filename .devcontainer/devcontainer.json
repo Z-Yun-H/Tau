@@ -18,6 +18,6 @@
       }
     }
   },
-  "postCreateCommand": "npm install",
+  "postCreateCommand": "corepack enable pnpm && pnpm install && pnpm build",
   "remoteUser": "node"
 }

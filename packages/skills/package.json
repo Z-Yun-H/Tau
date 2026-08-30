@@ -1,0 +1,35 @@
+{
+  "name": "@tau/skills",
+  "version": "0.1.0",
+  "description": "Tau skills — SKILL.md schema, three-tier loader, bundled skills/templates",
+  "license": "MIT",
+  "author": "Z-Yun-H",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "skills",
+    "templates"
+  ],
+  "scripts": {
+    "build": "tsdown"
+  },
+  "devDependencies": {
+    "tsdown": "^0.22.14"
+  },
+  "dependencies": {
+    "@tau/core": "workspace:*",
+    "@tau/engine": "workspace:*",
+    "@tau/ui": "workspace:*",
+    "yaml": "^2.9.0",
+    "zod": "^4.5.4"
+  }
+}

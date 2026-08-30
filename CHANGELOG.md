@@ -5,6 +5,35 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+### Changed
+
+- **pnpm monorepo restructure.** The single `src/` tree is now a pnpm
+  workspace: UI apps in `app/` and the reusable engine in `packages/`, each
+  an independent `@tau/*` package with its own package.json, tsdown build,
+  and colocated tests (root vitest aliases `@tau/*` to TypeScript sources):
+  - `app/cli` (`@tau/cli`, bin `tau`) — the commander terminal app; new
+    `tau tui` / `tau web` bridges hand off to the two new UI apps
+  - `app/tui` (`@tau/tui`, bin `tau-tui`) — NEW interactive terminal session
+    (REPL): intents go through the same plan → review → confirm → runPlan
+    pipeline as `tau ask`; `/help /provider /skills /history /status /clear`
+    manage the session
+  - `app/webui` (`@tau/webui`, bin `tau-web`) — NEW zero-dependency localhost
+    web interface (node:http + vanilla JS): status/skills/history views and a
+    plan → review → execute chat flow; deny verdicts are refused server-side
+    and high-risk plans demand explicit confirmation
+  - `packages/core|tools|engine|ai|skills|plugins|agent|ui` — engine layer;
+    NEW `@tau/agent` extracts the intent→plan orchestration (catalog prep,
+    plugin warnings, provider resolution) previously inlined in the CLI
+  - Cross-package imports now go through declared `@tau/*` `workspace:*`
+    dependencies and package barrels; relative escapes are gone. Bundled
+    skills/templates moved with `@tau/skills`; `packageRoot()` asset
+    resolution moved from `@tau/core` to `@tau/skills`
+  - Tooling: `pnpm build` builds all packages topologically; `packageManager`
+    pins pnpm; devcontainer post-create uses corepack + pnpm; gates are
+    `pnpm lint && pnpm typecheck && pnpm test:cov` (216 → 233 tests)
+  - Author attribution cleaned up: remaining `ZHYun` strings in READMEs and
+    bundled SKILL.md frontmatter are now `Z-Yun-H`
+
 ### Added
 
 - **Provider model-selection mode** (`tau provider list/set-key/models/use`):
@@ -19,8 +48,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   interactive arrow-key picker on a TTY (numbered fallback otherwise; CI
   sessions never hang on stdin). API keys resolve config-first with env vars
   as fallback, every CLI surface masks them, and a failed refresh degrades
-  to the cached list instead of failing. New `src/ai/models.ts` catalog
-  service, `src/ui/picker.ts` zero-dependency selector, `src/cli/provider.ts`
+  to the cached list instead of failing. New `packages/ai/src/ai/models.ts` catalog
+  service, `packages/ui/src/ui/picker.ts` zero-dependency selector, `app/cli/src/cli/provider.ts`
   command family.
 - Dotted config keys: `tau config get/set providers.<name>.<field>`
   (`apiKey`, `baseUrl`, `host`, `model`, `timeoutMs`) with per-provider
@@ -55,7 +84,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   `plugin.<name>.<tool>` and execute through the same plan → review →
   confirm pipeline. Plugin tools are always **medium risk**; connect
   handshake 10 s, tool call cap 120 s, 64 KB argument budget; env extras
-  layered over the SDK's safe default allowlist. New `src/plugins/` module,
+  layered over the SDK's safe default allowlist. New `packages/plugins/src/plugins/` module,
   `docs/plugins.md` guide, AGENTS/plugins.md rulebook.
 - `@modelcontextprotocol/sdk` joins as an `optionalDependency` (dynamically
   imported, never bundled; Tau degrades gracefully without it).
@@ -71,7 +100,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   are gone. Request-time resolution goes explicit config → single-model
   catalog (auto-selected and persisted) → an actionable error
   (`tau provider use <provider>` / `tau config set providers.<name>.model
-<id>`) via the new `resolveModel()` in `src/ai/models.ts`; `provider list`
+<id>`) via the new `resolveModel()` in `packages/ai/src/ai/models.ts`; `provider list`
   shows `(auto)` for unset models.
 - Repository housekeeping: the `AGENTS.d/` rulebook directory renamed to
   `AGENTS/` (all references updated); every source file under `src/` now

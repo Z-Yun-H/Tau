@@ -1,23 +1,28 @@
 # AGENTS/testing.md — how we test Tau
 
-Runner: **vitest** (`vitest.config.ts`). Coverage v8 with thresholds at 55%
+Runner: **vitest** at the repo root (`vitest.config.ts`) — one config covers the
+whole workspace. Test files live INSIDE the package they verify:
+`packages/*/tests/*.test.ts` and `app/*/tests/*.test.ts`. The root config
+aliases `@tau/*` to each package's TypeScript source, so tests always run
+against source, never stale dist. Coverage v8 with thresholds at 55%
 statements/branches/functions/lines — raise them when convenient, never lower
 them to make a PR pass.
 
 ## Commands
 
 ```bash
-npm test            # run once
-npm run test:watch  # dev loop
-npm run test:cov    # with coverage (pre-PR gate)
+pnpm test            # run once
+pnpm test:watch      # dev loop
+pnpm test:cov        # with coverage (pre-PR gate)
+npx vitest run packages/engine   # one package's tests
 ```
 
 ## Isolation rules
 
 1. **TAU_HOME**: every test that touches config/history/skills must set
    `process.env.TAU_HOME` to a fresh tmp dir (see
-   `tests/unit/config-store.test.ts` for the pattern) and clean up in
-   `afterEach`. NEVER let tests write to a real `~/.tau`.
+   `packages/core/tests/config-history.test.ts` for the pattern) and clean up
+   in `afterEach`. NEVER let tests write to a real `~/.tau`.
 2. **cwd-sensitive tools** (`file.*`, `text.*`): `process.chdir(tmpDir)` +
    fixture files, restore after. Keep fixture trees tiny (3-5 files).
 3. **No network in tests.** Provider tests use MockProvider or `vi.mock` /

@@ -1,6 +1,6 @@
 # AGENTS/ai-integration.md — providers, prompts, and the safety boundary
 
-## Provider interface (src/types.ts AIProvider)
+## Provider interface (packages/core/src/types.ts AIProvider)
 
 ```ts
 interface AIProvider {
@@ -13,15 +13,15 @@ interface AIProvider {
 }
 ```
 
-Registration: `src/ai/registry.ts registerProvider(...)`. `DEFAULT_CONFIG.providers`
-in `src/config/store.ts` carries NO model defaults — never add one.
+Registration: `packages/ai/src/ai/registry.ts registerProvider(...)`. `DEFAULT_CONFIG.providers`
+in `packages/core/src/config/store.ts` carries NO model defaults — never add one.
 
 Selection precedence: `--provider` flag > `TAU_PROVIDER` env > `config.provider`
 
 > mock fallback. An unknown name silently falls back to mock — intentional:
 > the CLI must never hard-fail on config drift.
 
-## Model discovery and selection (src/ai/models.ts)
+## Model discovery and selection (packages/ai/src/ai/models.ts)
 
 - `listModels()` is OPTIONAL: implement it only when the backend has a real
   discovery endpoint (`GET /models` for openai/deepseek, `/api/tags` for
@@ -37,7 +37,7 @@ Selection precedence: `--provider` flag > `TAU_PROVIDER` env > `config.provider`
   auto-refreshes the catalog, so `tau provider use` always picks from real,
   current models. A failed refresh degrades to the cache and NEVER fails the
   `set-key` command itself.
-- Request-time resolution (`resolveModel` in src/ai/models.ts): explicit
+- Request-time resolution (`resolveModel` in packages/ai/src/ai/models.ts): explicit
   `providers.<name>.model` wins; a catalog with exactly one model is
   auto-selected and persisted; anything else throws an error naming the exact
   fix (`tau provider use <name>` or `tau config set providers.<name>.model
@@ -65,7 +65,7 @@ Providers answer STRICT JSON:
 }
 ```
 
-`validatePlanResponse()` (src/ai/prompt.ts) is tolerant about WRAPPING
+`validatePlanResponse()` (packages/ai/src/ai/prompt.ts) is tolerant about WRAPPING
 (code fences, prose around JSON) and strict about CONTENT (zod `.strict()`).
 Changes to the schema must update: planSchema + reviewPlan expectations +
 mock provider + tests + this file + README example.
@@ -75,7 +75,7 @@ mock provider + tests + this file + README example.
 - Injects the REAL tool catalog (renderToolCatalog) and skill catalog — the
   planner can only propose tools that actually exist, and the reviewer
   independently enforces that. Keep both sides in sync.
-- The catalog also includes MCP plugin tools: `src/cli/ask.ts` calls
+- The catalog also includes MCP plugin tools: `app/cli/src/cli/ask.ts` calls
   `registerPluginTools()` BEFORE building the planning context, so
   `plugin.<name>.<tool>` entries are first-class planner targets (and the
   reviewer grades them via their intrinsic `medium` risk). Plugin failures
@@ -87,7 +87,7 @@ mock provider + tests + this file + README example.
 
 ## Adding a provider — checklist
 
-1. `src/ai/providers/<name>.ts` implementing AIProvider (look at openai.ts
+1. `packages/ai/src/ai/providers/<name>.ts` implementing AIProvider (look at openai.ts
    for the HTTP pattern; ollama.ts for local-server availability probing).
 2. Register in `registry.ts`; add config defaults in `store.ts`.
 3. `isAvailable()` must be CHEAP and never prompt; `unavailableReason()`
@@ -99,7 +99,7 @@ mock provider + tests + this file + README example.
 
 ## Provider notes — deepseek (harness adapter + built-in fallback)
 
-`src/ai/providers/deepseek.ts` speaks the official DeepSeek
+`packages/ai/src/ai/providers/deepseek.ts` speaks the official DeepSeek
 chat-completions STREAMING wire contract (`stream: true` +
 `stream_options.include_usage`, `data: [DONE]` framing,
 `reasoning_content` deltas collected separately, no `temperature`/`response_format`
@@ -136,7 +136,7 @@ touching node_modules; `resetDshLlmCache()` between tests.
 
 ## Safety boundary — the part you must not weaken
 
-- `reviewPlan()` (src/core/safety.ts) runs AFTER the provider and BEFORE any
+- `reviewPlan()` (packages/engine/src/core/safety.ts) runs AFTER the provider and BEFORE any
   confirmation/execution. It is deterministic and has no AI involvement.
 - `DENY_PATTERNS` → verdict deny (exit code 2). `CAUTION_PATTERNS` → high
   risk (interactive confirm required; `--yes` refuses to auto-run high).

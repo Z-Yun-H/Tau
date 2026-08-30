@@ -1,0 +1,35 @@
+{
+  "name": "@tau/ai",
+  "version": "0.1.0",
+  "description": "Tau AI layer — pluggable providers, planning contract, model catalog",
+  "license": "MIT",
+  "author": "Z-Yun-H",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown"
+  },
+  "devDependencies": {
+    "tsdown": "^0.22.14"
+  },
+  "dependencies": {
+    "@tau/core": "workspace:*",
+    "@tau/tools": "workspace:*",
+    "@tau/ui": "workspace:*",
+    "zod": "^4.5.4"
+  },
+  "optionalDependencies": {
+    "@deepseek-ai/dsh-llm": "^0.0.1-rc.1"
+  }
+}

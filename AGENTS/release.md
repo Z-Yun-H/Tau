@@ -32,7 +32,7 @@ versions, but must be called out in CHANGELOG under a **Breaking** header.
 - AGENTS.md + README.md
 
 Careful: `templates/` is resolved relative to the package root at runtime via
-`src/config/paths.ts packageRoot()`. If you move it, update that function and
+`packages/core/src/config/paths.ts packageRoot()`. If you move it, update that function and
 the smoke test above breaks — that's your signal.
 
 ## After release

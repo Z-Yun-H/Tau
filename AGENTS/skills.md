@@ -29,14 +29,14 @@ commands: # optional, declarative tools
 Markdown body — usage docs, guidance for AI agents, examples.
 ```
 
-Validation lives in `src/skills/schema.ts` (zod + safety scan). A skill whose
+Validation lives in `packages/skills/src/skills/schema.ts` (zod + safety scan). A skill whose
 command matches any `DENY_PATTERNS` entry still loads but is flagged as an
 issue by `tau skill validate` — never silently dropped.
 
 ## Behavior rules agents must keep
 
 1. **Declarative commands become tools** named `<skill>.<command>` registered
-   in `buildProgram()` (src/index.ts). They run through `runShell` with
+   in `buildProgram()` (app/cli/src/index.ts). They run through `runShell` with
    default timeout. Their declared `risk` is what the reviewer trusts.
 2. **`{args}` placeholder**: single braces, filled positionally from the
    `values` arg array. Docker templates use `{{.X}}` double braces — they
@@ -51,7 +51,7 @@ issue by `tau skill validate` — never silently dropped.
 5. Name conflicts: workspace > user > bundled wins. `registerTools` throws on
    duplicates — that's a bug signal, not something to catch and ignore.
 
-## tau skill subcommands (src/skills/manager.ts)
+## tau skill subcommands (packages/skills/src/skills/manager.ts)
 
 | Command                           | Purpose                                                   |
 | --------------------------------- | --------------------------------------------------------- |

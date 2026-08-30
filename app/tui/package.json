@@ -1,0 +1,38 @@
+{
+  "name": "@tau/tui",
+  "version": "0.1.0",
+  "description": "Tau interactive terminal session — REPL over the ask pipeline (bin: tau-tui)",
+  "license": "MIT",
+  "author": "Z-Yun-H",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "bin": {
+    "tau-tui": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsdown"
+  },
+  "devDependencies": {
+    "tsdown": "^0.22.14",
+    "commander": "^15.0.0"
+  },
+  "dependencies": {
+    "@tau/agent": "workspace:*",
+    "@tau/ai": "workspace:*",
+    "@tau/core": "workspace:*",
+    "@tau/engine": "workspace:*",
+    "@tau/skills": "workspace:*",
+    "@tau/ui": "workspace:*"
+  }
+}

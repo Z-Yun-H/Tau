@@ -1,6 +1,6 @@
 # AGENTS/plugins.md — MCP plugin system rules
 
-Read this before touching `src/plugins/`, `src/cli/plugin.ts`, or anything
+Read this before touching `packages/plugins/src/plugins/`, `app/cli/src/cli/plugin.ts`, or anything
 MCP-related. The plugin system lets external MCP servers contribute tools to
 Tau's planner catalog.
 

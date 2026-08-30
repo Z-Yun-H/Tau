@@ -4,7 +4,8 @@
 
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-211%20passing-success)](vitest.config.ts)
+[![Tests](https://img.shields.io/badge/tests-233%20passing-success)](vitest.config.ts)
+[![pnpm](https://img.shields.io/badge/pnpm-monorepo-F69220)](pnpm-workspace.yaml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 [![中文文档](https://img.shields.io/badge/docs-中文-red)](README.zh-CN.md)
 
@@ -57,10 +58,10 @@ around: **the AI proposes, deterministic code disposes.**
 
 ```bash
 git clone https://github.com/Z-Yun-H/Tau.git
-cd tau && npm install && npm run build && npm link   # provides the `tau` binary
+cd tau && pnpm install && pnpm build && pnpm --filter @tau/cli link   # provides the `tau` binary
 ```
 
-Requires Node.js ≥ 20.
+Requires Node.js ≥ 20 and pnpm ≥ 10 (corepack handles it: `corepack enable pnpm`).
 
 ## Quick start
 
@@ -210,20 +211,35 @@ Tau is designed to be _maintained by AI agents_ as much as used by humans:
   [ai-integration](AGENTS/ai-integration.md), [release](AGENTS/release.md)
 - **[`.claude/skills/`](.claude/skills)** — dev-workflow skills (tau-build, tau-test, tau-release, tau-skill-new)
 - **`CLAUDE.md`** pointer for Claude Code; deterministic safety module with 1:1 test coverage
-- 172 tests, strict TypeScript, `npm run lint && npm run typecheck && npm test` as the agent gate
+- 233 tests, strict TypeScript, `pnpm lint && pnpm typecheck && pnpm test` as the agent gate
 
-## Project layout
+## Project layout — pnpm monorepo
+
+UI apps live in `app/`, the reusable engine in `packages/`. Every workspace
+package is versioned, built with tsdown, and consumed through `workspace:*`
+dependencies; the CLI (`@tau/cli`) bundles nothing from its siblings — the
+workspace resolves them at runtime.
 
 ```
-src/
-  index.ts        CLI entry (commander)      core/      session pipeline, safety, executor
-  ai/             providers + prompt + plan schema      tools/     registry + file/sys/net/text
-  plugins/        MCP client + plugin manager           skills/    SKILL.md loader + manager
-  config/         TAU_HOME, config, history             cli/       per-family command wiring
-  ui/             theme + confirm
-skills/           bundled skills                        templates/ `tau skill new` scaffold
-tests/            unit + integration (vitest)           AGENTS/  agent rulebooks
+app/
+  cli/            @tau/cli    — bin `tau`: commander app + `tau tui` / `tau web` bridges
+  tui/            @tau/tui    — bin `tau-tui`: interactive terminal session (REPL)
+  webui/          @tau/webui  — bin `tau-web`: zero-dependency local web interface
+packages/
+  core/           @tau/core    — types, config store, history, TAU_HOME paths
+  tools/          @tau/tools   — registry + file/sys/net/text tools
+  engine/         @tau/engine  — safety review, executor, runPlan (only execution channel)
+  ai/             @tau/ai      — providers (mock/ollama/openai/deepseek/zai), prompt, models
+  skills/         @tau/skills  — SKILL.md schema/loader/manager + bundled skills & templates
+  plugins/        @tau/plugins — MCP plugin system
+  agent/          @tau/agent   — orchestration shared by all UIs (catalog + intent→plan)
+  ui/             @tau/ui      — theme, confirm, picker (terminal primitives)
+AGENTS/           agent rulebooks                     docs/  deep dives
 ```
+
+Dependency direction (enforced by package boundaries): `core ← tools ← engine`,
+`core+engine+ui ← skills`, `core+tools ← ai|plugins`, everything above ← `agent`,
+and apps depend on all of them. No cycles — including at test time.
 
 ## Documentation
 
@@ -236,8 +252,8 @@ tests/            unit + integration (vitest)           AGENTS/  agent rulebooks
 ## Contributing
 
 PRs welcome — start with [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md).
-The pre-PR gate: `npm run lint && npm run typecheck && npm run test:cov`.
+The pre-PR gate: `pnpm lint && pnpm typecheck && pnpm test:cov`.
 
 ## License
 
-[MIT](LICENSE) © 2026 ZHYun
+[MIT](LICENSE) © 2026 Z-Yun-H

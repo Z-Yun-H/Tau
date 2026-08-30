@@ -8,5 +8,12 @@
   "arrowParens": "always",
   "endOfLine": "lf",
   "sortPackageJson": false,
-  "ignorePatterns": ["templates/", "dist/", "coverage/", "node_modules/", "package-lock.json"]
+  "ignorePatterns": [
+    "templates/",
+    "dist/",
+    "coverage/",
+    "node_modules/",
+    "package-lock.json",
+    "pnpm-lock.yaml"
+  ]
 }

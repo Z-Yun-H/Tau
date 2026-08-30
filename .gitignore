@@ -8,6 +8,10 @@ dist/
 # Test & coverage
 coverage/
 .vitest/
+.tmp-*/
+
+# Package manager
+pnpm-lock.yaml.bak
 
 # Logs
 *.log
