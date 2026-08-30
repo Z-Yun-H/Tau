@@ -64,25 +64,40 @@ mock provider + tests + this file + README example.
 5. Update README (both languages) provider table + `tau config list` output
    if it changes.
 
-## Provider notes — deepseek (streaming wire format)
+## Provider notes — deepseek (harness adapter + built-in fallback)
 
-`src/ai/providers/deepseek.ts` implements the official DeepSeek
-chat-completions STREAMING wire contract with zero dependencies (global
-fetch + hand-rolled SSE in `collectStreamText`):
+`src/ai/providers/deepseek.ts` speaks the official DeepSeek
+chat-completions STREAMING wire contract (`stream: true` +
+`stream_options.include_usage`, `data: [DONE]` framing,
+`reasoning_content` deltas collected separately, no `temperature`/`response_format`
+— deepseek-reasoner rejects them). Two paths, identical wire contract:
 
-- `stream: true` + `stream_options.include_usage` always on; `data: [DONE]`
-  terminates; `reasoning_content` deltas (thinking models) are collected
-  separately and never leak into plan text.
-- Error mapping mirrors the harness adapter's stable codes
-  (auth 401/403, rate-limit 429, server 5xx) with actionable hints.
-- No `temperature`, no `response_format`: deepseek-reasoner rejects them and
-  `validatePlanResponse` already tolerates fences/prose.
-- Why not `@deepseek-ai/dsh-llm-deepseek`? It is harness-coupled (7 rc-stage
-  peers incl. one unpublished package — uninstallable standalone today).
-  Revisit if/when the DeepSeek Harness stack ships installable.
+1. **Harness path (preferred).** `@deepseek-ai/dsh-llm` — the DeepSeek
+   Harness' provider-neutral LLM seam — is an optionalDependency, loaded
+   through `loadDshLlm()` (variable-specifier dynamic import, never
+   bundled, cached, null when absent). The provider subclasses the official
+   abstract `LlmAdapter` and supplies the transport itself (the only
+   official HTTP adapter, `@deepseek-ai/dsh-llm-deepseek`, stays
+   uninstallable standalone — one of its rc peers, `dsh-environment`, is
+   not published). The adapter emits the canonical `StreamChunk` protocol
+   with the exact mappings of the official adapter (usage cache split,
+   finish-reason vocabulary, HTTP → `LlmError` codes: `AUTH`, `RATE_LIMIT`,
+   `SERVER`, `INVALID_REQUEST`, `QUOTA_EXCEEDED`,
+   `CONTEXT_WINDOW_EXCEEDED`, `EMPTY_RESPONSE`, `STREAM_CLOSED`,
+   `MALFORMED_RESPONSE`, `TRANSPORT`); the plan text assembles through the
+   official `BlockAssembler`; the credential is judged by the official
+   `assertUsableApiKey` (trimmed key is what the request sends; the secret
+   never enters a message); every request carries the official
+   `attributionHeaders()` identity (`tau/<version> (+repo url)`).
+2. **Direct fallback.** When the optional package is absent
+   (`--omit=optional`), `collectStreamText` consumes the same wire format
+   with zero dependencies. Error text (`apiErrorMessage`) and request
+   shape are identical across both paths, so tests and UX don't fork.
 
-Test seam: the provider reads `globalThis.fetch` lazily — stub it (never a
-real endpoint) for request-shape and SSE-parsing tests.
+Config: `providers.deepseek.model | baseUrl | timeoutMs`; key via
+`DEEPSEEK_API_KEY`. Test seams: stub `globalThis.fetch` (never a real
+endpoint); `setDshLlmLoaderForTests(loader)` forces either path without
+touching node_modules; `resetDshLlmCache()` between tests.
 
 ## Safety boundary — the part you must not weaken
 

@@ -36,9 +36,11 @@ Non-goals: shell replacement, TUI dashboard, daemon/server, secret management.
 4. **No new runtime dependencies** without updating AGENTS.d/architecture.md
    and justifying it in the PR description. Current runtime deps: commander,
    chalk, yaml, zod. The only sanctioned exceptions are optionalDependencies
-   (`@modelcontextprotocol/sdk` for plugins; provider SDKs stay out of
-   package.json entirely) — they must be dynamically imported, never bundled,
-   and the CLI must degrade gracefully when they are absent.
+   (the MCP SDK `@modelcontextprotocol/sdk` for plugins and the DeepSeek
+   Harness seam `@deepseek-ai/dsh-llm` for the deepseek provider; other
+   provider SDKs stay out of package.json entirely) — they must be dynamically
+   imported, never bundled, and the CLI must degrade gracefully when they are
+   absent.
 5. **Bilingual docs**: user-facing README changes go to both README.md
    (English) and README.zh-CN.md (Chinese). AGENTS.md/AGENTS.d stay English.
 6. **Run the gates before you claim done:**

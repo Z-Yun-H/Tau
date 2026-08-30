@@ -4,7 +4,7 @@
 
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-147%20passing-success)](vitest.config.ts)
+[![Tests](https://img.shields.io/badge/tests-172%20passing-success)](vitest.config.ts)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 [![中文文档](https://img.shields.io/badge/docs-中文-red)](README.zh-CN.md)
 
@@ -100,13 +100,13 @@ intent ──► provider.plan() ──► validatePlanResponse() ──► revi
 
 ## AI providers
 
-| Provider         | Needs                       | Setup                                                                            |
-| ---------------- | --------------------------- | -------------------------------------------------------------------------------- |
-| `mock` (default) | nothing                     | works offline, keyword-matched demo plans                                        |
-| `ollama`         | local ollama                | `ollama serve`, config: `providers.ollama.model`                                 |
-| `openai`         | `OPENAI_API_KEY`            | any OpenAI-compatible base URL via `providers.openai.baseUrl`                    |
-| `deepseek`       | `DEEPSEEK_API_KEY`          | official streaming wire format; model/baseUrl/timeoutMs via `providers.deepseek` |
-| `zai`            | optional `z-ai-web-dev-sdk` | graceful "unavailable + how to fix" when missing                                 |
+| Provider         | Needs                       | Setup                                                                                                                                                                      |
+| ---------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mock` (default) | nothing                     | works offline, keyword-matched demo plans                                                                                                                                  |
+| `ollama`         | local ollama                | `ollama serve`, config: `providers.ollama.model`                                                                                                                           |
+| `openai`         | `OPENAI_API_KEY`            | any OpenAI-compatible base URL via `providers.openai.baseUrl`                                                                                                              |
+| `deepseek`       | `DEEPSEEK_API_KEY`          | DeepSeek Harness adapter (`@deepseek-ai/dsh-llm`): official streaming wire format, `LlmAdapter` + `StreamChunk` protocol; model/baseUrl/timeoutMs via `providers.deepseek` |
+| `zai`            | optional `z-ai-web-dev-sdk` | graceful "unavailable + how to fix" when missing                                                                                                                           |
 
 Selection precedence: `--provider` flag > `TAU_PROVIDER` env > `config.provider`.
 Unknown → safe fallback to `mock`.
@@ -176,7 +176,7 @@ Tau is designed to be _maintained by AI agents_ as much as used by humans:
   [ai-integration](AGENTS.d/ai-integration.md), [release](AGENTS.d/release.md)
 - **[`.claude/skills/`](.claude/skills)** — dev-workflow skills (tau-build, tau-test, tau-release, tau-skill-new)
 - **`CLAUDE.md`** pointer for Claude Code; deterministic safety module with 1:1 test coverage
-- 147 tests, strict TypeScript, `npm run lint && npm run typecheck && npm test` as the agent gate
+- 172 tests, strict TypeScript, `npm run lint && npm run typecheck && npm test` as the agent gate
 
 ## Project layout
 

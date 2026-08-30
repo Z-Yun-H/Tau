@@ -72,6 +72,7 @@
     "zod": "^3.23.8"
   },
   "optionalDependencies": {
+    "@deepseek-ai/dsh-llm": "^0.0.1-rc.1",
     "@modelcontextprotocol/sdk": "^1.30.0"
   }
 }

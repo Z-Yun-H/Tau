@@ -7,13 +7,27 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Added
 
-- **DeepSeek provider** (`deepseek`): self-contained streaming client for the
-  official DeepSeek chat-completions wire format (SSE, `include_usage`,
-  `reasoning_content` handling, stable error codes) with zero dependencies —
-  enabled by `DEEPSEEK_API_KEY`; model/baseUrl/timeout via
-  `providers.deepseek`. Note: DeepSeek's own harness adapter
-  (`@deepseek-ai/dsh-llm-deepseek`) is currently uninstallable standalone
-  (unpublished rc peers), so Tau implements the same wire contract natively.
+- **DeepSeek provider** (`deepseek`): official DeepSeek chat-completions
+  streaming wire format, enabled by `DEEPSEEK_API_KEY`; model/baseUrl/timeout
+  via `providers.deepseek`. The provider is now a genuine DeepSeek Harness
+  adapter: it subclasses the official abstract `LlmAdapter` from
+  `@deepseek-ai/dsh-llm` (provider-neutral LLM seam) and speaks the
+  canonical `StreamChunk` protocol (`block-start`/`text-delta`/
+  `reasoning-delta`/`tool-call-delta`/`block-end`/`usage`/`finish`) with the
+  official adapter's exact mappings — disjoint token usage (cache reads
+  subtracted from input), finish-reason vocabulary, and the stable
+  `LlmError` code taxonomy (`AUTH`, `RATE_LIMIT`, `SERVER`, `QUOTA_EXCEEDED`,
+  `CONTEXT_WINDOW_EXCEEDED`, `EMPTY_RESPONSE`, `STREAM_CLOSED`,
+  `MALFORMED_RESPONSE`, `TRANSPORT`). Plans assemble through the official
+  `BlockAssembler`; credentials are judged by the official
+  `assertUsableApiKey`; requests carry the official `attributionHeaders()`
+  identity (`tau/<version> (+url)`). The transport itself is Tau's
+  (global fetch + SSE) because the only official HTTP adapter
+  (`@deepseek-ai/dsh-llm-deepseek`) remains uninstallable standalone — its rc peer
+  `dsh-environment` is not published. When the optional package is absent
+  (`--omit=optional`), the provider falls back to a zero-dependency
+  implementation of the identical wire contract; behavior and diagnostics
+  stay the same.
 - **MCP plugin system** (`tau plugin list/add/remove/enable/disable/tools`):
   connect external tool servers — dsh (DeepSeek Harness), VS Code bridges,
   filesystem/GitHub servers — via `stdio` or Streamable `http` transports.
@@ -25,10 +39,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   `docs/plugins.md` guide, AGENTS.d/plugins.md rulebook.
 - `@modelcontextprotocol/sdk` joins as an `optionalDependency` (dynamically
   imported, never bundled; Tau degrades gracefully without it).
+- `@deepseek-ai/dsh-llm` joins as an `optionalDependency` under the same
+  doctrine: dynamically imported through `loadDshLlm()`, excluded from the
+  bundle (`deps.neverBundle`), and the deepseek provider degrades to its
+  built-in wire client when it is absent.
 
 ### Changed
 
-- Tests grew from 108 to 147 (SSE wire parsing, provider request shaping,
+- Tests grew from 108 to 172 (SSE wire parsing, provider request shaping,
   plugin config CRUD, MCP tool mapping, real InMemory + spawned-stdio MCP
   integration, plugin CLI flows).
 

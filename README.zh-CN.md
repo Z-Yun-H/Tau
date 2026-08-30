@@ -4,7 +4,7 @@
 
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-147%20passing-success)](vitest.config.ts)
+[![Tests](https://img.shields.io/badge/tests-172%20passing-success)](vitest.config.ts)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 
 Tau 把自然语言意图（中文/英文）变成**经过审查、确认后执行的计划**。它用一个
@@ -96,13 +96,13 @@ tau file rename " IMG_([0-9]+)" " -photo-$1" -e  # 确认后执行
 
 ## AI Provider
 
-| Provider       | 依赖                    | 配置                                                                |
-| -------------- | ----------------------- | ------------------------------------------------------------------- |
-| `mock`（默认） | 无                      | 离线可用，关键词匹配的演示计划                                      |
-| `ollama`       | 本地 ollama             | `ollama serve`，模型见 `providers.ollama.model`                     |
-| `openai`       | `OPENAI_API_KEY`        | 任意 OpenAI 兼容端点：`providers.openai.baseUrl`                    |
-| `deepseek`     | `DEEPSEEK_API_KEY`      | 官方流式 wire 协议；model/baseUrl/timeoutMs 见 `providers.deepseek` |
-| `zai`          | 可选 `z-ai-web-dev-sdk` | 未安装时优雅提示 unavailable + 修复方法                             |
+| Provider       | 依赖                    | 配置                                                                                                                                                        |
+| -------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mock`（默认） | 无                      | 离线可用，关键词匹配的演示计划                                                                                                                              |
+| `ollama`       | 本地 ollama             | `ollama serve`，模型见 `providers.ollama.model`                                                                                                             |
+| `openai`       | `OPENAI_API_KEY`        | 任意 OpenAI 兼容端点：`providers.openai.baseUrl`                                                                                                            |
+| `deepseek`     | `DEEPSEEK_API_KEY`      | DeepSeek Harness 适配器（`@deepseek-ai/dsh-llm`）：官方流式 wire 协议、`LlmAdapter` + `StreamChunk` 流协议；model/baseUrl/timeoutMs 见 `providers.deepseek` |
+| `zai`          | 可选 `z-ai-web-dev-sdk` | 未安装时优雅提示 unavailable + 修复方法                                                                                                                     |
 
 选择优先级：`--provider` 参数 > `TAU_PROVIDER` 环境变量 > `config.provider`。
 未知值 → 安全回落到 `mock`。
@@ -172,7 +172,7 @@ Tau 从设计上就是"给人用、给 AI 维护"的双端项目：
   [AI 集成](AGENTS.d/ai-integration.md)、[发布](AGENTS.d/release.md)
 - **[`.claude/skills/`](.claude/skills)** —— 开发工作流技能（tau-build / tau-test / tau-release / tau-skill-new）
 - **`CLAUDE.md`** 指针文件供 Claude Code 自动发现；安全模块完全确定性且有 1:1 测试覆盖
-- 147 个测试、严格 TypeScript，`npm run lint && npm run typecheck && npm test` 就是 agent 门禁
+- 172 个测试、严格 TypeScript，`npm run lint && npm run typecheck && npm test` 就是 agent 门禁
 
 ## 项目结构
 

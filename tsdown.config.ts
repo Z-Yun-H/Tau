@@ -15,6 +15,7 @@ export default defineConfig({
       // runtime; never dragged into the bundle
       "z-ai-web-dev-sdk",
       /^@modelcontextprotocol\//,
+      /^@deepseek-ai\//,
     ],
   },
   outExtensions: () => ({ js: ".js" }),
