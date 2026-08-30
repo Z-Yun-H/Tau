@@ -1,3 +1,8 @@
+/**
+ * Central chalk theme — every command prints through this one palette so the
+ * CLI stays visually consistent (ok/warn/error/muted/brand).
+ */
+
 import chalk from "chalk";
 
 /** Central chalk theme so CLI output stays consistent. */

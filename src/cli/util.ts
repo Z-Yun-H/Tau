@@ -1,3 +1,9 @@
+/**
+ * Shared CLI plumbing — global option parsing (--json/--yes/--provider),
+ * timeout resolution, and runToolDirect: the bridge that lets non-AI command
+ * families execute registry tools through the same history-recording path.
+ */
+
 import { theme } from "../ui/theme.js";
 import { getTool } from "../tools/registry.js";
 import { appendHistory } from "../config/history.js";

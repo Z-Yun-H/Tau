@@ -1,3 +1,9 @@
+/**
+ * AI provider registry — idempotent provider registration plus lookup.
+ * Registers the five built-ins (mock | ollama | openai | deepseek | zai) and
+ * resolves the active provider from --provider / config.provider.
+ */
+
 import { loadConfig } from "../config/store.js";
 import type { AIProvider, ProviderChoice } from "../types.js";
 import { DeepSeekProvider } from "./providers/deepseek.js";
@@ -10,7 +16,7 @@ import { ZaiProvider } from "./providers/zai.js";
  * Provider registry. To add a backend:
  * 1. Implement AIProvider (see src/types.ts)
  * 2. Register it below
- * 3. Document it in AGENTS.d/ai-integration.md
+ * 3. Document it in AGENTS/ai-integration.md
  */
 const providers = new Map<string, AIProvider>();
 

@@ -1,3 +1,8 @@
+/**
+ * Append-only JSONL run history — every executed plan step lands here with
+ * its outcome; supports read/find/clear. Never rewritten in place.
+ */
+
 import fs from "node:fs";
 import crypto from "node:crypto";
 import { historyPath, ensureHome } from "./paths.js";

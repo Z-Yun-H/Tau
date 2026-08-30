@@ -4,7 +4,7 @@
  * These types are the shared vocabulary of the whole project:
  * CLI, tools, AI planner, safety reviewer and skills all speak this language.
  * When you change something here, run `npm run typecheck` and update
- * AGENTS.d/architecture.md if the data flow changes.
+ * AGENTS/architecture.md if the data flow changes.
  */
 
 /** Risk classification used by the safety reviewer and every tool definition. */
@@ -193,7 +193,7 @@ export interface HistoryEntry {
  * One configured MCP (Model Context Protocol) server. Plugins are the
  * escape hatch that lets Tau drive external tools (dsh, VS Code, GitHub,
  * filesystems, ...) through the same plan -> review -> confirm pipeline as
- * built-in tools. See docs/plugins.md and AGENTS.d/plugins.md.
+ * built-in tools. See docs/plugins.md and AGENTS/plugins.md.
  */
 export interface PluginConfig {
   /** Local alias; tool names become "plugin.<name>.<tool>". kebab-case. */

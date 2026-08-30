@@ -1,3 +1,8 @@
+/**
+ * Tool bootstrap — registers every built-in tool family (file, sys, net,
+ * text) with the central registry exactly once at import time.
+ */
+
 import { registerTools } from "./registry.js";
 import { fileTools } from "./file.js";
 import { sysTools } from "./sys.js";

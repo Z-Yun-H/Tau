@@ -1,3 +1,10 @@
+/**
+ * MCP transport layer — optional-SDK loader (variable-specifier import,
+ * injectable for tests), client handshake, tool listing/calling with strict
+ * budgets (10s connect / 120s call / 64KB args), JSON-schema mapping and
+ * tool-name sanitization into the plugin.<server>.<tool> namespace.
+ */
+
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import type { ToolDefinition, ToolParamSpec } from "../types.js";

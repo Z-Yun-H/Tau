@@ -1,3 +1,8 @@
+/**
+ * tau text — direct access to the text tools (count/search/replace) without
+ * going through the AI; replace stays dry-run-first like its tool counterpart.
+ */
+
 import type { Command } from "commander";
 import { runToolDirect } from "./util.js";
 

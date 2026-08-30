@@ -1,4 +1,9 @@
-import { loadConfig } from "../../config/store.js";
+/**
+ * Z.ai (GLM) provider over the optional `z-ai-web-dev-sdk` peer.
+ * The SDK is never bundled and loaded through a variable-specifier dynamic
+ * import; the provider degrades gracefully (unavailable + reason) when absent.
+ */
+
 import { buildSystemPrompt, validatePlanResponse } from "../prompt.js";
 import type { AIProvider, Plan, PlanningContext } from "../../types.js";
 
@@ -54,7 +59,12 @@ export class ZaiProvider implements AIProvider {
   async plan(ctx: PlanningContext): Promise<Plan> {
     const sdk = await loadSDK();
     if (!sdk) throw new Error(this.unavailableReason());
-    const model = String(loadConfig().providers["zai"]?.["model"] ?? "glm-4-flash");
+    // Dynamic import avoids the registry -> provider -> models -> registry
+    // ESM initialization cycle (see the note in providers/openai.ts).
+    const { resolveModel } = await import("../models.js");
+    // The SDK exposes no model-discovery endpoint, so an explicit model is
+    // required (resolveModel throws with the exact command to run).
+    const { model } = await resolveModel(this.name);
     const response = await sdk.chat.completions.create({
       messages: [
         { role: "system", content: `${buildSystemPrompt(ctx)} (model: ${model})` },

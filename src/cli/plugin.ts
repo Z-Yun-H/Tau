@@ -1,3 +1,9 @@
+/**
+ * tau plugin — MCP server management.
+ * list/add/remove/enable/disable plus `tools` to connect to a server and
+ * discover what it exposes; plugin tools always register as medium risk.
+ */
+
 import type { Command } from "commander";
 import { theme } from "../ui/theme.js";
 import { loadConfig } from "../config/store.js";

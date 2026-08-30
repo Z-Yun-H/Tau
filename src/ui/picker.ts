@@ -1,3 +1,10 @@
+/**
+ * Interactive UI primitives — arrow-key/j-k list selection with a scrolling
+ * viewport (selectFromList) and hidden-input prompts (promptHidden).
+ * Zero dependencies beyond chalk; streams are injectable for tests, and
+ * non-TTY callers fall back to numbered answers instead of hanging.
+ */
+
 import readline from "node:readline";
 import chalk from "chalk";
 

@@ -1,6 +1,6 @@
 # Architecture
 
-This is the human-facing deep dive. Agents: read `AGENTS.d/architecture.md`
+This is the human-facing deep dive. Agents: read `AGENTS/architecture.md`
 for the rulebook version (same facts, normative wording).
 
 ## The pipeline
@@ -72,8 +72,11 @@ Providers may also implement `listModels()` for live model discovery. The
 catalog service (`src/ai/models.ts`) caches ids per provider (24 h TTL) and
 the `tau provider` command family (set-key / models / use) turns it into the
 model-selection UX: configuring an API key auto-refreshes the catalog, then
-you pick from real models. Keys live in config (chmod 0600) with env vars as
-fallback and are masked in every CLI output.
+you pick from real models. There are no bundled default models — with a
+single-model catalog Tau auto-selects it, otherwise selection is explicit
+(`tau provider use`) and the request-time resolver (`resolveModel`) fails
+with an actionable hint when nothing is chosen. Keys live in config
+(chmod 0600) with env vars as fallback and are masked in every CLI output.
 
 ### src/skills/ — markdown as a plugin format
 
@@ -106,4 +109,4 @@ API keys, so it is written with chmod 0600 and keys are masked on display),
   - tests with mocked fetch.
 - **New skill** → just markdown; see docs/skills-authoring.md.
 
-Full "I want to..." table lives in AGENTS.d/architecture.md.
+Full "I want to..." table lives in AGENTS/architecture.md.

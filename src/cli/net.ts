@@ -1,3 +1,8 @@
+/**
+ * tau net — direct access to the network tools (fetch/ip/ping/port) without
+ * going through the AI. Same SSRF guards and shell-metacharacter rejections.
+ */
+
 import type { Command } from "commander";
 import { runToolDirect } from "./util.js";
 

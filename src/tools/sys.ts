@@ -1,3 +1,9 @@
+/**
+ * System tools — sys.disk / sys.info / sys.proc plus runCapture, the shared
+ * spawn-with-capture primitive used by shell-ish tools (fixed argv, no shell
+ * interpretation).
+ */
+
 import os from "node:os";
 import fs from "node:fs/promises";
 import { spawn } from "node:child_process";

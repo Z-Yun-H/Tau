@@ -1,3 +1,9 @@
+/**
+ * Central tool registry — idempotent ToolDefinition registration with
+ * replace support (tests), lookup by id, catalog rendering for the AI prompt,
+ * and the shared argument-coercion helpers (strArg/numArg/boolArg).
+ */
+
 import type { ToolDefinition, ToolResult } from "../types.js";
 
 /**

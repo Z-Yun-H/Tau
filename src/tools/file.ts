@@ -1,3 +1,9 @@
+/**
+ * File tools — file.find / file.stat / file.tree / file.rename.
+ * find/tree prune node_modules and .git; rename defaults to dry-run and
+ * refuses to overwrite; every tool is pure registry-driven, no shell.
+ */
+
 import fs from "node:fs";
 import path from "node:path";
 import type { ToolDefinition, ToolResult } from "../types.js";

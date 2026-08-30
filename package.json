@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Tau — AI-powered unified terminal assistant. Natural language in, safe commands out.",
   "license": "MIT",
-  "author": "ZHYun",
+  "author": "Z-Yun-H",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Z-Yun-H/Tau.git"
@@ -56,20 +56,20 @@
     "prepack": "npm run build"
   },
   "devDependencies": {
-    "@types/node": "^22.5.0",
-    "@vitest/coverage-v8": "^3.0.0",
+    "@types/node": "^26.4.0",
+    "@vitest/coverage-v8": "^4.1.11",
     "oxfmt": "^0.65.0",
     "oxlint": "^1.80.0",
     "tsdown": "^0.22.14",
-    "tsx": "^4.19.0",
-    "typescript": "^5.5.4",
-    "vitest": "^3.0.0"
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
   },
   "dependencies": {
-    "chalk": "^5.3.0",
-    "commander": "^12.1.0",
-    "yaml": "^2.4.5",
-    "zod": "^3.23.8"
+    "chalk": "^6.0.0",
+    "commander": "^15.0.0",
+    "yaml": "^2.9.0",
+    "zod": "^4.5.4"
   },
   "optionalDependencies": {
     "@deepseek-ai/dsh-llm": "^0.0.1-rc.1",

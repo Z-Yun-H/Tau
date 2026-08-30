@@ -1,4 +1,4 @@
-# AGENTS.d/plugins.md — MCP plugin system rules
+# AGENTS/plugins.md — MCP plugin system rules
 
 Read this before touching `src/plugins/`, `src/cli/plugin.ts`, or anything
 MCP-related. The plugin system lets external MCP servers contribute tools to

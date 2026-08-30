@@ -1,3 +1,10 @@
+/**
+ * SafetyReviewer — the gate every AI-generated plan must pass.
+ * DENY patterns block outright, CAUTION patterns force confirmation, risk is
+ * the max of tool/self-assessed/pattern-derived levels; blocked steps are
+ * never executed, only reported.
+ */
+
 import { RISK_ORDER } from "../types.js";
 import type { Plan, PlanStep, RiskLevel, SafetyIssue, SafetyReview } from "../types.js";
 import { getTool } from "../tools/registry.js";

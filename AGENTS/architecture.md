@@ -1,4 +1,4 @@
-# AGENTS.d/architecture.md — module map & data flow
+# AGENTS/architecture.md — module map & data flow
 
 Owner of truth for how data moves. Update this file whenever you change the
 pipeline, add a command family, or add a module.
@@ -46,16 +46,16 @@ pipeline, add a command family, or add a module.
 
 ## Where to add things (the "I want to..." table)
 
-| I want to...                                | Do this                                                                                                                                                                                  |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| add a built-in tool op (e.g. `file.dedupe`) | implement in `src/tools/<family>.ts` as ToolDefinition + register in the family array + add CLI wiring in `src/cli/<family>.ts` + tests. Consider dry-run default if it mutates.         |
-| add a command family (e.g. `tau pkg`)       | new `src/tools/pkg.ts` + `src/cli/pkg.ts` + register both in `src/index.ts buildProgram()` + update this file + both READMEs                                                             |
-| add an AI provider                          | implement AIProvider in `src/ai/providers/<name>.ts` + register in `src/ai/registry.ts` + config defaults in `src/config/store.ts DEFAULT_CONFIG.providers` + AGENTS.d/ai-integration.md |
-| integrate an external tool server (MCP)     | nothing to code — `tau plugin add`; changing the MCP layer itself → `src/plugins/*` + AGENTS.d/plugins.md (plugin tools are ALWAYS medium risk)                                          |
-| add a bundled skill                         | new dir `skills/<name>/SKILL.md` (spec: AGENTS.d/skills.md) — no TS code required for declarative commands                                                                               |
-| change the plan schema                      | `src/ai/prompt.ts planSchema` + safety reviewer expectations + tests + this diagram                                                                                                      |
-| change config keys                          | `src/types.ts TauConfig` + `src/config/store.ts` (defaults + VALID_KEYS) + READMEs                                                                                                       |
-| add model discovery to a provider           | optional `listModels()` on the provider (throw on failure) + `src/ai/models.ts` handles caching; UI via `tau provider` (src/cli/provider.ts); contract in AGENTS.d/ai-integration.md     |
+| I want to...                                | Do this                                                                                                                                                                                |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| add a built-in tool op (e.g. `file.dedupe`) | implement in `src/tools/<family>.ts` as ToolDefinition + register in the family array + add CLI wiring in `src/cli/<family>.ts` + tests. Consider dry-run default if it mutates.       |
+| add a command family (e.g. `tau pkg`)       | new `src/tools/pkg.ts` + `src/cli/pkg.ts` + register both in `src/index.ts buildProgram()` + update this file + both READMEs                                                           |
+| add an AI provider                          | implement AIProvider in `src/ai/providers/<name>.ts` + register in `src/ai/registry.ts` + config defaults in `src/config/store.ts DEFAULT_CONFIG.providers` + AGENTS/ai-integration.md |
+| integrate an external tool server (MCP)     | nothing to code — `tau plugin add`; changing the MCP layer itself → `src/plugins/*` + AGENTS/plugins.md (plugin tools are ALWAYS medium risk)                                          |
+| add a bundled skill                         | new dir `skills/<name>/SKILL.md` (spec: AGENTS/skills.md) — no TS code required for declarative commands                                                                               |
+| change the plan schema                      | `src/ai/prompt.ts planSchema` + safety reviewer expectations + tests + this diagram                                                                                                    |
+| change config keys                          | `src/types.ts TauConfig` + `src/config/store.ts` (defaults + VALID_KEYS) + READMEs                                                                                                     |
+| add model discovery to a provider           | optional `listModels()` on the provider (throw on failure) + `src/ai/models.ts` handles caching; UI via `tau provider` (src/cli/provider.ts); contract in AGENTS/ai-integration.md     |
 
 ## Runtime data layout ($TAU_HOME, default ~/.tau)
 

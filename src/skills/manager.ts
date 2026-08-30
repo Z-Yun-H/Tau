@@ -1,3 +1,9 @@
+/**
+ * tau skill operations — list/show/new/validate implementations:
+ * scaffold a new skill from the template, pretty-print metadata, run the
+ * schema validator and report every issue with a fix hint.
+ */
+
 import fs from "node:fs";
 import path from "node:path";
 import { theme } from "../ui/theme.js";

@@ -1,3 +1,9 @@
+/**
+ * Runtime path resolution — TAU_HOME override, config/history/skills
+ * locations, and first-run directory bootstrap. All IO funnels through here
+ * so tests can relocate the entire data home via one env var.
+ */
+
 import path from "node:path";
 import os from "node:os";
 import fs from "node:fs";

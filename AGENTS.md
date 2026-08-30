@@ -5,8 +5,8 @@
 repository. Humans are welcome too — it doubles as the fastest tour of the
 codebase.
 
-> Detailed rulebooks live in [`AGENTS.d/`](./AGENTS.d/). The split:
-> this file = what you must know in 60 seconds; AGENTS.d = what you need when
+> Detailed rulebooks live in [`AGENTS/`](./AGENTS/). The split:
+> this file = what you must know in 60 seconds; AGENTS = what you need when
 > you actually touch a subsystem.
 
 ## What is Tau
@@ -33,7 +33,7 @@ Non-goals: shell replacement, TUI dashboard, daemon/server, secret management.
    plan must go through `runPlan()` in `src/core/session.ts`. No bypasses.
 3. **Dry-run by default** for anything that mutates (`file.rename`,
    `text.replace`). `execute:true` is always an explicit, visible choice.
-4. **No new runtime dependencies** without updating AGENTS.d/architecture.md
+4. **No new runtime dependencies** without updating AGENTS/architecture.md
    and justifying it in the PR description. Current runtime deps: commander,
    chalk, yaml, zod. The only sanctioned exceptions are optionalDependencies
    (the MCP SDK `@modelcontextprotocol/sdk` for plugins and the DeepSeek
@@ -42,7 +42,7 @@ Non-goals: shell replacement, TUI dashboard, daemon/server, secret management.
    imported, never bundled, and the CLI must degrade gracefully when they are
    absent.
 5. **Bilingual docs**: user-facing README changes go to both README.md
-   (English) and README.zh-CN.md (Chinese). AGENTS.md/AGENTS.d stay English.
+   (English) and README.zh-CN.md (Chinese). AGENTS.md/AGENTS stay English.
 6. **Run the gates before you claim done:**
    `npm run lint && npm run typecheck && npm test`
 
@@ -78,31 +78,31 @@ src/
 skills/             bundled skills (git-helper, docker-helper)
 templates/          tau skill new scaffold source
 tests/              vitest unit + CLI integration tests
-AGENTS.d/           deep-dive rulebooks for agents (see below)
+AGENTS/           deep-dive rulebooks for agents (see below)
 docs/               human-facing deep dives (architecture, safety, skills, plugins)
 ```
 
-## AGENTS.d index — read the relevant file BEFORE touching that subsystem
+## AGENTS index — read the relevant file BEFORE touching that subsystem
 
-| File                                                       | Read it when...                                          |
-| ---------------------------------------------------------- | -------------------------------------------------------- |
-| [AGENTS.d/architecture.md](./AGENTS.d/architecture.md)     | you add/modify any module, command, or the plan pipeline |
-| [AGENTS.d/conventions.md](./AGENTS.d/conventions.md)       | you write any TypeScript in this repo                    |
-| [AGENTS.d/testing.md](./AGENTS.d/testing.md)               | you write or run tests                                   |
-| [AGENTS.d/skills.md](./AGENTS.d/skills.md)                 | you touch skills/, templates/, or the SKILL.md parser    |
-| [AGENTS.d/plugins.md](./AGENTS.d/plugins.md)               | you touch src/plugins/, MCP integration, or plugin CLI   |
-| [AGENTS.d/ai-integration.md](./AGENTS.d/ai-integration.md) | you touch src/ai/, safety, or provider code              |
-| [AGENTS.d/release.md](./AGENTS.d/release.md)               | you cut a release or bump versions                       |
+| File                                                   | Read it when...                                          |
+| ------------------------------------------------------ | -------------------------------------------------------- |
+| [AGENTS/architecture.md](./AGENTS/architecture.md)     | you add/modify any module, command, or the plan pipeline |
+| [AGENTS/conventions.md](./AGENTS/conventions.md)       | you write any TypeScript in this repo                    |
+| [AGENTS/testing.md](./AGENTS/testing.md)               | you write or run tests                                   |
+| [AGENTS/skills.md](./AGENTS/skills.md)                 | you touch skills/, templates/, or the SKILL.md parser    |
+| [AGENTS/plugins.md](./AGENTS/plugins.md)               | you touch src/plugins/, MCP integration, or plugin CLI   |
+| [AGENTS/ai-integration.md](./AGENTS/ai-integration.md) | you touch src/ai/, safety, or provider code              |
+| [AGENTS/release.md](./AGENTS/release.md)               | you cut a release or bump versions                       |
 
 ## Change checklist (every PR)
 
 - [ ] `npm run lint && npm run typecheck && npm test` green
-- [ ] New behavior has tests (see AGENTS.d/testing.md for patterns)
+- [ ] New behavior has tests (see AGENTS/testing.md for patterns)
 - [ ] New user-facing flags/commands documented in both READMEs
 - [ ] Tool added? → registered in `src/tools/<module>.ts`, catalog renders,
       risk level reviewed, docs table updated
-- [ ] Skill-related change? → AGENTS.d/skills.md checklist
-- [ ] Plugin-related change? → AGENTS.d/plugins.md checklist
+- [ ] Skill-related change? → AGENTS/skills.md checklist
+- [ ] Plugin-related change? → AGENTS/plugins.md checklist
 - [ ] `docs/safety.md` still truthful after your change
 - [ ] CHANGELOG.md entry under **Unreleased**
 

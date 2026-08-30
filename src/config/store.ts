@@ -1,3 +1,10 @@
+/**
+ * tau config store — defaults, deep-merged per-provider entries, dotted
+ * get/set with field validation, 0600 persistence and secret masking.
+ * Provider entries ship NO default model: models are user-selected or
+ * resolved from the live catalog (see src/ai/models.ts).
+ */
+
 import fs from "node:fs";
 import { configPath, ensureHome } from "./paths.js";
 import type { TauConfig } from "../types.js";
@@ -9,10 +16,10 @@ export const DEFAULT_CONFIG: TauConfig = {
   aliases: {},
   plugins: [],
   providers: {
-    ollama: { host: "http://localhost:11434", model: "llama3.1" },
-    openai: { model: "gpt-4o-mini" },
-    deepseek: { model: "deepseek-chat" },
-    zai: { model: "glm-4-flash" },
+    // No bundled model defaults: models are either user-selected
+    // (`tau provider use`) or resolved from the provider's live catalog at
+    // request time (see resolveModel in src/ai/models.ts).
+    ollama: { host: "http://localhost:11434" },
   },
 };
 
@@ -43,9 +50,9 @@ export function loadConfig(): TauConfig {
 }
 
 /**
- * Provider entries deep-merge per name so a user-written
- * `{ "deepseek": { "apiKey": "..." } }` keeps the bundled default model
- * instead of wiping it.
+ * Provider entries deep-merge per name so a partial user entry
+ * (`{ "deepseek": { "apiKey": "..." } }`) keeps sibling fields — cached model
+ * catalogs, timeoutMs, etc. — instead of wiping them.
  */
 function mergeProviders(
   defaults: TauConfig["providers"],

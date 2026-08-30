@@ -1,3 +1,9 @@
+/**
+ * Text tools — text.count / text.search / text.replace over files.
+ * replace is dry-run by default and requires an explicit confirm flag, and
+ * search reuses the glob-to-regex translation from the file family.
+ */
+
 import fs from "node:fs";
 import path from "node:path";
 import type { ToolDefinition, ToolResult } from "../types.js";

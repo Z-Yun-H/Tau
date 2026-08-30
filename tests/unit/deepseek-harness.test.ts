@@ -1,4 +1,7 @@
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import type { GenerateOptions, LlmAdapter } from "@deepseek-ai/dsh-llm";
 import {
   DeepSeekProvider,
@@ -79,9 +82,24 @@ function planOptions(model = "deepseek-chat"): GenerateOptions {
 afterEach(() => {
   vi.unstubAllGlobals();
   delete process.env.DEEPSEEK_API_KEY;
+  delete process.env.TAU_HOME;
+  if (tempHome) fs.rmSync(tempHome, { recursive: true, force: true });
+  tempHome = undefined;
   setDshLlmLoaderForTests(undefined);
   resetDshLlmCache();
 });
+
+let tempHome: string | undefined;
+
+/** Point TAU_HOME at a fresh temp dir with an explicit deepseek model configured. */
+function useTempModelHome(model = "deepseek-chat"): void {
+  tempHome = fs.mkdtempSync(path.join(os.tmpdir(), "tau-ds-harness-"));
+  process.env.TAU_HOME = tempHome;
+  fs.writeFileSync(
+    path.join(tempHome, "config.json"),
+    JSON.stringify({ providers: { deepseek: { model } } }),
+  );
+}
 
 describe("mapWireUsage (official disjoint-count mapping)", () => {
   it("subtracts cached tokens from input and reports them separately", () => {
@@ -454,6 +472,10 @@ describe("DeepSeek harness adapter (HTTP boundary)", () => {
 });
 
 describe("DeepSeekProvider.plan (harness path)", () => {
+  // plan() resolves the model from config/catalog first — give every test an
+  // explicit model so resolution never hits the stubbed fetch.
+  beforeEach(() => useTempModelHome());
+
   it("streams a plan through the official BlockAssembler", async () => {
     process.env.DEEPSEEK_API_KEY = "sk-test";
     let sawUserAgent: string | undefined;
@@ -515,6 +537,8 @@ describe("DeepSeekProvider.plan (harness path)", () => {
 });
 
 describe("graceful degradation (dsh-llm absent → direct path)", () => {
+  beforeEach(() => useTempModelHome());
+
   it("falls back to the built-in streaming client without attribution headers", async () => {
     process.env.DEEPSEEK_API_KEY = "sk-test";
     setDshLlmLoaderForTests(async () => null);

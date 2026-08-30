@@ -1,3 +1,8 @@
+/**
+ * tau sys — direct access to the system tools (disk/info/proc) without going
+ * through the AI.
+ */
+
 import type { Command } from "commander";
 import { runToolDirect } from "./util.js";
 

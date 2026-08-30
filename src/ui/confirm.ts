@@ -1,3 +1,9 @@
+/**
+ * Risk-gated confirmation prompt — the yes/all/skip/no readline flow that
+ * runPlan uses before executing anything risky. all/yes can be preset via
+ * --yes for trusted automation.
+ */
+
 import * as readline from "node:readline";
 import { theme } from "./theme.js";
 

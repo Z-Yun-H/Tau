@@ -1,3 +1,10 @@
+/**
+ * Prompt construction + AI-plan validation.
+ * Builds the system prompt from the live tool registry, sends it through the
+ * provider, and parses the reply with a zod-strict Plan schema (markdown
+ * fences tolerated, malformed plans rejected).
+ */
+
 import { z } from "zod";
 import { renderToolCatalog, allTools } from "../tools/registry.js";
 import type { PlanningContext, Plan } from "../types.js";
@@ -13,7 +20,7 @@ export const planStepSchema = z
     kind: z.enum(["tool", "shell"]),
     tool: z.string().optional(),
     command: z.string().optional(),
-    args: z.record(z.unknown()).optional(),
+    args: z.record(z.string(), z.unknown()).optional(),
     reason: z.string().optional(),
   })
   .strict();

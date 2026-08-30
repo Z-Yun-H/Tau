@@ -1,3 +1,9 @@
+/**
+ * Plugin runtime — loads every enabled plugin's tools into the registry with
+ * per-plugin failure isolation: one broken server degrades to a warning and
+ * never breaks the CLI or the other plugins.
+ */
+
 import { loadConfig } from "../config/store.js";
 import type { ToolDefinition } from "../types.js";
 import { registerTools } from "../tools/registry.js";

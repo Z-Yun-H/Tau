@@ -1,3 +1,10 @@
+/**
+ * tau provider — the model-selection command family.
+ * list (key source / active model / catalog age), set-key (store + immediate
+ * catalog refresh), models (cached or live catalog), use (interactive or
+ * explicit provider+model selection; never hangs on stdin in CI).
+ */
+
 import type { Command } from "commander";
 import { theme } from "../ui/theme.js";
 import { selectFromList, promptHidden } from "../ui/picker.js";
@@ -116,7 +123,7 @@ function currentModel(name: string): string {
   const entry = loadConfig().providers[name] ?? {};
   return typeof entry["model"] === "string" && entry["model"].length > 0
     ? entry["model"]
-    : "(default)";
+    : "(auto)";
 }
 
 function humanAge(iso?: string): string {

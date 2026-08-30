@@ -130,8 +130,12 @@ tau provider models [--refresh|--offline]
 tau provider use deepseek [model]        # TTY 下方向键交互选型
 ```
 
+Tau **不内置任何默认模型** —— 模型永远来自这份实时目录或你的显式配置。当目录中
+只有一个模型时，Tau 自动选中并持久化；有多个时，`tau ask` 会快速失败并给出
+可操作的提示（而不是瞎猜），用 `tau provider use` 选一个即可。
+
 目录展示永不泄漏 key；刷新失败自动降级到缓存列表；
-不支持发现端点的 Provider（zai）回退到手工 `providers.<name>.model`。
+不支持发现端点的 Provider（zai）需要显式设置 `providers.<name>.model`。
 
 ## Skills：一个 markdown 文件教会 Tau 新本事
 
@@ -192,10 +196,10 @@ tau ask "在项目里找所有超过 1MB 的文件"
 Tau 从设计上就是"给人用、给 AI 维护"的双端项目：
 
 - **[`AGENTS.md`](AGENTS.md)** —— 60 秒项目认知 + 黄金法则 + 提交前门禁
-- **[`AGENTS.d/`](AGENTS.d/)** —— 分子系统规则书：[架构](AGENTS.d/architecture.md)、
-  [规范](AGENTS.d/conventions.md)、[测试](AGENTS.d/testing.md)、
-  [技能](AGENTS.d/skills.md)、[插件](AGENTS.d/plugins.md)、
-  [AI 集成](AGENTS.d/ai-integration.md)、[发布](AGENTS.d/release.md)
+- **[`AGENTS/`](AGENTS/)** —— 分子系统规则书：[架构](AGENTS/architecture.md)、
+  [规范](AGENTS/conventions.md)、[测试](AGENTS/testing.md)、
+  [技能](AGENTS/skills.md)、[插件](AGENTS/plugins.md)、
+  [AI 集成](AGENTS/ai-integration.md)、[发布](AGENTS/release.md)
 - **[`.claude/skills/`](.claude/skills)** —— 开发工作流技能（tau-build / tau-test / tau-release / tau-skill-new）
 - **`CLAUDE.md`** 指针文件供 Claude Code 自动发现；安全模块完全确定性且有 1:1 测试覆盖
 - 172 个测试、严格 TypeScript，`npm run lint && npm run typecheck && npm test` 就是 agent 门禁
@@ -210,7 +214,7 @@ src/
   config/         TAU_HOME、配置、历史         cli/       各命令族接线
   ui/             主题 + 确认交互
 skills/           内置技能                      templates/ `tau skill new` 模板
-tests/            单元 + 集成测试（vitest）     AGENTS.d/  agent 规则书
+tests/            单元 + 集成测试（vitest）     AGENTS/  agent 规则书
 ```
 
 ## 文档

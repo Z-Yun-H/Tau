@@ -1,3 +1,9 @@
+/**
+ * Network tools — net.fetch (SSRF-guarded: no private/loopback/link-local
+ * targets), net.ip, net.ping (ICMP via the OS binary, shell metacharacters
+ * rejected) and net.port (TCP reachability probe).
+ */
+
 import net from "node:net";
 import os from "node:os";
 import type { ToolDefinition, ToolResult } from "../types.js";

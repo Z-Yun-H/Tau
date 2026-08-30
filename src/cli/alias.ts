@@ -1,3 +1,9 @@
+/**
+ * tau alias — short names for longer commands.
+ * expandAliasArgv rewrites argv BEFORE commander parses (src/index.ts), so
+ * aliases work for every command family; CRUD persists into config.aliases.
+ */
+
 import type { Command } from "commander";
 import { theme } from "../ui/theme.js";
 import { loadConfig, saveConfig } from "../config/store.js";

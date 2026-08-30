@@ -1,3 +1,9 @@
+/**
+ * Skill discovery — scans bundled, user (TAU_HOME) and workspace scopes,
+ * applies first-wins shadowing across scopes, and renders the catalog that
+ * gets injected into the AI planning prompt.
+ */
+
 import fs from "node:fs";
 import path from "node:path";
 import { bundledSkillsDir, userSkillsDir } from "../config/paths.js";

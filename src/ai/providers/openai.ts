@@ -1,3 +1,9 @@
+/**
+ * OpenAI-compatible provider (OpenAI, Moonshot, vLLM, ...).
+ * JSON chat completions with response_format=json_object; the model catalog
+ * comes live from GET {baseUrl}/models, resolved dynamically per request.
+ */
+
 import { loadConfig } from "../../config/store.js";
 import { buildSystemPrompt, validatePlanResponse } from "../prompt.js";
 import { chatJSON } from "./mock.js";
@@ -55,8 +61,13 @@ export class OpenAIProvider implements AIProvider {
   }
 
   async plan(ctx: PlanningContext): Promise<Plan> {
-    const cfg = loadConfig();
-    const model = String(cfg.providers["openai"]?.["model"] ?? "gpt-4o-mini");
+    // Dynamic import: models.ts pulls in the provider registry, and a static
+    // edge here would create a registry -> provider -> models -> registry
+    // cycle that breaks ESM module initialization.
+    const { resolveModel } = await import("../models.js");
+    // No bundled default: explicit user pick, the catalog's single model, or
+    // an actionable error (see resolveModel).
+    const { model } = await resolveModel(this.name);
     const raw = await chatJSON(
       `${this.baseUrl()}/chat/completions`,
       { authorization: `Bearer ${this.apiKey() ?? ""}` },

@@ -1,4 +1,4 @@
-# AGENTS.d/conventions.md — TypeScript rules for this repo
+# AGENTS/conventions.md — TypeScript rules for this repo
 
 ## Style baseline
 
@@ -63,7 +63,7 @@
 
 Runtime deps are frozen at: commander, chalk, yaml, zod. Adding a runtime dep
 requires: (a) justification in the PR, (b) update to AGENTS.md golden rule 4
-and AGENTS.d/architecture.md, (c) no better stdlib alternative
+and AGENTS/architecture.md, (c) no better stdlib alternative
 (`node:fs/promises`, `node:os`, `node:net`, `fetch` cover 90% of needs).
 
 Dev deps are freer, but keep install time reasonable; no monolithic toolchains.

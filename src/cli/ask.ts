@@ -1,3 +1,10 @@
+/**
+ * tau ask — the natural-language front door.
+ * Resolves the provider, injects the skill catalog + plugin tools into the
+ * planning context, then funnels everything through runPlan (the only plan
+ * execution channel). --explain shows the plan without running it.
+ */
+
 import type { Command } from "commander";
 import { theme } from "../ui/theme.js";
 import { resolveProvider } from "../ai/registry.js";
@@ -47,7 +54,7 @@ export function registerAsk(program: Command): void {
         );
         console.error(
           theme.muted(
-            "Tip: configure a key with `tau provider set-key <provider> <key>` — the model catalog then refreshes automatically; or stay offline with `tau config set provider mock`.",
+            "Tip: configure a key with `tau provider set-key <provider> <key>`, then pick a model with `tau provider use <provider>` — the model catalog refreshes automatically; or stay offline with `tau config set provider mock`.",
           ),
         );
         process.exitCode = 1;

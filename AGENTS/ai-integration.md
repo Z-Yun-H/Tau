@@ -1,4 +1,4 @@
-# AGENTS.d/ai-integration.md — providers, prompts, and the safety boundary
+# AGENTS/ai-integration.md — providers, prompts, and the safety boundary
 
 ## Provider interface (src/types.ts AIProvider)
 
@@ -13,8 +13,8 @@ interface AIProvider {
 }
 ```
 
-Registration: `src/ai/registry.ts registerProvider(...)`. Config defaults per
-provider: `DEFAULT_CONFIG.providers` in `src/config/store.ts`.
+Registration: `src/ai/registry.ts registerProvider(...)`. `DEFAULT_CONFIG.providers`
+in `src/config/store.ts` carries NO model defaults — never add one.
 
 Selection precedence: `--provider` flag > `TAU_PROVIDER` env > `config.provider`
 
@@ -37,6 +37,14 @@ Selection precedence: `--provider` flag > `TAU_PROVIDER` env > `config.provider`
   auto-refreshes the catalog, so `tau provider use` always picks from real,
   current models. A failed refresh degrades to the cache and NEVER fails the
   `set-key` command itself.
+- Request-time resolution (`resolveModel` in src/ai/models.ts): explicit
+  `providers.<name>.model` wins; a catalog with exactly one model is
+  auto-selected and persisted; anything else throws an error naming the exact
+  fix (`tau provider use <name>` or `tau config set providers.<name>.model
+<id>`). Never reintroduce hardcoded model fallbacks.
+- Providers load `models.ts` lazily (`await import("../models.js")`) inside
+  `plan()` — a static import would create a registry → provider → models →
+  registry cycle and break ESM initialization.
 - API key resolution: `providers.<name>.apiKey` (config) FIRST, env var
   (`DEEPSEEK_API_KEY` / `OPENAI_API_KEY`) as fallback. `set-key` stores into
   config; `saveConfig` chmods the file 0600. CLI output always masks keys

@@ -1,3 +1,9 @@
+/**
+ * Plan-step executor — spawns tool handlers (or shell) with timeout and
+ * output budgets, normalizes every failure into a StepOutcome so the session
+ * loop can keep going and report honestly.
+ */
+
 import { spawn } from "node:child_process";
 import { getTool } from "../tools/registry.js";
 import type { PlanStep, ToolResult } from "../types.js";

@@ -1,3 +1,8 @@
+/**
+ * tau file — direct access to the file tools (find/stat/tree/rename) without
+ * going through the AI. Same ToolDefinition contracts, same safety semantics.
+ */
+
 import type { Command } from "commander";
 import { runToolDirect } from "./util.js";
 

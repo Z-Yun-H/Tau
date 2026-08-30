@@ -1,4 +1,4 @@
-# AGENTS.d/testing.md — how we test Tau
+# AGENTS/testing.md — how we test Tau
 
 Runner: **vitest** (`vitest.config.ts`). Coverage v8 with thresholds at 55%
 statements/branches/functions/lines — raise them when convenient, never lower

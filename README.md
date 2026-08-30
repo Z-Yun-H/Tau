@@ -135,8 +135,14 @@ tau provider models [--refresh|--offline]
 tau provider use deepseek [model]        # interactive arrow-key picker on a TTY
 ```
 
+Tau ships **no hardcoded default models** — a model always comes from this
+live catalog or your explicit config. When the catalog offers exactly one
+model, Tau auto-selects it and persists the choice; with several, `tau ask`
+fails fast with an actionable hint instead of guessing, so pick one with
+`tau provider use`.
+
 Catalog display never leaks keys, a failed refresh degrades to the cached
-list, and providers without discovery (zai) fall back to manual
+list, and providers without discovery (zai) require an explicit
 `providers.<name>.model`.
 
 ## Skills: teach Tau new tricks with one markdown file
@@ -198,10 +204,10 @@ endpoint). Guide + recipes: [docs/plugins.md](docs/plugins.md).
 Tau is designed to be _maintained by AI agents_ as much as used by humans:
 
 - **[`AGENTS.md`](AGENTS.md)** — 60-second orientation + golden rules + pre-PR gate
-- **[`AGENTS.d/`](AGENTS.d/)** — per-subsystem rulebooks: [architecture](AGENTS.d/architecture.md),
-  [conventions](AGENTS.d/conventions.md), [testing](AGENTS.d/testing.md),
-  [skills](AGENTS.d/skills.md), [plugins](AGENTS.d/plugins.md),
-  [ai-integration](AGENTS.d/ai-integration.md), [release](AGENTS.d/release.md)
+- **[`AGENTS/`](AGENTS/)** — per-subsystem rulebooks: [architecture](AGENTS/architecture.md),
+  [conventions](AGENTS/conventions.md), [testing](AGENTS/testing.md),
+  [skills](AGENTS/skills.md), [plugins](AGENTS/plugins.md),
+  [ai-integration](AGENTS/ai-integration.md), [release](AGENTS/release.md)
 - **[`.claude/skills/`](.claude/skills)** — dev-workflow skills (tau-build, tau-test, tau-release, tau-skill-new)
 - **`CLAUDE.md`** pointer for Claude Code; deterministic safety module with 1:1 test coverage
 - 172 tests, strict TypeScript, `npm run lint && npm run typecheck && npm test` as the agent gate
@@ -216,7 +222,7 @@ src/
   config/         TAU_HOME, config, history             cli/       per-family command wiring
   ui/             theme + confirm
 skills/           bundled skills                        templates/ `tau skill new` scaffold
-tests/            unit + integration (vitest)           AGENTS.d/  agent rulebooks
+tests/            unit + integration (vitest)           AGENTS/  agent rulebooks
 ```
 
 ## Documentation

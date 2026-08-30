@@ -1,3 +1,9 @@
+/**
+ * tau config — get/set/list persisted configuration.
+ * Supports dotted provider keys (providers.<name>.<field>), validates values
+ * (timeout positivity, opaque apiKeys) and masks secrets in every output.
+ */
+
 import type { Command } from "commander";
 import { theme } from "../ui/theme.js";
 import {

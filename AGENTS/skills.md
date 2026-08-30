@@ -1,4 +1,4 @@
-# AGENTS.d/skills.md — the SKILL.md system
+# AGENTS/skills.md — the SKILL.md system
 
 Tau's skill system turns markdown files into (a) CLI capabilities, (b) AI
 planner catalog entries, (c) validated, shareable knowledge. Three scopes,

@@ -1,3 +1,10 @@
+/**
+ * Mock provider — deterministic, zero-network.
+ * Test fixture, offline demo, and the factory default so `tau ask` degrades
+ * gracefully without any AI backend. Keyword-matches plans over the real tool
+ * catalog and ships a fake model catalog for the `tau provider` flow.
+ */
+
 import { theme } from "../../ui/theme.js";
 import { validatePlanResponse } from "../prompt.js";
 import type { AIProvider, ModelInfo, Plan, PlanningContext } from "../../types.js";

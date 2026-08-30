@@ -56,7 +56,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   confirm pipeline. Plugin tools are always **medium risk**; connect
   handshake 10 s, tool call cap 120 s, 64 KB argument budget; env extras
   layered over the SDK's safe default allowlist. New `src/plugins/` module,
-  `docs/plugins.md` guide, AGENTS.d/plugins.md rulebook.
+  `docs/plugins.md` guide, AGENTS/plugins.md rulebook.
 - `@modelcontextprotocol/sdk` joins as an `optionalDependency` (dynamically
   imported, never bundled; Tau degrades gracefully without it).
 - `@deepseek-ai/dsh-llm` joins as an `optionalDependency` under the same
@@ -66,11 +66,29 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Changed
 
+- **No bundled default models**: providers used to fall back to hardcoded
+  models (`gpt-4o-mini`, `deepseek-chat`, `llama3.1`, `glm-4-flash`); those
+  are gone. Request-time resolution goes explicit config → single-model
+  catalog (auto-selected and persisted) → an actionable error
+  (`tau provider use <provider>` / `tau config set providers.<name>.model
+<id>`) via the new `resolveModel()` in `src/ai/models.ts`; `provider list`
+  shows `(auto)` for unset models.
+- Repository housekeeping: the `AGENTS.d/` rulebook directory renamed to
+  `AGENTS/` (all references updated); every source file under `src/` now
+  carries a file-level documentation header; project identity corrected to
+  `Z-Yun-H` in `package.json` author and the LICENSE copyright line.
+- Dependency refresh to current latest: zod 4, commander 15, chalk 6,
+  vitest 4 (+ @vitest/coverage-v8 4), TypeScript 7, @types/node 26,
+  tsx 4.23, yaml 2.9; oxlint/oxfmt/tsdown stay on their latest
+  (1.80.0 / 0.65.0 / 0.22.14). Full gate suite re-run green.
 - Tests grew from 172 to 211 (model-catalog service: live/cache/unsupported
   paths, TTL staleness and cache degradation; provider `listModels` request
   shaping and parsing; dotted config keys and secret masking; the
   `tau provider` CLI flow; the TTY arrow-key picker and hidden key prompt
   driven through injectable streams).
+- Tests grew further from 211 to 216 (resolveModel precedence, auto-select
+  and guidance paths; deepseek plan tests now isolate `TAU_HOME` with
+  explicit models instead of relying on bundled defaults).
 - `tau ask` unavailable-provider tips now point at
   `tau provider set-key <provider> <key>`.
 - Config file permissions tighten to 0600 on every write (it may hold API
@@ -115,7 +133,7 @@ list/show/new/validate`, bundled `git-helper` and `docker-helper` skills,
 - **Session memory**: `tau history` (list/show/replay/clear) on an
   append-only JSONL store; `tau alias` persistent aliases; `tau config`
   get/set/list/path/reset under `$TAU_HOME`.
-- **AI-friendly repo**: `AGENTS.md` + `AGENTS.d/` rulebook system
+- **AI-friendly repo**: `AGENTS.md` + `AGENTS/` rulebook system
   (architecture/conventions/testing/skills/ai-integration/release),
   `.claude/skills/` dev-workflow skills, `CLAUDE.md` pointer.
 - **Engineering**: strict TypeScript (ESM), vitest suite (108 tests, 82%

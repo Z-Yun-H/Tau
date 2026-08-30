@@ -1,3 +1,10 @@
+/**
+ * Model-catalog service — the model-selection data plane.
+ * Live discovery per provider, 24h-cached catalogs persisted in config, and
+ * request-time model resolution (resolveModel). No hardcoded defaults:
+ * models come from user config or from what the provider actually serves.
+ */
+
 import { loadConfig, updateProviderEntry } from "../config/store.js";
 import { getProvider, providerNames } from "./registry.js";
 import type { ModelInfo } from "../types.js";
@@ -146,4 +153,60 @@ export async function refreshProviderModels(
     }
     throw error instanceof Error ? error : new Error(message);
   }
+}
+
+/** How the model for a request was determined. */
+export type ResolvedModelSource = "config" | "catalog";
+
+export interface ResolvedModel {
+  model: string;
+  source: ResolvedModelSource;
+}
+
+/**
+ * Request-time model resolution — the counterpart to `tau provider use`.
+ *
+ * There are NO bundled default models. Precedence:
+ * 1. explicit `providers.<name>.model` in the config (user-picked);
+ * 2. the provider's live/cached catalog, when it offers exactly one model —
+ *    auto-selected and persisted so `tau provider list` shows it and later
+ *    runs stay stable;
+ * 3. otherwise: a thrown error with an actionable fix (`tau provider use` or
+ *    an explicit `tau config set providers.<name>.model`).
+ */
+export async function resolveModel(name: string): Promise<ResolvedModel> {
+  const explicit = loadConfig().providers[name]?.["model"];
+  if (typeof explicit === "string" && explicit.trim().length > 0) {
+    return { model: explicit, source: "config" };
+  }
+
+  const provider = getProvider(name);
+  if (!provider?.listModels) {
+    throw new Error(
+      `No model selected for "${name}" and the provider does not support model discovery — ` +
+        `set one explicitly: tau config set providers.${name}.model <model-id>`,
+    );
+  }
+
+  const catalog = await refreshProviderModels(name);
+  const [only] = catalog.models;
+  if (catalog.models.length === 1 && only) {
+    updateProviderEntry(name, { model: only.id });
+    return { model: only.id, source: "catalog" };
+  }
+  if (catalog.models.length === 0) {
+    throw new Error(
+      `No models discovered for "${name}" — pull/install a model or set one explicitly: ` +
+        `tau config set providers.${name}.model <model-id>`,
+    );
+  }
+  const sample = catalog.models
+    .slice(0, 5)
+    .map((model) => `"${model.id}"`)
+    .join(", ");
+  throw new Error(
+    `No model selected for "${name}" — its catalog currently offers ` +
+      `${catalog.models.length} models (e.g. ${sample}). ` +
+      `Pick one with: tau provider use ${name}`,
+  );
 }

@@ -88,7 +88,7 @@ describe("tau provider CLI", () => {
     expect(mock?.default).toBe(true);
     expect(mock?.keySource).toBe("-");
     const openai = json.find((row) => row.provider === "openai");
-    expect(openai?.model).toBe("gpt-4o-mini");
+    expect(openai?.model).toBe("(auto)");
   });
 
   it("set-key stores the key and auto-refreshes the model catalog", async () => {
@@ -145,6 +145,7 @@ describe("tau provider CLI", () => {
     });
     await run("provider", "set-key", "openai", "sk-test-1234567890");
     await run("config", "set", "provider", "openai");
+    await run("config", "set", "providers.openai.model", "gpt-4.1");
 
     const out = await run("provider", "models");
     expect(out).toContain("gpt-4o-mini");

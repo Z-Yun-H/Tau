@@ -1,3 +1,8 @@
+/**
+ * tau skill — manage SKILL.md skills: list/show/new/validate over the
+ * three-scope loader and the frontmatter contract in skills/schema.ts.
+ */
+
 import type { Command } from "commander";
 import { listSkills, newSkill, showSkill, validateSkill } from "../skills/manager.js";
 import { globalOptions } from "./util.js";

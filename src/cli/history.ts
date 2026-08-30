@@ -1,3 +1,9 @@
+/**
+ * tau history — browse, show, replay and clear the JSONL run history.
+ * Replay re-executes a stored plan through runPlan so it passes the same
+ * review/confirm gates as the original run.
+ */
+
 import type { Command } from "commander";
 import { theme } from "../ui/theme.js";
 import { clearHistory, findHistoryEntry, readHistory } from "../config/history.js";

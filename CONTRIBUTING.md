@@ -5,7 +5,7 @@ humans **and** AI agents — start with whichever fits you:
 
 - Humans: this file, then [docs/architecture.md](docs/architecture.md)
 - AI agents: [AGENTS.md](AGENTS.md) (entry) → the relevant
-  [AGENTS.d/](AGENTS.d/) rulebook for the subsystem you touch
+  [AGENTS/](AGENTS/) rulebook for the subsystem you touch
 
 ## The pre-PR gate (mandatory)
 

@@ -1,3 +1,9 @@
+/**
+ * runPlan — the ONLY execution channel for AI plans:
+ * safety review -> user confirmation -> step execution -> history append.
+ * Every AI-driven action in Tau flows through here; nothing bypasses it.
+ */
+
 import { theme } from "../ui/theme.js";
 import { confirm } from "../ui/confirm.js";
 import { reviewPlan, scanShellCommand } from "./safety.js";

@@ -1,3 +1,10 @@
+/**
+ * DeepSeek provider — streaming planner speaking the official wire contract.
+ * Dual path: the optional @deepseek-ai/dsh-llm harness (official LlmAdapter +
+ * BlockAssembler) with a byte-identical zero-dependency fallback (SSE over
+ * fetch). Model resolves dynamically via resolveModel — no bundled default.
+ */
+
 import { createRequire } from "node:module";
 import { loadConfig } from "../../config/store.js";
 import { buildSystemPrompt, validatePlanResponse } from "../prompt.js";
@@ -51,7 +58,6 @@ import type {
  */
 
 const DEFAULT_BASE_URL = "https://api.deepseek.com";
-const DEFAULT_MODEL = "deepseek-chat";
 const DEFAULT_TIMEOUT_MS = 120_000;
 /** Planning output is a small JSON document; cap the generation budget. */
 const PLAN_MAX_TOKENS = 8192;
@@ -713,9 +719,15 @@ export class DeepSeekProvider implements AIProvider {
   }
 
   async plan(ctx: PlanningContext): Promise<Plan> {
+    // Dynamic import avoids the registry -> provider -> models -> registry
+    // ESM initialization cycle (see the note in providers/openai.ts).
+    const { resolveModel } = await import("../models.js");
+    // Model resolution first: it fails fast with an actionable message when
+    // nothing is selected, before any network traffic happens.
+    const { model } = await resolveModel(this.name);
     const llm = await loadDshLlm();
-    if (llm) return this.planViaHarness(llm, ctx);
-    return this.planDirect(ctx);
+    if (llm) return this.planViaHarness(llm, ctx, model);
+    return this.planDirect(ctx, model);
   }
 
   /**
@@ -723,9 +735,11 @@ export class DeepSeekProvider implements AIProvider {
    * assembly. `assertUsableApiKey` judges the credential before any request
    * (trimmed, printable-ASCII, secret never echoed).
    */
-  private async planViaHarness(llm: DshLlmBundle, ctx: PlanningContext): Promise<Plan> {
-    const cfg = loadConfig();
-    const model = String(cfg.providers["deepseek"]?.["model"] ?? DEFAULT_MODEL);
+  private async planViaHarness(
+    llm: DshLlmBundle,
+    ctx: PlanningContext,
+    model: string,
+  ): Promise<Plan> {
     // Official contract: use the returned (trimmed) key, never the raw value.
     const apiKey = llm.assertUsableApiKey(this.apiKey() ?? "", "tau", "DEEPSEEK_API_KEY");
 
@@ -775,10 +789,7 @@ export class DeepSeekProvider implements AIProvider {
    * Direct fallback path: identical wire contract, zero dependencies, used
    * when the optional harness seam is not installed. See DSH_LLM_MISSING.
    */
-  private async planDirect(ctx: PlanningContext): Promise<Plan> {
-    const cfg = loadConfig();
-    const model = String(cfg.providers["deepseek"]?.["model"] ?? DEFAULT_MODEL);
-
+  private async planDirect(ctx: PlanningContext, model: string): Promise<Plan> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs());
     timer.unref?.();

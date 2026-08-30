@@ -1,4 +1,4 @@
-# AGENTS.d/release.md — versioning & publishing
+# AGENTS/release.md — versioning & publishing
 
 ## Versioning
 

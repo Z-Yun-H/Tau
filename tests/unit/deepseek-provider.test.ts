@@ -1,4 +1,7 @@
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import {
   DeepSeekProvider,
   apiErrorMessage,
@@ -31,7 +34,22 @@ const ctx: PlanningContext = {
 afterEach(() => {
   vi.unstubAllGlobals();
   delete process.env.DEEPSEEK_API_KEY;
+  delete process.env.TAU_HOME;
+  if (tempHome) fs.rmSync(tempHome, { recursive: true, force: true });
+  tempHome = undefined;
 });
+
+let tempHome: string | undefined;
+
+/** Point TAU_HOME at a fresh temp dir with an explicit deepseek model configured. */
+function useTempModelHome(model = "deepseek-chat"): void {
+  tempHome = fs.mkdtempSync(path.join(os.tmpdir(), "tau-ds-provider-"));
+  process.env.TAU_HOME = tempHome;
+  fs.writeFileSync(
+    path.join(tempHome, "config.json"),
+    JSON.stringify({ providers: { deepseek: { model } } }),
+  );
+}
 
 describe("collectStreamText (SSE wire parsing)", () => {
   it("accumulates content deltas across chunk boundaries split mid-frame", async () => {
@@ -127,6 +145,10 @@ describe("apiErrorMessage", () => {
 });
 
 describe("DeepSeekProvider", () => {
+  // plan() resolves the model from config/catalog — give every test an
+  // explicit model so resolution never touches the network stub.
+  beforeEach(() => useTempModelHome());
+
   it("is unavailable without DEEPSEEK_API_KEY and explains why", async () => {
     const provider = new DeepSeekProvider();
     expect(await provider.isAvailable()).toBe(false);

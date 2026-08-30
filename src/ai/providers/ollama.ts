@@ -1,3 +1,9 @@
+/**
+ * Ollama provider (local models).
+ * Availability probes the local server; the model catalog is whatever is
+ * installed (/api/tags) — never a bundled default list.
+ */
+
 import { loadConfig } from "../../config/store.js";
 import { buildSystemPrompt, validatePlanResponse } from "../prompt.js";
 import { chatJSON } from "./mock.js";
@@ -53,8 +59,12 @@ export class OllamaProvider implements AIProvider {
   }
 
   async plan(ctx: PlanningContext): Promise<Plan> {
-    const cfg = loadConfig();
-    const model = String(cfg.providers["ollama"]?.["model"] ?? "llama3.1");
+    // Dynamic import avoids the registry -> provider -> models -> registry
+    // ESM initialization cycle (see the note in providers/openai.ts).
+    const { resolveModel } = await import("../models.js");
+    // No bundled default: explicit user pick, the only installed model, or an
+    // actionable error (see resolveModel).
+    const { model } = await resolveModel(this.name);
     const body = {
       model,
       stream: false,

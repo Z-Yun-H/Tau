@@ -1,3 +1,9 @@
+/**
+ * SKILL.md contract — YAML frontmatter parsing, zod-strict metadata
+ * validation, and blacklist scanning of commands/paths so a skill can never
+ * smuggle destructive operations past the safety layer.
+ */
+
 import fs from "node:fs";
 import path from "node:path";
 import YAML from "yaml";
@@ -6,7 +12,7 @@ import type { RiskLevel, SkillCommand, SkillIssue, SkillMeta } from "../types.js
 import { DENY_PATTERNS } from "../core/safety.js";
 
 /**
- * SKILL.md contract (see AGENTS.d/skills.md for the full spec):
+ * SKILL.md contract (see AGENTS/skills.md for the full spec):
  *
  * ---
  * name: git-helper            # required, kebab-case, unique

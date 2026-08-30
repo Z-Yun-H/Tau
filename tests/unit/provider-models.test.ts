@@ -17,6 +17,7 @@ import {
   cachedModels,
   isCatalogStale,
   refreshProviderModels,
+  resolveModel,
 } from "../../src/ai/models.js";
 import { DeepSeekProvider } from "../../src/ai/providers/deepseek.js";
 import { OllamaProvider } from "../../src/ai/providers/ollama.js";
@@ -52,15 +53,15 @@ function jsonResponse(payload: unknown, status = 200): Response {
 /* ---------------- dotted config keys ---------------- */
 
 describe("config store: dotted provider keys", () => {
-  it("stores an apiKey while preserving the bundled default model", () => {
+  it("stores an apiKey without bundling a default model", () => {
     setConfigValue("providers.deepseek.apiKey", "sk-test-1234567890abcd");
     const config = loadConfig();
     expect(config.providers["deepseek"]?.["apiKey"]).toBe("sk-test-1234567890abcd");
-    expect(config.providers["deepseek"]?.["model"]).toBe("deepseek-chat");
+    expect(config.providers["deepseek"]?.["model"]).toBeUndefined();
   });
 
-  it("reads dotted keys (set and defaults)", () => {
-    expect(getConfigValue("providers.deepseek.model")).toBe("deepseek-chat");
+  it("reads dotted keys (set works; unset defaults do not exist)", () => {
+    expect(() => getConfigValue("providers.deepseek.model")).toThrow(/does not exist|is not set/);
     setConfigValue("providers.openai.model", "gpt-4.1");
     expect(getConfigValue("providers.openai.model")).toBe("gpt-4.1");
   });
@@ -98,6 +99,45 @@ describe("config store: dotted provider keys", () => {
     const printed = JSON.stringify(redactConfig(loadConfig()));
     expect(printed).not.toContain("sk-very-secret-openai-key-99");
     expect(loadConfig().providers["openai"]?.["apiKey"]).toBe("sk-very-secret-openai-key-99");
+  });
+});
+
+/* ---------------- resolveModel (request-time selection) ---------------- */
+
+describe("resolveModel", () => {
+  it("prefers the explicit config model without touching the network", async () => {
+    setConfigValue("providers.openai.model", "gpt-4.1");
+    globalThis.fetch = (async () => {
+      throw new Error("no network expected when a model is configured");
+    }) as typeof fetch;
+    expect(await resolveModel("openai")).toEqual({ model: "gpt-4.1", source: "config" });
+  });
+
+  it("auto-selects and persists when the catalog offers exactly one model", async () => {
+    globalThis.fetch = (async () =>
+      jsonResponse({ data: [{ id: "gpt-5-mini", owned_by: "openai" }] })) as typeof fetch;
+    const resolved = await resolveModel("openai");
+    expect(resolved).toEqual({ model: "gpt-5-mini", source: "catalog" });
+    expect(loadConfig().providers["openai"]?.["model"]).toBe("gpt-5-mini");
+  });
+
+  it("rejects with actionable guidance when the catalog has several models", async () => {
+    globalThis.fetch = (async () =>
+      jsonResponse({
+        data: [{ id: "m-one" }, { id: "m-two" }, { id: "m-three" }],
+      })) as typeof fetch;
+    await expect(resolveModel("openai")).rejects.toThrow(/tau provider use openai/);
+    await expect(resolveModel("openai")).rejects.toThrow(/3 models/);
+  });
+
+  it("rejects when discovery finds nothing", async () => {
+    globalThis.fetch = (async () => jsonResponse({ data: [] })) as typeof fetch;
+    await expect(resolveModel("openai")).rejects.toThrow(/No models discovered/);
+  });
+
+  it("tells the user to set a model explicitly when discovery is unsupported", async () => {
+    await expect(resolveModel("zai")).rejects.toThrow(/does not support model discovery/);
+    await expect(resolveModel("zai")).rejects.toThrow(/providers\.zai\.model/);
   });
 });
 
