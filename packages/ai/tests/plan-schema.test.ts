@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validatePlanResponse, buildSystemPrompt, planningContext } from "../src/ai/prompt.js";
+import { validatePlanResponse, buildSystemPrompt, planningContext } from "../src/prompt.js";
 import { registerCoreTools } from "@tau/tools";
 
 // Ensure the catalog has content for prompt tests.

@@ -7,6 +7,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Changed
 
+- **Flattened the workspace file structure.** The monorepo migration had left
+  every package with a redundant folder duplicating its own name
+  (`packages/ai/src/ai/...`, `packages/tools/src/tools/...`,
+  `packages/engine/src/core/...`, `app/cli/src/cli/...`, and so on). All
+  sources now sit directly in `<pkg>/src/` — e.g. `packages/ai/src/providers/
+deepseek.ts`, `packages/engine/src/safety.ts`, `app/cli/src/ask.ts`. The
+  tools bootstrap barrel became `packages/tools/src/bootstrap.ts`; bundled
+  skills moved from `packages/skills/skills/` to `packages/skills/bundled/`;
+  the dead root-level `tsdown.config.ts` (single-package leftover) was
+  removed. No public API changes — all 233 tests pass untouched, and the PR
+  workflow (branch + pull request, never direct pushes to `main`) is now
+  codified in CONTRIBUTING.md / AGENTS/release.md with a PR template in
+  `.github/`.
+
 - **pnpm monorepo restructure.** The single `src/` tree is now a pnpm
   workspace: UI apps in `app/` and the reusable engine in `packages/`, each
   an independent `@tau/*` package with its own package.json, tsdown build,
@@ -48,8 +62,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   interactive arrow-key picker on a TTY (numbered fallback otherwise; CI
   sessions never hang on stdin). API keys resolve config-first with env vars
   as fallback, every CLI surface masks them, and a failed refresh degrades
-  to the cached list instead of failing. New `packages/ai/src/ai/models.ts` catalog
-  service, `packages/ui/src/ui/picker.ts` zero-dependency selector, `app/cli/src/cli/provider.ts`
+  to the cached list instead of failing. New `packages/ai/src/models.ts` catalog
+  service, `packages/ui/src/picker.ts` zero-dependency selector, `app/cli/src/provider.ts`
   command family.
 - Dotted config keys: `tau config get/set providers.<name>.<field>`
   (`apiKey`, `baseUrl`, `host`, `model`, `timeoutMs`) with per-provider
@@ -84,7 +98,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   `plugin.<name>.<tool>` and execute through the same plan → review →
   confirm pipeline. Plugin tools are always **medium risk**; connect
   handshake 10 s, tool call cap 120 s, 64 KB argument budget; env extras
-  layered over the SDK's safe default allowlist. New `packages/plugins/src/plugins/` module,
+  layered over the SDK's safe default allowlist. New `packages/plugins/src/` module,
   `docs/plugins.md` guide, AGENTS/plugins.md rulebook.
 - `@modelcontextprotocol/sdk` joins as an `optionalDependency` (dynamically
   imported, never bundled; Tau degrades gracefully without it).
@@ -100,7 +114,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   are gone. Request-time resolution goes explicit config → single-model
   catalog (auto-selected and persisted) → an actionable error
   (`tau provider use <provider>` / `tau config set providers.<name>.model
-<id>`) via the new `resolveModel()` in `packages/ai/src/ai/models.ts`; `provider list`
+<id>`) via the new `resolveModel()` in `packages/ai/src/models.ts`; `provider list`
   shows `(auto)` for unset models.
 - Repository housekeeping: the `AGENTS.d/` rulebook directory renamed to
   `AGENTS/` (all references updated); every source file under `src/` now

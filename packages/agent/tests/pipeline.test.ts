@@ -9,9 +9,9 @@ import os from "node:os";
 import path from "node:path";
 import { tauHome } from "@tau/core";
 import { allTools, getTool, resetRegistry } from "@tau/tools";
-import { prepareCatalog, ProviderUnavailableError } from "../src/agent/pipeline.js";
-import { planIntent } from "../src/agent/pipeline.js";
-import { buildSkillTools } from "../src/agent/skill-tools.js";
+import { prepareCatalog, ProviderUnavailableError } from "../src/pipeline.js";
+import { planIntent } from "../src/pipeline.js";
+import { buildSkillTools } from "../src/skill-tools.js";
 
 const ORIGINAL_CWD = process.cwd();
 let tmp = "";

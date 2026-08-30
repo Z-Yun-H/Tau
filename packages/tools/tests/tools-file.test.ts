@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { registerCoreTools, getTool } from "../src/tools/index.js";
+import { registerCoreTools, getTool } from "../src/index.js";
 
 let tmp = "";
 

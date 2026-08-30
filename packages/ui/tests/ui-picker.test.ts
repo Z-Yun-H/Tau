@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { PassThrough } from "node:stream";
-import { selectFromList, promptHidden } from "../src/ui/picker.js";
+import { selectFromList, promptHidden } from "../src/picker.js";
 
 const tick = async (ms = 20): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 

@@ -13,7 +13,7 @@ import type { SkillIssue, SkillMeta } from "@tau/core";
 
 /**
  * Skill discovery. Search order (later wins on name conflict):
- *   1. bundled  — <package>/skills/          shipped with tau
+ *   1. bundled  — <package>/bundled/          shipped with tau
  *   2. user     — $TAU_HOME/skills/          ~/.tau/skills
  *   3. workspace— <cwd>/skills/ or .tau/skills/   project-local skills
  */

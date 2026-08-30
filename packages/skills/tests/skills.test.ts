@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { scanSkills, renderSkillCatalog } from "../src/skills/loader.js";
-import { loadSkillFile, parseFrontmatter } from "../src/skills/schema.js";
-import { newSkill, validateSkill } from "../src/skills/manager.js";
+import { scanSkills, renderSkillCatalog } from "../src/loader.js";
+import { loadSkillFile, parseFrontmatter } from "../src/schema.js";
+import { newSkill, validateSkill } from "../src/manager.js";
 
 const ORIGINAL_CWD = process.cwd();
 let tmp = "";

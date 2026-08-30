@@ -16,9 +16,25 @@ pnpm lint && pnpm typecheck && pnpm test:cov
 All green, coverage ≥ thresholds (see `vitest.config.ts`), no skipped tests.
 CI runs the same gate.
 
+## PR workflow (mandatory)
+
+**Never push directly to `main`.** All changes — features, fixes, docs,
+refactors — land through pull requests:
+
+1. Cut a branch from `main`: `feat/<topic>`, `fix/<topic>`, `refactor/<topic>`,
+   `docs/<topic>`
+2. Commit there using Conventional Commits (one logical change per PR)
+3. Run the pre-PR gate on your branch
+4. Push the branch and open a PR against `main` (the repo has a PR template —
+   fill in the checklist)
+5. Merge after the gate is green
+
+Direct pushes to `main` are reserved for maintainers' exceptional housekeeping
+(e.g. reverting a broken merge) and should be avoided all the same.
+
 ## Ground rules
 
-1. **Never weaken the safety reviewer** (`packages/engine/src/core/safety.ts`)
+1. **Never weaken the safety reviewer** (`packages/engine/src/safety.ts`)
    to make a feature easier. Fix the feature.
 2. **New behavior needs tests.** Safety-adjacent changes need positive AND
    benign-lookalike test pairs.

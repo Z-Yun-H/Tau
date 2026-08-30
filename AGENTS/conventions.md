@@ -29,7 +29,7 @@
 - oxlint owns linting (`.oxlintrc.json`, Rust-based, single binary);
   `pnpm lint:fix` before pushing. Safety-critical regexes may carry an
   inline `// oxlint-disable <rule>` block with a WHY comment — see
-  `packages/tools/src/tools/net.ts` (SSRF guard) for the pattern.
+  `packages/tools/src/net.ts` (SSRF guard) for the pattern.
 - 2-space indent, double quotes, trailing commas, LF, 100 cols.
 - `strict: true` + `noUncheckedIndexedAccess: true` — code accordingly:
   - array access returns `T | undefined`: use `arr[i] ?? fallback`, never `!`
@@ -67,7 +67,7 @@
 
 ## Output
 
-- All user-facing color goes through `packages/ui/src/ui/theme.ts` — never raw chalk in
+- All user-facing color goes through `packages/ui/src/theme.ts` — never raw chalk in
   modules below `ui/` (providers return plain text; the CLI adds color).
 - Tools return PLAIN text (no ANSI). History stores plain text.
 - Tables/lists: simple padded strings are fine; no table dependency.

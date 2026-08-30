@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { runPlan } from "../src/core/session.js";
+import { runPlan } from "../src/session.js";
 import { registerCoreTools } from "@tau/tools";
 import { readHistory } from "@tau/core";
 import type { Plan } from "@tau/core";

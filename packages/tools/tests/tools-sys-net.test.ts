@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import net from "node:net";
-import { registerCoreTools, getTool } from "../src/tools/index.js";
+import { registerCoreTools, getTool } from "../src/index.js";
 
 beforeAll(() => registerCoreTools());
 

@@ -2,7 +2,7 @@
  * tau config store — defaults, deep-merged per-provider entries, dotted
  * get/set with field validation, 0600 persistence and secret masking.
  * Provider entries ship NO default model: models are user-selected or
- * resolved from the live catalog (see src/ai/models.ts).
+ * resolved from the live catalog (see packages/ai/src/models.ts).
  */
 
 import fs from "node:fs";
@@ -18,7 +18,7 @@ export const DEFAULT_CONFIG: TauConfig = {
   providers: {
     // No bundled model defaults: models are either user-selected
     // (`tau provider use`) or resolved from the provider's live catalog at
-    // request time (see resolveModel in src/ai/models.ts).
+    // request time (see resolveModel in packages/ai/src/models.ts).
     ollama: { host: "http://localhost:11434" },
   },
 };
