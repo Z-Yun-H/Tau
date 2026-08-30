@@ -218,7 +218,8 @@ Tau is designed to be _maintained by AI agents_ as much as used by humans:
 UI apps live in `app/`, the reusable engine in `packages/`. Every workspace
 package is versioned, built with tsdown, and consumed through `workspace:*`
 dependencies; the CLI (`@tau/cli`) bundles nothing from its siblings — the
-workspace resolves them at runtime.
+workspace resolves them at runtime. Every package and app ships its own
+`README.md` describing its public API, dependencies and dev commands.
 
 ```
 app/

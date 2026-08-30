@@ -1,0 +1,18 @@
+# Conventional Commits: <type>(<scope>): <subject>
+# types: feat | fix | docs | refactor | test | chore | build
+# Subject: imperative, <= 72 chars, no trailing period.
+#
+# Body: what & why, wrapped at ~72 chars. Reference PRs/issues.
+#
+# ============ AI commit declaration (MANDATORY for AI-authored commits) ======
+# If this commit is authored by an AI agent, BEFORE committing you must:
+#   1. Present the declaration to the human in the session (no silent AI
+#      commits), then
+#   2. Uncomment and fill the block below so it lands in the commit message.
+# Human authors: leave the block commented out / delete it.
+#
+# AI-declaration: this commit was authored by an AI agent under human direction.
+# AI-agent: <agent name and model, e.g. Super Z (GLM)>
+# AI-scope: <one line — exactly what the AI did in this commit>
+# AI-gate: lint=pass typecheck=pass test=pass (<N> tests)
+# ============================================================================
