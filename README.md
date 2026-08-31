@@ -226,7 +226,7 @@ workspace resolves them at runtime. Every package and app ships its own
 app/
   cli/            @tau/cli    — bin `tau`: commander app + `tau tui` / `tau web` bridges
   tui/            @tau/tui    — bin `tau-tui`: interactive terminal session (REPL)
-  webui/          @tau/webui  — bin `tau-web`: zero-dependency local web interface
+  webui/          @tau/webui  — bin `tau-web`: local web interface (Vue 3 + UnoCSS client, zero-dependency node API)
 packages/
   core/           @tau/core    — types, config store, history, TAU_HOME paths
   tools/          @tau/tools   — registry + file/sys/net/text tools

@@ -27,7 +27,6 @@ import { registerCoreTools, registerTools, resetRegistry } from "@tau/tools";
 import { scanSkills } from "@tau/skills";
 import { buildSkillTools } from "@tau/agent";
 import { registerTuiCommand } from "@tau/tui";
-import { registerWebCommand } from "@tau/webui";
 import { registerAsk } from "./ask.js";
 import { registerFileCommands } from "./file.js";
 import { registerSysCommands } from "./sys.js";
@@ -39,6 +38,7 @@ import { registerAliasCommands, expandAliasArgv } from "./alias.js";
 import { registerProviderCommands } from "./provider.js";
 import { registerConfigCommands } from "./config.js";
 import { registerPluginCommands } from "./plugin.js";
+import { registerWebCommand } from "./web.js";
 
 const require = createRequire(import.meta.url);
 

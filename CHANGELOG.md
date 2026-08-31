@@ -79,6 +79,23 @@ from "commander"` — a phantom dependency satisfied only through sibling
 
 ### Changed
 
+- **`@tau/webui` rebuilt on Vite + Vue 3 + UnoCSS.** The local web
+  interface keeps its zero-dependency `node:http` API server
+  (`src/server.ts`) but replaces the vanilla static frontend with a Vue 3
+  single-file client (`client/App.vue`) styled by UnoCSS (`uno.config.ts`,
+  `presetWind3` theme tokens + shortcuts). Build is vite end-to-end:
+  client → `dist/client/` (served statically by the node server, with the
+  raw `client/` sources as dev/test fallback) and the `tau-web` bin via a
+  node/SSR vite config with the same shebang-keeping plugin as the TUI.
+  Dev mode: `vite dev` proxies `/api/*` to the engine server on :8787. The
+  `tau web` commander wiring moved into `@tau/cli` (`app/cli/src/web.ts`),
+  so `@tau/webui` no longer imports commander at all — the phantom
+  dependency is gone by construction, not by declaration. vue /
+  @vitejs/plugin-vue / unocss are dev-only (the client bundle ships
+  self-contained). User-visible behavior is unchanged; the API gained
+  additive fields (provider.model, plugins, skills.risk/origin) from the
+  shared session services. Root READMEs/AGENTS map wording updated.
+
 - **`@tau/tui` builds with vite.** The interactive terminal app now uses
   vite (v8, node/SSR mode, `app/tui/vite.config.ts`) for build and
   `vite build --watch` for its dev loop; the unified tsdown workspace build

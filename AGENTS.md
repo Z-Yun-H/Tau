@@ -86,7 +86,7 @@ app/                        UI layer (thin front doors, no engine logic)
   cli/src/index.ts          bin `tau`: builds commander program, registers tools+skills
   cli/src/<family>.ts       thin commander wiring per command family (ask, file, sys, ...)
   tui/src/index.ts          bin `tau-tui`: interactive REPL (slash commands + intents)
-  webui/src/server.ts       zero-dependency HTTP API over the engine + static UI
+  webui/src/server.ts       zero-dependency HTTP API over the engine; Vue 3 + UnoCSS client in webui/client/ (vite)
 packages/                   engine layer (each with a public src/index.ts barrel)
   core/src/types.ts         shared domain vocabulary (Plan, ToolDefinition, RiskLevel...)
   core/src/config/          TAU_HOME paths, config store, JSONL history
