@@ -71,7 +71,10 @@ export function buildProgram(): Command {
     .description("AI-powered unified terminal assistant — natural language in, safe commands out.")
     .version(readVersion())
     .option("--provider <name>", "AI provider for this run (mock|ollama|openai|deepseek|zai)")
-    .option("--yes", "auto-approve low/medium risk steps (never high/blocked)")
+    .option(
+      "--yes",
+      "auto-approve low-risk steps (medium needs config allowMediumAutoApprove; never high/blocked)",
+    )
     .option("--json", "machine-readable output where supported");
 
   registerAsk(program);

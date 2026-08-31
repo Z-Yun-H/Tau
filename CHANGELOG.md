@@ -7,14 +7,31 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Fixed
 
+- **`--yes` now honors the medium-risk policy for tool steps.** The per-step
+  risk derivation in `runPlan()` hard-coded `low` for every tool step, so
+  `tau ask "<intent>" --yes` silently executed medium-risk tool steps
+  (`file.rename`, `text.replace`, every `plugin.*` MCP tool) even with the
+  default `allowMediumAutoApprove: false` — contradicting the documented
+  contract ("--yes auto-approves low; medium only with the opt-in config;
+  never high/blocked"). Tool steps now carry their tool's intrinsic risk
+  (unknown tools derive `blocked`), so under `--yes` a medium-risk tool step
+  waits for the opt-in config or an interactive confirmation, and a
+  high-risk tool step (e.g. a skill-declared one) is skipped exactly like a
+  high-risk shell step. The WebUI flow is unchanged (its explicit
+  request-as-approval doctrine already set `autoApproveAll`), the TUI is
+  unchanged (it confirms interactively before executing). CLI `--yes` help
+  text and both README quick-start glosses updated to state the real policy.
+  Tests: medium-refused / medium-opted-in / low-benign-lookalike /
+  high-risk-tool pairs.
+
 - **Fresh-clone gate repairs** — the pre-PR gate (`pnpm lint && pnpm typecheck
-  && pnpm test`) failed on a fresh clone under pnpm's isolated `node_modules`
+&& pnpm test`) failed on a fresh clone under pnpm's isolated `node_modules`
   layout, even though it passed on the maintainer's machine:
   - `pnpm build` could not resolve `tsdown` from the root script (it was
     declared only in each sub-package); `tsdown` now sits in the root
     `devDependencies` so the unified workspace build works everywhere.
   - `pnpm typecheck` failed on `@tau/webui`'s type-only `import type { Command }
-    from "commander"` — a phantom dependency satisfied only through sibling
+from "commander"` — a phantom dependency satisfied only through sibling
     hoisting. `commander` is now declared (as a devDependency — it is erased at
     runtime) in `@tau/webui`.
   - The MCP stdio E2E test created its scratch dir at the vitest cwd, so the

@@ -6,6 +6,7 @@
 
 import { theme } from "@tau/ui";
 import { confirm } from "@tau/ui";
+import { getTool } from "@tau/tools";
 import { reviewPlan, scanShellCommand } from "./safety.js";
 import { executeStep, type StepOutcome } from "./executor.js";
 import { appendHistory } from "@tau/core";
@@ -21,7 +22,7 @@ import type { Plan, RiskLevel } from "@tau/core";
 export interface RunPlanOptions {
   /** Provider name for history tracking. */
   provider?: string;
-  /** Auto-approve low/medium risk (never high/blocked). Used by --yes. */
+  /** Auto-approve low risk (medium only with allowMediumAutoApprove; never high/blocked). Used by --yes. */
   assumeYes: boolean;
   /** Allow --yes to cover medium risk steps too. */
   allowMediumAutoApprove: boolean;
@@ -96,7 +97,7 @@ export async function runPlan(
         review,
         outcomes: [],
         output:
-          "Non-interactive shell refuses to execute without --yes.\nRe-run with --yes to auto-approve low/medium risk steps only.",
+          "Non-interactive shell refuses to execute without --yes.\nRe-run with --yes to auto-approve low-risk steps (medium only with config allowMediumAutoApprove).",
       };
     }
     console.log(renderPlan(plan, review.overallRisk));
@@ -176,5 +177,10 @@ function stepRiskOf(step: Plan["steps"][number]): RiskLevel {
     // Already reviewed; re-derive cheaply.
     return scanShellCommand(step.command ?? "");
   }
-  return "low"; // tool intrinsic risk was validated in review; args risk unchanged
+  // Tool steps carry the tool's INTRINSIC risk: the --yes policy (skip high,
+  // confirm medium unless allowMediumAutoApprove) must treat a medium-risk
+  // tool (file.rename, text.replace, plugin.* tools) differently from a
+  // read-only one, exactly as reviewPlan did at the plan level.
+  const tool = step.tool ? getTool(step.tool) : undefined;
+  return tool ? tool.risk : "blocked";
 }

@@ -14,7 +14,7 @@ Tau 把自然语言意图（中文/英文）变成**经过审查、确认后执�
 
 ```bash
 tau ask "找出所有 TODO 的地方"          # 意图 -> 计划 -> 确认 -> 完成
-tau ask "how much disk is left?" --yes  # 仅自动批准低/中风险
+tau ask "how much disk is left?" --yes  # 仅自动批准低风险（中风险需 allowMediumAutoApprove 配置）
 tau file find "*.ts"                    # 也可以直接用工具
 ```
 
