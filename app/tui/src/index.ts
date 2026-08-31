@@ -23,6 +23,7 @@
 
 import readline from "node:readline";
 import { pathToFileURL } from "node:url";
+import { realpathSync } from "node:fs";
 import type { Command } from "commander";
 import { loadConfig } from "@tau/core";
 import { renderPlan, renderReview, runPlan } from "@tau/engine";
@@ -206,8 +207,18 @@ export function registerTuiCommand(program: Command): void {
 }
 
 // Only auto-run when executed directly (not when imported by the CLI/tests).
-const invokedDirectly =
-  process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
+// Installed bins run through a symlink (npm/pnpm .bin, `pnpm link`), so
+// argv[1] must be resolved to its realpath before comparing against
+// import.meta.url (Node ESM reports this module under its real path).
+const invokedDirectly = (() => {
+  const entry = process.argv[1];
+  if (entry === undefined) return false;
+  try {
+    return import.meta.url === pathToFileURL(realpathSync(entry)).href;
+  } catch {
+    return false;
+  }
+})();
 
 if (invokedDirectly) {
   startTui().catch((error) => {

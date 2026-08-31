@@ -7,6 +7,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Fixed
 
+- **Installed `tau` bins no longer silently no-op.** The "am I the entry
+  module?" guard in `@tau/cli`, `@tau/tui` and `@tau/webui` compared
+  `import.meta.url` against the raw `process.argv[1]`; every installed
+  binary runs through a symlink (npm/pnpm `.bin` shims, `pnpm link
+--global`), where `argv[1]` is the link path while Node reports the
+  module under its real path — the comparison never matched, and the
+  command exited 0 with zero output (found by the pack smoke test while
+  unblocking #23; also affected the documented dev install
+  `pnpm --filter @tau/cli link`). The guards now resolve `argv[1]`
+  through `realpathSync` before comparing. Regression test: symlinked
+  `dist/index.js` → `tau --version` must print the version.
+
 - **`--yes` now honors the medium-risk policy for tool steps.** The per-step
   risk derivation in `runPlan()` hard-coded `low` for every tool step, so
   `tau ask "<intent>" --yes` silently executed medium-risk tool steps
