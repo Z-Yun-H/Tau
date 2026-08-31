@@ -19,6 +19,9 @@
     "bundled",
     "templates"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsdown"
   },
