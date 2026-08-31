@@ -4,33 +4,78 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@deepseek-ai/dsh-llm':
+      specifier: ^0.0.1-rc.1
+      version: 0.0.1-rc.1
+    '@modelcontextprotocol/sdk':
+      specifier: ^1.30.0
+      version: 1.30.0
+    '@types/node':
+      specifier: ^26.4.0
+      version: 26.4.0
+    '@vitest/coverage-v8':
+      specifier: ^4.1.11
+      version: 4.1.11
+    chalk:
+      specifier: ^6.0.0
+      version: 6.0.0
+    commander:
+      specifier: ^15.0.0
+      version: 15.0.0
+    oxfmt:
+      specifier: ^0.65.0
+      version: 0.65.0
+    oxlint:
+      specifier: ^1.80.0
+      version: 1.80.0
+    tsdown:
+      specifier: ^0.22.14
+      version: 0.22.14
+    tsx:
+      specifier: ^4.23.13
+      version: 4.23.13
+    typescript:
+      specifier: ^7.0.2
+      version: 7.0.2
+    vitest:
+      specifier: ^4.1.11
+      version: 4.1.11
+    yaml:
+      specifier: ^2.9.0
+      version: 2.9.0
+    zod:
+      specifier: ^4.5.4
+      version: 4.5.4
+
 importers:
 
   .:
     devDependencies:
       '@types/node':
-        specifier: ^26.4.0
+        specifier: 'catalog:'
         version: 26.4.0
       '@vitest/coverage-v8':
-        specifier: ^4.1.11
+        specifier: 'catalog:'
         version: 4.1.11(vitest@4.1.11)
       oxfmt:
-        specifier: ^0.65.0
+        specifier: 'catalog:'
         version: 0.65.0
       oxlint:
-        specifier: ^1.80.0
+        specifier: 'catalog:'
         version: 1.80.0
       tsdown:
-        specifier: ^0.22.14
+        specifier: 'catalog:'
         version: 0.22.14(tsx@4.23.13)(typescript@7.0.2)
       tsx:
-        specifier: ^4.23.13
+        specifier: 'catalog:'
         version: 4.23.13
       typescript:
-        specifier: ^7.0.2
+        specifier: 'catalog:'
         version: 7.0.2
       vitest:
-        specifier: ^4.1.11
+        specifier: 'catalog:'
         version: 4.1.11(@types/node@26.4.0)(@vitest/coverage-v8@4.1.11)(vite@8.2.2(@types/node@26.4.0)(esbuild@0.28.2)(tsx@4.23.13)(yaml@2.9.0))
 
   app/cli:
@@ -66,11 +111,11 @@ importers:
         specifier: workspace:*
         version: link:../webui
       commander:
-        specifier: ^15.0.0
+        specifier: 'catalog:'
         version: 15.0.0
     devDependencies:
       tsdown:
-        specifier: ^0.22.14
+        specifier: 'catalog:'
         version: 0.22.14(tsx@4.23.13)(typescript@7.0.2)
 
   app/tui:
@@ -95,10 +140,10 @@ importers:
         version: link:../../packages/ui
     devDependencies:
       commander:
-        specifier: ^15.0.0
+        specifier: 'catalog:'
         version: 15.0.0
       tsdown:
-        specifier: ^0.22.14
+        specifier: 'catalog:'
         version: 0.22.14(tsx@4.23.13)(typescript@7.0.2)
 
   app/webui:
@@ -120,10 +165,10 @@ importers:
         version: link:../../packages/skills
     devDependencies:
       commander:
-        specifier: ^15.0.0
+        specifier: 'catalog:'
         version: 15.0.0
       tsdown:
-        specifier: ^0.22.14
+        specifier: 'catalog:'
         version: 0.22.14(tsx@4.23.13)(typescript@7.0.2)
 
   packages/agent:
@@ -148,7 +193,7 @@ importers:
         version: link:../tools
     devDependencies:
       tsdown:
-        specifier: ^0.22.14
+        specifier: 'catalog:'
         version: 0.22.14(tsx@4.23.13)(typescript@7.0.2)
 
   packages/ai:
@@ -163,21 +208,21 @@ importers:
         specifier: workspace:*
         version: link:../ui
       zod:
-        specifier: ^4.5.4
+        specifier: 'catalog:'
         version: 4.5.4
     devDependencies:
       tsdown:
-        specifier: ^0.22.14
+        specifier: 'catalog:'
         version: 0.22.14(tsx@4.23.13)(typescript@7.0.2)
     optionalDependencies:
       '@deepseek-ai/dsh-llm':
-        specifier: ^0.0.1-rc.1
+        specifier: 'catalog:'
         version: 0.0.1-rc.1(@deepseek-ai/cordis@4.0.1)(@deepseek-ai/dsh-attachment@0.0.1-rc.1(@deepseek-ai/cordis@4.0.1)(@deepseek-ai/dsh-brand@0.0.1-rc.1(@deepseek-ai/cordis@4.0.1)(@deepseek-ai/dsh-invariants@0.0.1-rc.1(@deepseek-ai/cordis@4.0.1)))(@deepseek-ai/dsh-invariants@0.0.1-rc.1(@deepseek-ai/cordis@4.0.1)))(@deepseek-ai/dsh-brand@0.0.1-rc.1(@deepseek-ai/cordis@4.0.1)(@deepseek-ai/dsh-invariants@0.0.1-rc.1(@deepseek-ai/cordis@4.0.1)))(@deepseek-ai/dsh-invariants@0.0.1-rc.1(@deepseek-ai/cordis@4.0.1))(@deepseek-ai/dsh-timeout@0.0.1-rc.1(@deepseek-ai/cordis@4.0.1)(@deepseek-ai/dsh-invariants@0.0.1-rc.1(@deepseek-ai/cordis@4.0.1)))
 
   packages/core:
     devDependencies:
       tsdown:
-        specifier: ^0.22.14
+        specifier: 'catalog:'
         version: 0.22.14(tsx@4.23.13)(typescript@7.0.2)
 
   packages/engine:
@@ -193,7 +238,7 @@ importers:
         version: link:../ui
     devDependencies:
       tsdown:
-        specifier: ^0.22.14
+        specifier: 'catalog:'
         version: 0.22.14(tsx@4.23.13)(typescript@7.0.2)
 
   packages/plugins:
@@ -206,14 +251,14 @@ importers:
         version: link:../tools
     devDependencies:
       tsdown:
-        specifier: ^0.22.14
+        specifier: 'catalog:'
         version: 0.22.14(tsx@4.23.13)(typescript@7.0.2)
       zod:
-        specifier: ^4.5.4
+        specifier: 'catalog:'
         version: 4.5.4
     optionalDependencies:
       '@modelcontextprotocol/sdk':
-        specifier: ^1.30.0
+        specifier: 'catalog:'
         version: 1.30.0(supports-color@7.2.0)(zod@4.5.4)
 
   packages/skills:
@@ -228,14 +273,14 @@ importers:
         specifier: workspace:*
         version: link:../ui
       yaml:
-        specifier: ^2.9.0
+        specifier: 'catalog:'
         version: 2.9.0
       zod:
-        specifier: ^4.5.4
+        specifier: 'catalog:'
         version: 4.5.4
     devDependencies:
       tsdown:
-        specifier: ^0.22.14
+        specifier: 'catalog:'
         version: 0.22.14(tsx@4.23.13)(typescript@7.0.2)
 
   packages/tools:
@@ -245,17 +290,17 @@ importers:
         version: link:../core
     devDependencies:
       tsdown:
-        specifier: ^0.22.14
+        specifier: 'catalog:'
         version: 0.22.14(tsx@4.23.13)(typescript@7.0.2)
 
   packages/ui:
     dependencies:
       chalk:
-        specifier: ^6.0.0
+        specifier: 'catalog:'
         version: 6.0.0
     devDependencies:
       tsdown:
-        specifier: ^0.22.14
+        specifier: 'catalog:'
         version: 0.22.14(tsx@4.23.13)(typescript@7.0.2)
 
 packages:

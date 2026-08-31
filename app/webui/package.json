@@ -24,8 +24,8 @@
     "build": "tsdown"
   },
   "devDependencies": {
-    "commander": "^15.0.0",
-    "tsdown": "^0.22.14"
+    "commander": "catalog:",
+    "tsdown": "catalog:"
   },
   "dependencies": {
     "@tau/core": "workspace:*",
