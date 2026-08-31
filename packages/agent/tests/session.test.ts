@@ -15,6 +15,7 @@ import {
   getSessionInfo,
   listProviderAvailability,
   listSkillSummaries,
+  listToolSummaries,
   planAndReview,
   readRecentHistory,
   readTauVersion,
@@ -109,5 +110,29 @@ describe("session services", () => {
 
   it("reports a real package version, not the dev fallback", () => {
     expect(readTauVersion()).toMatch(/^\d+\.\d+\.\d+/);
+  });
+
+  it("lists tool summaries as pure data (catalog built on demand)", () => {
+    const tools = listToolSummaries();
+    // The built-in file/sys/net/text families must be registered.
+    const names = tools.map((t) => t.name);
+    for (const expected of ["file.find", "file.rename", "text.replace", "sys.info", "net.fetch"]) {
+      expect(names).toContain(expected);
+    }
+    const find = tools.find((t) => t.name === "file.find");
+    expect(find?.risk).toBe("low");
+    expect(find?.owner).toBe("core");
+    expect(find?.params.some((p) => p.name === "pattern" && p.required)).toBe(true);
+    // Medium-risk mutation tools keep their intrinsic risk.
+    expect(tools.find((t) => t.name === "file.rename")?.risk).toBe("medium");
+    // The serialized shape is pure data — the executable never leaks.
+    expect(JSON.stringify(tools)).not.toContain('"run"');
+    expect(find && Object.keys(find).sort()).toEqual([
+      "description",
+      "name",
+      "owner",
+      "params",
+      "risk",
+    ]);
   });
 });

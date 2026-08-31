@@ -1,0 +1,105 @@
+/**
+ * Typed client for the WebUI HTTP surface. The shapes mirror the server
+ * payloads one-to-one (server.ts is the contract; these interfaces are the
+ * hand-mirrored read model). Nothing here touches the DOM.
+ */
+
+export type RiskLevel = "low" | "medium" | "high" | "blocked";
+export type Verdict = "allow" | "review" | "deny";
+export type HistoryStatus = "ok" | "failed" | "cancelled" | "denied";
+
+export interface PlanStep {
+  kind: "tool" | "shell";
+  tool?: string;
+  command?: string;
+  args?: Record<string, unknown>;
+  reason?: string;
+}
+
+export interface Plan {
+  explanation: string;
+  steps: PlanStep[];
+}
+
+export interface ReviewIssue {
+  level: string;
+  message: string;
+}
+
+export interface Review {
+  verdict: Verdict;
+  overallRisk: RiskLevel;
+  issues: ReviewIssue[];
+}
+
+export interface StatusPayload {
+  version: string;
+  tauHome: string;
+  provider: { name: string; label: string; source: string; model: string };
+  providers: { name: string; available: boolean }[];
+  skills: number;
+  plugins: number;
+}
+
+export interface SkillSummary {
+  name: string;
+  description: string;
+  commands: number;
+  risk: RiskLevel;
+  origin: "bundled" | "user" | "workspace";
+}
+
+export interface ToolParamInfo {
+  name: string;
+  type: "string" | "number" | "boolean" | "string[]";
+  description: string;
+  required: boolean;
+}
+
+export interface ToolSummary {
+  name: string;
+  description: string;
+  risk: RiskLevel;
+  owner: string;
+  params: ToolParamInfo[];
+}
+
+export interface HistoryEntry {
+  id: string;
+  ts: string;
+  kind: string;
+  input: string;
+  steps: PlanStep[];
+  status: HistoryStatus;
+  exitCode?: number;
+  provider?: string;
+}
+
+export interface PlanResponse {
+  intent: string;
+  plan: Plan;
+  review: Review;
+  provider: string;
+  providerLabel: string;
+  warnings: string[];
+}
+
+export interface ExecuteResponse {
+  status: string;
+  output: string;
+  outcomes: { ok: boolean; skipped: boolean; output?: string }[];
+}
+
+export async function api<T>(path: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(path, options);
+  const body = (await res.json().catch(() => ({}))) as T & { error?: string };
+  if (!res.ok) throw new Error(body.error ?? res.statusText);
+  return body;
+}
+
+export const postJson = <T>(path: string, payload: unknown): Promise<T> =>
+  api<T>(path, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });

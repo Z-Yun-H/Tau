@@ -14,20 +14,21 @@ Not every `SKILL.md` in this repository is a Tau runtime skill. Three
 distinct layers exist; placement is normative (see also the governance table
 in [AGENTS/architecture.md](./architecture.md)):
 
-| Layer                     | Location                                                                               | Consumed by                                                                        | Versions with    |
-| ------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------- |
-| **L1 root dev-workflow**  | `.claude/skills/<name>/SKILL.md`                                                       | AI coding agents (Claude Code root discovery + the AGENTS.md read chain)           | the repo         |
-| **L2 package tool-layer** | `packages/<pkg>/SKILL.md`                                                              | AI coding agents (AGENTS.md read chain — there is NO package-level auto-discovery) | the package      |
-| **L3 product content**    | `packages/skills/bundled/<name>/SKILL.md`, `packages/skills/templates/skill-template/` | the tau CLI at RUNTIME (user-facing data, not agent skills)                        | the npm artifact |
+| Layer                    | Location                                                                               | Consumed by                                                                        | Versions with    |
+| ------------------------ | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------- |
+| **L1 root dev-workflow** | `.claude/skills/<name>/SKILL.md`                                                       | AI coding agents (Claude Code root discovery + the AGENTS.md read chain)           | the repo         |
+| **L2 tool-layer**        | `packages/<pkg>/SKILL.md` or `app/<app>/SKILL.md`                                      | AI coding agents (AGENTS.md read chain — there is NO package-level auto-discovery) | the package/app  |
+| **L3 product content**   | `packages/skills/bundled/<name>/SKILL.md`, `packages/skills/templates/skill-template/` | the tau CLI at RUNTIME (user-facing data, not agent skills)                        | the npm artifact |
 
 Today's inventory — L1: `tau-build`, `tau-test`, `tau-release`,
 `tau-skill-new` (a thin ROUTER); L2: `packages/skills/SKILL.md`
-(`tau-skills-authoring`, owned by `@tau/skills`); L3: `git-helper`,
+(`tau-skills-authoring`, owned by `@tau/skills`) and `app/webui/SKILL.md`
+(`tau-webui-design`, owned by the WebUI app); L3: `git-helper`,
 `docker-helper`, `skill-template`.
 
 Placement rule of thumb: a cross-cutting repo workflow → L1; knowledge bound
-to ONE package → L2, next to the code it governs (optionally keep a thin L1
-router with the original name/description so Claude Code trigger
+to ONE package or app → L2, next to the code it governs (optionally keep a
+thin L1 router with the original name/description so Claude Code trigger
 discoverability survives); anything the CLI loads at runtime → L3, never
 `.claude/`. Never mix layers: L3 files are data for the product, L1/L2 files
 are instructions for coding agents — a file can only be one of them.
