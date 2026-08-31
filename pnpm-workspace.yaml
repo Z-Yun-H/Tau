@@ -2,6 +2,33 @@ packages:
   - "packages/*"
   - "app/*"
 
+# Single source of truth for every external dependency version in the
+# workspace (pnpm catalog:). Packages declare `"<dep>": "catalog:"` and
+# resolve the version pinned here — bumping a version is a one-line change
+# in this file, and drift between packages is impossible by construction.
+catalog:
+  # ---- runtime deps (frozen set — AGENTS.md golden rule 4) ----
+  commander: ^15.0.0
+  chalk: ^6.0.0
+  yaml: ^2.9.0
+  zod: ^4.5.4
+  # ---- optional SDKs (dynamically imported, never bundled) ----
+  "@deepseek-ai/dsh-llm": ^0.0.1-rc.1
+  "@modelcontextprotocol/sdk": ^1.30.0
+  # ---- toolchain (dev-only) ----
+  "@types/node": ^26.4.0
+  "@vitejs/plugin-vue": ^6.0.0
+  "@vitest/coverage-v8": ^4.1.11
+  oxfmt: ^0.65.0
+  oxlint: ^1.80.0
+  tsdown: ^0.22.14
+  tsx: ^4.23.13
+  typescript: ^7.0.2
+  unocss: ^66.8.0
+  vite: ^8.2.0
+  vitest: ^4.1.11
+  vue: ^3.5.0
+
 allowBuilds:
   esbuild: true
 

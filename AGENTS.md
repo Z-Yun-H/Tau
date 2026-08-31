@@ -5,6 +5,12 @@
 repository. Humans are welcome too — it doubles as the fastest tour of the
 codebase.
 
+> **MANDATORY for AI agents:** besides this file, read
+> [`AGENTS/collaboration.md`](./AGENTS/collaboration.md) — the AI
+> collaboration operating norms (issue→PR flow, AI labeling, changelog
+> fragments, merge policy). It is binding; violating it is a process
+> failure even when the code itself is correct.
+
 > Detailed rulebooks live in [`AGENTS/`](./AGENTS/). The split:
 > this file = what you must know in 60 seconds; AGENTS = what you need when
 > you actually touch a subsystem.
@@ -41,7 +47,8 @@ independent execution paths.)
    `text.replace`). `execute:true` is always an explicit, visible choice.
 4. **No new runtime dependencies** without updating AGENTS/architecture.md
    and justifying it in the PR description. Runtime deps live in the package
-   that actually imports them: commander (`@tau/cli`/`@tau/tui`), chalk
+   that actually imports them: commander (`@tau/cli`; type-only devDep in
+   `@tau/tui`), chalk
    (`@tau/ui`), yaml+zod (`@tau/skills`), zod (`@tau/ai`). The only sanctioned
    exceptions are optionalDependencies (the MCP SDK `@modelcontextprotocol/sdk`
    for plugins and the DeepSeek Harness seam `@deepseek-ai/dsh-llm` for the
@@ -80,7 +87,7 @@ app/                        UI layer (thin front doors, no engine logic)
   cli/src/index.ts          bin `tau`: builds commander program, registers tools+skills
   cli/src/<family>.ts       thin commander wiring per command family (ask, file, sys, ...)
   tui/src/index.ts          bin `tau-tui`: interactive REPL (slash commands + intents)
-  webui/src/server.ts       zero-dependency HTTP API over the engine + static UI
+  webui/src/server.ts       zero-dependency HTTP API over the engine; Vue 3 + UnoCSS client in webui/client/ (vite)
 packages/                   engine layer (each with a public src/index.ts barrel)
   core/src/types.ts         shared domain vocabulary (Plan, ToolDefinition, RiskLevel...)
   core/src/config/          TAU_HOME paths, config store, JSONL history
@@ -103,6 +110,7 @@ docs/                       human-facing deep dives (architecture, safety, skill
 
 | File                                                   | Read it when...                                                 |
 | ------------------------------------------------------ | --------------------------------------------------------------- |
+| [AGENTS/collaboration.md](./AGENTS/collaboration.md)   | **always — AI collaboration norms (mandatory, normative)**      |
 | [AGENTS/architecture.md](./AGENTS/architecture.md)     | you add/modify any module, command, or the plan pipeline        |
 | [AGENTS/conventions.md](./AGENTS/conventions.md)       | you write any TypeScript in this repo                           |
 | [AGENTS/testing.md](./AGENTS/testing.md)               | you write or run tests                                          |
@@ -122,9 +130,12 @@ docs/                       human-facing deep dives (architecture, safety, skill
 - [ ] Plugin-related change? → AGENTS/plugins.md checklist
 - [ ] `docs/safety.md` still truthful after your change
 - [ ] CHANGELOG.md entry under **Unreleased**
-- [ ] Commit authored by an AI agent? → `AI-declaration:` block in the
-      commit message, presented to the human BEFORE committing
-      (AGENTS/release.md)
+- [ ] AI-authored? → PR body notes "此 PR 由 AI 生成"；every AI commit carries
+      the `AI-Generated:` prefix line AND the `AI-declaration:` block,
+      presented to the human BEFORE committing (AGENTS/collaboration.md,
+      AGENTS/release.md)
+- [ ] PR title tagged `[REFACTOR]` / `[ARCHITECTURE]` when applicable; AI
+      never merges — human review required
 
 ## Commit style
 

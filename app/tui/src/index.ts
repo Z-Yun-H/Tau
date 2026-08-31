@@ -24,12 +24,18 @@
 import readline from "node:readline";
 import { pathToFileURL } from "node:url";
 import type { Command } from "commander";
-import { loadConfig, readHistory, tauHome } from "@tau/core";
-import { renderPlan, renderReview, reviewPlan, runPlan } from "@tau/engine";
-import { providerNames, resolveProvider } from "@tau/ai";
-import { scanSkills } from "@tau/skills";
+import { loadConfig } from "@tau/core";
+import { renderPlan, renderReview, runPlan } from "@tau/engine";
 import { confirm, theme } from "@tau/ui";
-import { planIntent, prepareCatalog, ProviderUnavailableError } from "@tau/agent";
+import {
+  ensureCatalog,
+  getActiveProvider,
+  getSessionInfo,
+  listSkillSummaries,
+  planAndReview,
+  ProviderUnavailableError,
+  readRecentHistory,
+} from "@tau/agent";
 
 const TUI_TIMEOUT_SEC = 120;
 
@@ -62,27 +68,25 @@ async function handleLine(raw: string): Promise<boolean> {
       process.stdout.write("\x1b[2J\x1b[H");
       return false;
     case "/provider": {
-      const choice = resolveProvider(undefined);
-      const providers = loadConfig().providers as Record<string, { model?: string }> | undefined;
-      const model = providers?.[choice.provider.name]?.model ?? "(auto)";
+      const active = getActiveProvider();
       console.log(
-        `${theme.brand(choice.provider.label)} ${theme.muted(`(${choice.source}) — model: ${model}`)}`,
+        `${theme.brand(active.label)} ${theme.muted(`(${active.source}) — model: ${active.model}`)}`,
       );
       return false;
     }
     case "/skills": {
-      const scan = scanSkills();
-      if (scan.skills.length === 0) {
+      const skills = listSkillSummaries();
+      if (skills.length === 0) {
         console.log(theme.muted("no skills loaded"));
         return false;
       }
-      for (const skill of scan.skills) {
+      for (const skill of skills) {
         console.log(`  ${theme.brand(skill.name)} ${theme.muted(`— ${skill.description}`)}`);
       }
       return false;
     }
     case "/history": {
-      const entries = readHistory(10);
+      const entries = readRecentHistory(10);
       if (entries.length === 0) {
         console.log(theme.muted("history is empty"));
         return false;
@@ -95,16 +99,14 @@ async function handleLine(raw: string): Promise<boolean> {
       return false;
     }
     case "/status": {
-      const scan = scanSkills();
-      const config = loadConfig();
-      const pluginCount = Object.keys(config.plugins ?? {}).length;
+      const info = await getSessionInfo();
       console.log(
         [
-          `  ${theme.muted("home:")} ${tauHome()}`,
-          `  ${theme.muted("provider:")} ${resolveProvider(undefined).provider.name}`,
-          `  ${theme.muted("skills:")} ${scan.skills.length}`,
-          `  ${theme.muted("plugins:")} ${pluginCount}`,
-          `  ${theme.muted("tools:")} ${providerNames().length} providers registered`,
+          `  ${theme.muted("home:")} ${info.tauHome}`,
+          `  ${theme.muted("provider:")} ${info.provider.name} ${theme.muted(`— model: ${info.provider.model}`)}`,
+          `  ${theme.muted("skills:")} ${info.skillsCount}`,
+          `  ${theme.muted("plugins:")} ${info.pluginsCount}`,
+          `  ${theme.muted("providers:")} ${info.providers.length} registered`,
         ].join("\n"),
       );
       return false;
@@ -115,7 +117,7 @@ async function handleLine(raw: string): Promise<boolean> {
 
   // ---- intent pipeline (same sequence as `tau ask`) ----
   try {
-    const planned = await planIntent(line);
+    const planned = await planAndReview(line);
     for (const warning of planned.warnings) {
       console.log(theme.warn(`plugin: ${warning}`));
     }
@@ -124,11 +126,10 @@ async function handleLine(raw: string): Promise<boolean> {
         `planning with ${planned.providerLabel} (${planned.providerSource}) — risk gate is independent of the AI`,
       ),
     );
-    const review = reviewPlan(planned.plan);
-    console.log(renderPlan(planned.plan, review.overallRisk));
+    console.log(renderPlan(planned.plan, planned.review.overallRisk));
     const reviewText = renderReview(planned.plan);
     if (reviewText) console.log(reviewText);
-    if (review.verdict === "deny") {
+    if (planned.review.verdict === "deny") {
       console.log(theme.error("Plan denied by safety review — nothing ran."));
       return false;
     }
@@ -173,7 +174,7 @@ export async function startTui(): Promise<void> {
     process.exitCode = 1;
     return;
   }
-  prepareCatalog();
+  ensureCatalog();
   console.log(
     [
       theme.brand("τ tau tui") + theme.muted(" — interactive session"),

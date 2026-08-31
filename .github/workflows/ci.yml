@@ -1,0 +1,53 @@
+name: CI
+
+# The gate CONTRIBUTING.md promises ("CI runs the same gate"), made real:
+# every push to main and every PR runs the exact pre-PR gate commands.
+# Safety-adjacent PRs still require human review before merge (see
+# AGENTS/collaboration.md) — CI is a floor, not an approver.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  gate:
+    name: lint + typecheck + build + test:cov
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm version comes from package.json "packageManager" (pnpm@11.24.0)
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint (oxlint)
+        run: pnpm lint
+
+      - name: Format check (oxfmt)
+        run: pnpm format:check
+
+      - name: Typecheck (tsc --noEmit)
+        run: pnpm typecheck
+
+      - name: Build (unified tsdown workspace build)
+        run: pnpm build
+
+      - name: Smoke the built binaries
+        run: |
+          head -1 app/cli/dist/index.js | grep -q '#!/usr/bin/env node'
+          node app/cli/dist/index.js --version
+          node app/cli/dist/index.js skill list
+
+      - name: Tests + coverage thresholds (vitest)
+        run: pnpm test:cov
+
+      - name: Dependency audit
+        run: pnpm audit --prod

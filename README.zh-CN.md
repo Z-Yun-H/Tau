@@ -2,6 +2,7 @@
 
 **AI 驱动的统一终端助手 —— 自然语言进，安全命令出。**
 
+[![CI](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml/badge.svg)](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
 [![Tests](https://img.shields.io/badge/tests-233%20passing-success)](vitest.config.ts)
@@ -14,7 +15,7 @@ Tau 把自然语言意图（中文/英文）变成**经过审查、确认后执�
 
 ```bash
 tau ask "找出所有 TODO 的地方"          # 意图 -> 计划 -> 确认 -> 完成
-tau ask "how much disk is left?" --yes  # 仅自动批准低/中风险
+tau ask "how much disk is left?" --yes  # 仅自动批准低风险（中风险需 allowMediumAutoApprove 配置）
 tau file find "*.ts"                    # 也可以直接用工具
 ```
 
@@ -165,8 +166,8 @@ tau skill validate my-skill    # frontmatter + 黑名单扫描
 tau git-helper status          # 声明式命令自动成为 CLI + AI 可调用工具
 ```
 
-内置示例：[`skills/git-helper`](skills/git-helper/SKILL.md)、
-[`skills/docker-helper`](skills/docker-helper/SKILL.md)。
+内置示例：[`packages/skills/bundled/git-helper`](packages/skills/bundled/git-helper/SKILL.md)、
+[`packages/skills/bundled/docker-helper`](packages/skills/bundled/docker-helper/SKILL.md)。
 编写指南：[docs/skills-authoring.md](docs/skills-authoring.md)。
 
 ## Plugins：通过 MCP 驱动外部工具
@@ -216,7 +217,7 @@ API、依赖与开发命令。
 app/
   cli/            @tau/cli    —— bin `tau`：commander 应用 + `tau tui` / `tau web` 桥接
   tui/            @tau/tui    —— bin `tau-tui`：交互式终端会话（REPL）
-  webui/          @tau/webui  —— bin `tau-web`：零依赖本地 Web 界面
+  webui/          @tau/webui  —— bin `tau-web`：本地 Web 界面（Vue 3 + UnoCSS 客户端，零依赖 node API）
 packages/
   core/           @tau/core    —— 领域类型、配置存储、历史、TAU_HOME 路径
   tools/          @tau/tools   —— 注册表 + file/sys/net/text 工具

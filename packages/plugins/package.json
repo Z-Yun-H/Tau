@@ -21,14 +21,14 @@
     "build": "tsdown"
   },
   "devDependencies": {
-    "tsdown": "^0.22.14",
-    "zod": "^4.5.4"
+    "tsdown": "catalog:",
+    "zod": "catalog:"
   },
   "dependencies": {
     "@tau/core": "workspace:*",
     "@tau/tools": "workspace:*"
   },
   "optionalDependencies": {
-    "@modelcontextprotocol/sdk": "^1.30.0"
+    "@modelcontextprotocol/sdk": "catalog:"
   }
 }

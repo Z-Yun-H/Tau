@@ -7,14 +7,31 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Fixed
 
+- **`--yes` now honors the medium-risk policy for tool steps.** The per-step
+  risk derivation in `runPlan()` hard-coded `low` for every tool step, so
+  `tau ask "<intent>" --yes` silently executed medium-risk tool steps
+  (`file.rename`, `text.replace`, every `plugin.*` MCP tool) even with the
+  default `allowMediumAutoApprove: false` — contradicting the documented
+  contract ("--yes auto-approves low; medium only with the opt-in config;
+  never high/blocked"). Tool steps now carry their tool's intrinsic risk
+  (unknown tools derive `blocked`), so under `--yes` a medium-risk tool step
+  waits for the opt-in config or an interactive confirmation, and a
+  high-risk tool step (e.g. a skill-declared one) is skipped exactly like a
+  high-risk shell step. The WebUI flow is unchanged (its explicit
+  request-as-approval doctrine already set `autoApproveAll`), the TUI is
+  unchanged (it confirms interactively before executing). CLI `--yes` help
+  text and both README quick-start glosses updated to state the real policy.
+  Tests: medium-refused / medium-opted-in / low-benign-lookalike /
+  high-risk-tool pairs.
+
 - **Fresh-clone gate repairs** — the pre-PR gate (`pnpm lint && pnpm typecheck
-  && pnpm test`) failed on a fresh clone under pnpm's isolated `node_modules`
+&& pnpm test`) failed on a fresh clone under pnpm's isolated `node_modules`
   layout, even though it passed on the maintainer's machine:
   - `pnpm build` could not resolve `tsdown` from the root script (it was
     declared only in each sub-package); `tsdown` now sits in the root
     `devDependencies` so the unified workspace build works everywhere.
   - `pnpm typecheck` failed on `@tau/webui`'s type-only `import type { Command }
-    from "commander"` — a phantom dependency satisfied only through sibling
+from "commander"` — a phantom dependency satisfied only through sibling
     hoisting. `commander` is now declared (as a devDependency — it is erased at
     runtime) in `@tau/webui`.
   - The MCP stdio E2E test created its scratch dir at the vitest cwd, so the
@@ -23,6 +40,28 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
     test file location (inside `packages/plugins/`), independent of cwd.
 
 ### Added
+
+- **AI collaboration operating norms** (`AGENTS/collaboration.md`, normative
+  in Chinese). Transcribes the maintainer's collaboration contract into the
+  repo's must-read chain: systematic project understanding before code;
+  Issue-first with one-PR-per-Issue (`Closes #N`); standalone dependency PRs
+  with audit + test reports; doc sync in the same PR; `[REFACTOR]` /
+  `[ARCHITECTURE]` PR tags with structure-impact statements; "此 PR 由 AI 生成"
+  in AI PR bodies plus the `AI-Generated:` commit prefix line (alongside the
+  existing `AI-declaration:` block); a CHANGELOG fragment in every PR;
+  `AGENTS.md`/`.claude/skills/` update duties; AI never merges (human review
+  mandatory, extra approval for architecture/safety PRs); CI compliance and
+  traceability. Wired into AGENTS.md (mandatory-read notice + index),
+  CLAUDE.md, CONTRIBUTING.md, AGENTS/release.md, `.gitmessage` and the PR
+  template (structure-impact section + AI note).
+
+- **CI gate workflow** (`.github/workflows/ci.yml`). CONTRIBUTING.md claimed
+  "CI runs the same gate" — now it actually does: every push to `main` and
+  every PR runs the frozen-lockfile install, `pnpm lint`, `pnpm format:check`,
+  `pnpm typecheck`, `pnpm build` (plus a built-binary smoke test), coverage-
+  thresholded `pnpm test:cov`, and a production dependency audit. CI is a
+  floor, not an approver: merge still requires human review. Both READMEs
+  gained the CI badge.
 
 - **Per-package READMEs.** Every workspace package (`@tau/core`, `@tau/tools`,
   `@tau/engine`, `@tau/ai`, `@tau/skills`, `@tau/plugins`, `@tau/agent`,
@@ -39,6 +78,78 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   `git config commit.template`) and a checklist item in the PR template.
 
 ### Changed
+
+- **Directory governance codified; stale skill paths repaired.** New
+  normative "Directory governance" table in `AGENTS/architecture.md` (human
+  summary in `docs/architecture.md`) spelling out what lives at the repo
+  root versus inside `packages/skills/` versus runtime `$TAU_HOME`: AI
+  behavior rulebooks at root (`AGENTS.md`, `AGENTS/`), AI dev-workflow
+  skills at root (`.claude/skills/*/SKILL.md` — this repo has no root
+  SKILL.md), shipped skills + `tau skill new` scaffold inside
+  `packages/skills/` (`bundled/`, `templates/` — runtime-resolved via
+  `packageRoot()`, never relocated casually), and user-scope skills under
+  `$TAU_HOME` / workspace scopes only. Fixed the broken README links to the
+  bundled skill examples (`skills/git-helper/...` →
+  `packages/skills/bundled/...` in both languages), the stale
+  `skills/<name>/SKILL.md` path in AGENTS/architecture.md, the tsdown
+  workspace description in AGENTS/conventions.md (now
+  `packages/* + app/cli`, UI apps on vite), and the frozen-runtime-deps
+  wording for commander. CONTRIBUTING dev-workflow commands updated for the
+  vite-based UI apps.
+
+- **`@tau/webui` rebuilt on Vite + Vue 3 + UnoCSS.** The local web
+  interface keeps its zero-dependency `node:http` API server
+  (`src/server.ts`) but replaces the vanilla static frontend with a Vue 3
+  single-file client (`client/App.vue`) styled by UnoCSS (`uno.config.ts`,
+  `presetWind3` theme tokens + shortcuts). Build is vite end-to-end:
+  client → `dist/client/` (served statically by the node server, with the
+  raw `client/` sources as dev/test fallback) and the `tau-web` bin via a
+  node/SSR vite config with the same shebang-keeping plugin as the TUI.
+  Dev mode: `vite dev` proxies `/api/*` to the engine server on :8787. The
+  `tau web` commander wiring moved into `@tau/cli` (`app/cli/src/web.ts`),
+  so `@tau/webui` no longer imports commander at all — the phantom
+  dependency is gone by construction, not by declaration. vue /
+  @vitejs/plugin-vue / unocss are dev-only (the client bundle ships
+  self-contained). User-visible behavior is unchanged; the API gained
+  additive fields (provider.model, plugins, skills.risk/origin) from the
+  shared session services. Root READMEs/AGENTS map wording updated.
+
+- **`@tau/tui` builds with vite.** The interactive terminal app now uses
+  vite (v8, node/SSR mode, `app/tui/vite.config.ts`) for build and
+  `vite build --watch` for its dev loop; the unified tsdown workspace build
+  narrows to `packages/* + app/cli`. Vite does not guarantee bin shebangs,
+  so a small `tau-bin-shebang` plugin re-adds `#!/usr/bin/env node` and
+  marks `dist/index.js` executable (verified by smoke test). Output and
+  runtime behavior are unchanged: `@tau/*` siblings stay external, source
+  runs via `tsx --conditions=development` are unaffected. Rationale: one
+  frontend toolchain across the two UI apps (WebUI follows), per the
+  maintainer's tooling directive. `.claude/skills/tau-build` updated to
+  describe the split build.
+
+- **Shared UI session services in `@tau/agent`.** The facts and flows that
+  the two interactive front doors (TUI REPL, WebUI server) both present and
+  drive now live in one place: `packages/agent/src/session.ts` exports
+  `getActiveProvider()`, `listProviderAvailability()`, `listSkillSummaries()`,
+  `readRecentHistory()`, `getSessionInfo()` (one async status snapshot:
+  version, TAU_HOME, provider + model, provider availability, skill/plugin
+  counts), `ensureCatalog()` (once-per-process catalog bootstrap) and
+  `planAndReview()` (intent → plan → deterministic safety review). `tau tui`
+  consumes them for `/provider` `/skills` `/history` `/status` and the intent
+  flow; `tau web` serves the same sources over `/api/*` (the status payload
+  additionally reports `provider.model` and `plugins`, and `/api/skills`
+  entries now include `risk` and `origin` — additive, clients unaffected).
+  Deduplicates catalog bootstrap, status assembly and the double
+  `reviewPlan()` call the two apps previously ran independently. No
+  execution-path change: plans still run exclusively through `runPlan()`.
+
+- **pnpm catalog adoption — one source of truth for dependency versions.**
+  All 29 external dependency specifiers across the root and the 11 workspace
+  packages now read `catalog:` from a single block in `pnpm-workspace.yaml`
+  (runtime deps, optional SDKs, toolchain), so version drift between packages
+  is impossible by construction and a version bump is a one-line change.
+  `pnpm-lock.yaml` regenerated (`--frozen-lockfile` verified); no version was
+  added, removed, upgraded or downgraded in the process — the lockfile
+  resolves to the exact same package set as before. `pnpm audit` clean.
 
 - **Unified tsdown workspace build.** `pnpm build` now runs a single tsdown
   process in workspace mode (root `tsdown.config.ts`,

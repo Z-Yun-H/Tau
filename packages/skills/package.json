@@ -23,13 +23,13 @@
     "build": "tsdown"
   },
   "devDependencies": {
-    "tsdown": "^0.22.14"
+    "tsdown": "catalog:"
   },
   "dependencies": {
     "@tau/core": "workspace:*",
     "@tau/engine": "workspace:*",
     "@tau/ui": "workspace:*",
-    "yaml": "^2.9.0",
-    "zod": "^4.5.4"
+    "yaml": "catalog:",
+    "zod": "catalog:"
   }
 }

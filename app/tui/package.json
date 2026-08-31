@@ -1,7 +1,7 @@
 {
   "name": "@tau/tui",
   "version": "0.1.0",
-  "description": "Tau interactive terminal session — REPL over the ask pipeline (bin: tau-tui)",
+  "description": "Tau interactive terminal session (REPL) — bin: tau-tui",
   "license": "MIT",
   "author": "Z-Yun-H",
   "type": "module",
@@ -21,11 +21,12 @@
     "tau-tui": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsdown"
+    "dev": "vite build --watch",
+    "build": "vite build"
   },
   "devDependencies": {
-    "tsdown": "^0.22.14",
-    "commander": "^15.0.0"
+    "commander": "catalog:",
+    "vite": "catalog:"
   },
   "dependencies": {
     "@tau/agent": "workspace:*",

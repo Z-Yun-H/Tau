@@ -21,6 +21,6 @@
     "build": "tsdown"
   },
   "devDependencies": {
-    "tsdown": "^0.22.14"
+    "tsdown": "catalog:"
   }
 }

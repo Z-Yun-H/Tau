@@ -27,7 +27,6 @@ import { registerCoreTools, registerTools, resetRegistry } from "@tau/tools";
 import { scanSkills } from "@tau/skills";
 import { buildSkillTools } from "@tau/agent";
 import { registerTuiCommand } from "@tau/tui";
-import { registerWebCommand } from "@tau/webui";
 import { registerAsk } from "./ask.js";
 import { registerFileCommands } from "./file.js";
 import { registerSysCommands } from "./sys.js";
@@ -39,6 +38,7 @@ import { registerAliasCommands, expandAliasArgv } from "./alias.js";
 import { registerProviderCommands } from "./provider.js";
 import { registerConfigCommands } from "./config.js";
 import { registerPluginCommands } from "./plugin.js";
+import { registerWebCommand } from "./web.js";
 
 const require = createRequire(import.meta.url);
 
@@ -71,7 +71,10 @@ export function buildProgram(): Command {
     .description("AI-powered unified terminal assistant — natural language in, safe commands out.")
     .version(readVersion())
     .option("--provider <name>", "AI provider for this run (mock|ollama|openai|deepseek|zai)")
-    .option("--yes", "auto-approve low/medium risk steps (never high/blocked)")
+    .option(
+      "--yes",
+      "auto-approve low-risk steps (medium needs config allowMediumAutoApprove; never high/blocked)",
+    )
     .option("--json", "machine-readable output where supported");
 
   registerAsk(program);

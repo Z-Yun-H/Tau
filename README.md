@@ -2,6 +2,7 @@
 
 **AI-powered unified terminal assistant — natural language in, safe commands out.**
 
+[![CI](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml/badge.svg)](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
 [![Tests](https://img.shields.io/badge/tests-233%20passing-success)](vitest.config.ts)
@@ -16,7 +17,7 @@ gate before it can touch your machine.
 
 ```bash
 tau ask "找出所有 TODO 的地方"          # intent -> plan -> confirm -> done
-tau ask "how much disk is left?" --yes  # auto-approve low/medium risk only
+tau ask "how much disk is left?" --yes  # auto-approve low risk (medium only with allowMediumAutoApprove)
 tau file find "*.ts"                    # or use the tools directly
 ```
 
@@ -173,8 +174,8 @@ tau skill validate my-skill    # frontmatter + deny-list scan
 tau git-helper status          # declarative commands become CLI + AI-callable tools
 ```
 
-Bundled examples: [`skills/git-helper`](skills/git-helper/SKILL.md),
-[`skills/docker-helper`](skills/docker-helper/SKILL.md).
+Bundled examples: [`packages/skills/bundled/git-helper`](packages/skills/bundled/git-helper/SKILL.md),
+[`packages/skills/bundled/docker-helper`](packages/skills/bundled/docker-helper/SKILL.md).
 Authoring guide: [docs/skills-authoring.md](docs/skills-authoring.md).
 
 ## Plugins: drive external tools over MCP
@@ -225,7 +226,7 @@ workspace resolves them at runtime. Every package and app ships its own
 app/
   cli/            @tau/cli    — bin `tau`: commander app + `tau tui` / `tau web` bridges
   tui/            @tau/tui    — bin `tau-tui`: interactive terminal session (REPL)
-  webui/          @tau/webui  — bin `tau-web`: zero-dependency local web interface
+  webui/          @tau/webui  — bin `tau-web`: local web interface (Vue 3 + UnoCSS client, zero-dependency node API)
 packages/
   core/           @tau/core    — types, config store, history, TAU_HOME paths
   tools/          @tau/tools   — registry + file/sys/net/text tools

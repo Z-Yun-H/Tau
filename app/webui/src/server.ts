@@ -10,14 +10,17 @@
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
-import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-import { readHistory, tauHome } from "@tau/core";
-import type { Plan, SafetyReview } from "@tau/core";
 import { reviewPlan, runPlan } from "@tau/engine";
-import { getProvider, providerNames, resolveProvider } from "@tau/ai";
-import { scanSkills } from "@tau/skills";
-import { planIntent, prepareCatalog, ProviderUnavailableError } from "@tau/agent";
+import type { Plan, SafetyReview } from "@tau/core";
+import {
+  ensureCatalog,
+  getSessionInfo,
+  listSkillSummaries,
+  planAndReview,
+  ProviderUnavailableError,
+  readRecentHistory,
+} from "@tau/agent";
 
 const WEBUI_TIMEOUT_SEC = 120;
 const BODY_CAP_BYTES = 1024 * 1024;
@@ -29,36 +32,33 @@ const MIME: Record<string, string> = {
   ".svg": "image/svg+xml",
   ".png": "image/png",
   ".ico": "image/x-icon",
+  ".map": "application/json; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
 };
 
-/** Tau's own version for the status endpoint (nearest package.json). */
-function readVersion(): string {
-  try {
-    const requireFromHere = createRequire(import.meta.url);
-    return (requireFromHere("../package.json") as { version?: string }).version ?? "0.0.0-dev";
-  } catch {
-    return "0.0.0-dev";
-  }
-}
-
-/** Locate public/ assets whether running from src (tsx) or the dist bundle. */
-function resolvePublicDir(): string {
+/**
+ * Locate the built client assets (dist/client from the vite client build);
+ * fall back to the raw client/ sources so the API server can also serve a
+ * page before the first build (and tests can exercise the static path).
+ */
+function resolveStaticDir(): string {
   let dir = path.dirname(fileURLToPath(import.meta.url));
   for (let i = 0; i < 4; i++) {
-    if (fs.existsSync(path.join(dir, "package.json"))) return path.join(dir, "public");
+    if (fs.existsSync(path.join(dir, "package.json"))) {
+      const pkgRoot = dir;
+      for (const candidate of [
+        path.join(pkgRoot, "dist", "client"),
+        path.join(pkgRoot, "client"),
+      ]) {
+        if (fs.existsSync(path.join(candidate, "index.html"))) return candidate;
+      }
+      return pkgRoot;
+    }
     const parent = path.dirname(dir);
     if (parent === dir) break;
     dir = parent;
   }
-  return path.resolve(process.cwd(), "public");
-}
-
-let catalogReady = false;
-function ensureCatalog(): void {
-  if (!catalogReady) {
-    prepareCatalog();
-    catalogReady = true;
-  }
+  return path.resolve(process.cwd(), "dist", "client");
 }
 
 function sendJson(res: http.ServerResponse, status: number, payload: unknown): void {
@@ -97,28 +97,24 @@ function readJsonBody(req: http.IncomingMessage): Promise<Record<string, unknown
 }
 
 async function statusPayload(): Promise<Record<string, unknown>> {
-  const choice = resolveProvider(undefined);
-  const providers = await Promise.all(
-    providerNames().map(async (name) => {
-      const provider = getProvider(name);
-      return { name, available: provider ? await provider.isAvailable() : false };
-    }),
-  );
+  const info = await getSessionInfo();
   return {
-    version: readVersion(),
-    tauHome: tauHome(),
+    version: info.version,
+    tauHome: info.tauHome,
     provider: {
-      name: choice.provider.name,
-      label: choice.provider.label,
-      source: choice.source,
+      name: info.provider.name,
+      label: info.provider.label,
+      source: info.provider.source,
+      model: info.provider.model,
     },
-    providers,
-    skills: scanSkills().skills.length,
+    providers: info.providers,
+    skills: info.skillsCount,
+    plugins: info.pluginsCount,
   };
 }
 
 export function createRequestListener(): http.RequestListener {
-  const publicDir = resolvePublicDir();
+  const staticDir = resolveStaticDir();
   return async (req, res) => {
     const url = new URL(req.url ?? "/", "http://localhost");
     try {
@@ -129,20 +125,11 @@ export function createRequestListener(): http.RequestListener {
           return;
         }
         if (req.method === "GET" && url.pathname === "/api/skills") {
-          const scan = scanSkills();
-          sendJson(
-            res,
-            200,
-            scan.skills.map((skill) => ({
-              name: skill.name,
-              description: skill.description,
-              commands: skill.commands.length,
-            })),
-          );
+          sendJson(res, 200, listSkillSummaries());
           return;
         }
         if (req.method === "GET" && url.pathname === "/api/history") {
-          sendJson(res, 200, readHistory(20));
+          sendJson(res, 200, readRecentHistory(20));
           return;
         }
         if (req.method === "POST" && url.pathname === "/api/plan") {
@@ -153,12 +140,11 @@ export function createRequestListener(): http.RequestListener {
             return;
           }
           ensureCatalog();
-          const planned = await planIntent(intent);
-          const review = reviewPlan(planned.plan);
+          const planned = await planAndReview(intent);
           sendJson(res, 200, {
             intent,
             plan: planned.plan,
-            review,
+            review: planned.review,
             provider: planned.providerName,
             providerLabel: planned.providerLabel,
             warnings: planned.warnings,
@@ -219,8 +205,8 @@ export function createRequestListener(): http.RequestListener {
         return;
       }
       const requested = url.pathname === "/" ? "/index.html" : url.pathname;
-      const target = path.resolve(publicDir, "." + requested);
-      if (!target.startsWith(publicDir + path.sep) || !fs.existsSync(target)) {
+      const target = path.resolve(staticDir, "." + requested);
+      if (!target.startsWith(staticDir + path.sep) || !fs.existsSync(target)) {
         res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
         res.end("not found");
         return;
