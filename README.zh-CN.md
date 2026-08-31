@@ -2,6 +2,7 @@
 
 **AI 驱动的统一终端助手 —— 自然语言进，安全命令出。**
 
+[![CI](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml/badge.svg)](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
 [![Tests](https://img.shields.io/badge/tests-233%20passing-success)](vitest.config.ts)

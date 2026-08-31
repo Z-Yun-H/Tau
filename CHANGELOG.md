@@ -41,6 +41,14 @@ from "commander"` — a phantom dependency satisfied only through sibling
 
 ### Added
 
+- **CI gate workflow** (`.github/workflows/ci.yml`). CONTRIBUTING.md claimed
+  "CI runs the same gate" — now it actually does: every push to `main` and
+  every PR runs the frozen-lockfile install, `pnpm lint`, `pnpm format:check`,
+  `pnpm typecheck`, `pnpm build` (plus a built-binary smoke test), coverage-
+  thresholded `pnpm test:cov`, and a production dependency audit. CI is a
+  floor, not an approver: merge still requires human review. Both READMEs
+  gained the CI badge.
+
 - **Per-package READMEs.** Every workspace package (`@tau/core`, `@tau/tools`,
   `@tau/engine`, `@tau/ai`, `@tau/skills`, `@tau/plugins`, `@tau/agent`,
   `@tau/ui`) and every app (`@tau/cli`, `@tau/tui`, `@tau/webui`) now ships
