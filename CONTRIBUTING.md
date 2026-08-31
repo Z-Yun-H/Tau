@@ -53,7 +53,7 @@ no self-merging). Human authors never add the AI markers.
 3. **User-facing changes update both READMEs** (`README.md` + `README.zh-CN.md`)
    and, when applicable, `docs/safety.md` / `docs/skills-authoring.md`.
 4. **Runtime dependencies are frozen** and live in the package that imports
-   them (commander in apps, chalk in `@tau/ui`, yaml+zod in `@tau/skills`,
+   them (commander in `@tau/cli`, chalk in `@tau/ui`, yaml+zod in `@tau/skills`,
    zod in `@tau/ai`). Adding one requires justification + AGENTS.md update.
 5. **Dry-run by default** for anything that mutates.
 6. Conventional Commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`.
@@ -65,10 +65,13 @@ no self-merging). Human authors never add the AI markers.
 
 ```bash
 pnpm install
-pnpm build                          # unified tsdown workspace build (all packages)
+pnpm build                          # unified tsdown workspace build (packages + cli)
+pnpm --filter @tau/tui build        # tui (vite, node/SSR mode)
+pnpm --filter @tau/webui build      # webui client + server (vite)
 pnpm dev -- file find "*.ts"        # run the CLI from source
-pnpm --filter @tau/tui dev          # interactive TUI from source
-pnpm --filter @tau/webui dev        # web UI from source
+pnpm --filter @tau/tui dev          # tui dev loop (vite build --watch)
+pnpm --filter @tau/webui dev        # web client dev server (proxies /api → :8787)
+pnpm dev:web                        # web engine API server (tsx, :8787)
 pnpm test:watch                     # focused loop
 ```
 

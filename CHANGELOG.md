@@ -79,6 +79,24 @@ from "commander"` — a phantom dependency satisfied only through sibling
 
 ### Changed
 
+- **Directory governance codified; stale skill paths repaired.** New
+  normative "Directory governance" table in `AGENTS/architecture.md` (human
+  summary in `docs/architecture.md`) spelling out what lives at the repo
+  root versus inside `packages/skills/` versus runtime `$TAU_HOME`: AI
+  behavior rulebooks at root (`AGENTS.md`, `AGENTS/`), AI dev-workflow
+  skills at root (`.claude/skills/*/SKILL.md` — this repo has no root
+  SKILL.md), shipped skills + `tau skill new` scaffold inside
+  `packages/skills/` (`bundled/`, `templates/` — runtime-resolved via
+  `packageRoot()`, never relocated casually), and user-scope skills under
+  `$TAU_HOME` / workspace scopes only. Fixed the broken README links to the
+  bundled skill examples (`skills/git-helper/...` →
+  `packages/skills/bundled/...` in both languages), the stale
+  `skills/<name>/SKILL.md` path in AGENTS/architecture.md, the tsdown
+  workspace description in AGENTS/conventions.md (now
+  `packages/* + app/cli`, UI apps on vite), and the frozen-runtime-deps
+  wording for commander. CONTRIBUTING dev-workflow commands updated for the
+  vite-based UI apps.
+
 - **`@tau/webui` rebuilt on Vite + Vue 3 + UnoCSS.** The local web
   interface keeps its zero-dependency `node:http` API server
   (`src/server.ts`) but replaces the vanilla static frontend with a Vue 3

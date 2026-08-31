@@ -174,8 +174,8 @@ tau skill validate my-skill    # frontmatter + deny-list scan
 tau git-helper status          # declarative commands become CLI + AI-callable tools
 ```
 
-Bundled examples: [`skills/git-helper`](skills/git-helper/SKILL.md),
-[`skills/docker-helper`](skills/docker-helper/SKILL.md).
+Bundled examples: [`packages/skills/bundled/git-helper`](packages/skills/bundled/git-helper/SKILL.md),
+[`packages/skills/bundled/docker-helper`](packages/skills/bundled/docker-helper/SKILL.md).
 Authoring guide: [docs/skills-authoring.md](docs/skills-authoring.md).
 
 ## Plugins: drive external tools over MCP

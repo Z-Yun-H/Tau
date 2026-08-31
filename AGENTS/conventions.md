@@ -17,14 +17,17 @@
 - Runtime deps belong in the package that imports them (see AGENTS.md rule 4);
   test-only deps are devDependencies of that same package.
 - Build: `pnpm build` is a UNIFIED tsdown workspace build (root
-  `tsdown.config.ts`, `workspace: ["packages/*", "app/*"]`) — one tsdown
-  process builds every package; each package's own `tsdown.config.ts` is
-  still discovered and merged on top of the shared base (neverBundle,
-  extra entries), and `pnpm --filter <pkg> build` still builds one package
-  from its own config. tsdown
-  externalizes all declared deps (workspace siblings are never bundled into
-  each other); optional SDKs (`@modelcontextprotocol/*`, `@deepseek-ai/*`) are
-  pinned via that package's `deps.neverBundle`.
+  `tsdown.config.ts`, `workspace: ["packages/*", "app/cli"]`) — one tsdown
+  process builds every engine package plus the CLI; each package's own
+  `tsdown.config.ts` is still discovered and merged on top of the shared
+  base (neverBundle, extra entries), and `pnpm --filter <pkg> build` still
+  builds one package from its own config. The two UI apps build with
+  **vite** instead (node/SSR configs in `app/tui` and `app/webui`) and are
+  outside the tsdown workspace glob.
+- Dependency versions live ONLY in the `pnpm-workspace.yaml` catalog;
+  package.json files declare `catalog:` specifiers. Bumping a version =
+  one line in the catalog + a standalone dependency PR (with
+  `pnpm audit` + full test report, see AGENTS/collaboration.md).
 
 ## Style baseline
 

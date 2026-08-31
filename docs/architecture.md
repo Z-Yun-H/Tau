@@ -100,6 +100,20 @@ wins precedence: bundled → user ($TAU_HOME/skills) → workspace (./skills,
 API keys, so it is written with chmod 0600 and keys are masked on display),
 `history.jsonl` (append-only, one `HistoryEntry` per line).
 
+## Where things live (directory governance)
+
+The normative table is in `AGENTS/architecture.md`; the short version:
+
+- **Repo root**: `AGENTS.md` + `AGENTS/` (AI behavior rulebooks), `.claude/skills/`
+  (dev-workflow SKILL.md files for coding agents — there is no root SKILL.md),
+  `docs/`, `.github/`, workspace tooling.
+- **`packages/skills/`**: `bundled/<name>/SKILL.md` (skills that ship with the
+  CLI, resolved at runtime via `packageRoot()`) and `templates/` (the
+  `tau skill new` scaffold, read at runtime).
+- **Runtime, never committed**: `$TAU_HOME/skills/` (user skills), `config.json`,
+  `history.jsonl`; plus the _user's_ project `./skills/` / `./.tau/skills/`
+  scopes. Tau's own repo never contains user-scope skills.
+
 ## Invariants
 
 1. `runPlan()` is the single execution path for AI plans.
