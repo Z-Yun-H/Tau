@@ -3,9 +3,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { runPlan } from "../src/session.js";
-import { registerCoreTools } from "@tau/tools";
+import { registerCoreTools, registerTools, getTool } from "@tau/tools";
 import { readHistory } from "@tau/core";
-import type { Plan } from "@tau/core";
+import type { Plan, ToolDefinition } from "@tau/core";
 
 const ORIGINAL_CWD = process.cwd();
 let tmp = "";
@@ -122,5 +122,102 @@ describe("runPlan", () => {
     });
     expect(fs.existsSync("precious.txt")).toBe(true);
     expect(result.outcomes[0]?.skipped).toBe(true);
+  });
+
+  it("does not auto-run a medium-risk TOOL step under --yes when allowMediumAutoApprove is false", async () => {
+    // file.rename is intrinsic-risk medium and mutates when execute:true.
+    // The documented contract (README, docs/safety.md, types.ts): --yes
+    // auto-approves low (and medium ONLY with the opt-in config) — the
+    // non-TTY confirm falls back to "no", so the step must be skipped.
+    fs.writeFileSync("report.txt", "data");
+    const plan: Plan = {
+      explanation: "rename report.txt",
+      steps: [
+        {
+          kind: "tool",
+          tool: "file.rename",
+          args: { find: "report.txt", replace: "renamed.txt", execute: true },
+          reason: "medium-risk mutating tool",
+        },
+      ],
+    };
+    const result = await runPlan("rename report", plan, {
+      assumeYes: true,
+      allowMediumAutoApprove: false,
+      timeoutSec: 5,
+      skipHistory: true,
+    });
+    expect(result.outcomes[0]?.skipped).toBe(true);
+    expect(fs.existsSync("report.txt")).toBe(true);
+    expect(fs.existsSync("renamed.txt")).toBe(false);
+  });
+
+  it("auto-runs a medium-risk TOOL step under --yes when allowMediumAutoApprove is true", async () => {
+    fs.writeFileSync("report.txt", "data");
+    const plan: Plan = {
+      explanation: "rename report.txt",
+      steps: [
+        {
+          kind: "tool",
+          tool: "file.rename",
+          args: { find: "report.txt", replace: "renamed.txt", execute: true },
+          reason: "medium-risk mutating tool, opt-in auto-approve",
+        },
+      ],
+    };
+    const result = await runPlan("rename report", plan, {
+      assumeYes: true,
+      allowMediumAutoApprove: true,
+      timeoutSec: 5,
+      skipHistory: true,
+    });
+    expect(result.status).toBe("ok");
+    expect(fs.existsSync("renamed.txt")).toBe(true);
+    expect(fs.existsSync("report.txt")).toBe(false);
+  });
+
+  it("still auto-runs a low-risk TOOL step under --yes (benign lookalike)", async () => {
+    // The read-only sibling of the mutating tools must keep sailing through.
+    fs.writeFileSync("keep.txt", "x");
+    const plan: Plan = {
+      explanation: "find txt files",
+      steps: [{ kind: "tool", tool: "file.find", args: { pattern: "*.txt" }, reason: "lookup" }],
+    };
+    const result = await runPlan("find txt", plan, {
+      assumeYes: true,
+      allowMediumAutoApprove: false,
+      timeoutSec: 5,
+      skipHistory: true,
+    });
+    expect(result.status).toBe("ok");
+    expect(result.outcomes[0]?.skipped).toBeUndefined();
+  });
+
+  it("skips a high-risk TOOL step under --yes", async () => {
+    // A skill-provided tool may declare risk: high — --yes must skip it
+    // exactly like a high-risk shell step.
+    if (!getTool("demo.dangerous")) {
+      const dangerous: ToolDefinition = {
+        name: "demo.dangerous",
+        description: "demo tool with intrinsic high risk",
+        params: [],
+        risk: "high",
+        owner: "demo",
+        run: async () => ({ text: "RAN — should never happen under --yes" }),
+      };
+      registerTools([dangerous]);
+    }
+    const plan: Plan = {
+      explanation: "run the dangerous demo tool",
+      steps: [{ kind: "tool", tool: "demo.dangerous", args: {}, reason: "high-risk tool" }],
+    };
+    const result = await runPlan("dangerous demo", plan, {
+      assumeYes: true,
+      allowMediumAutoApprove: true, // even with medium opt-in, high stays manual
+      timeoutSec: 5,
+      skipHistory: true,
+    });
+    expect(result.outcomes[0]?.skipped).toBe(true);
+    expect(result.outcomes[0]?.output).toContain("high risk step requires interactive approval");
   });
 });

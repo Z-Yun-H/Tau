@@ -16,7 +16,7 @@ gate before it can touch your machine.
 
 ```bash
 tau ask "找出所有 TODO 的地方"          # intent -> plan -> confirm -> done
-tau ask "how much disk is left?" --yes  # auto-approve low/medium risk only
+tau ask "how much disk is left?" --yes  # auto-approve low risk (medium only with allowMediumAutoApprove)
 tau file find "*.ts"                    # or use the tools directly
 ```
 
