@@ -57,6 +57,15 @@ from "commander"` — a phantom dependency satisfied only through sibling
 
 ### Changed
 
+- **pnpm catalog adoption — one source of truth for dependency versions.**
+  All 29 external dependency specifiers across the root and the 11 workspace
+  packages now read `catalog:` from a single block in `pnpm-workspace.yaml`
+  (runtime deps, optional SDKs, toolchain), so version drift between packages
+  is impossible by construction and a version bump is a one-line change.
+  `pnpm-lock.yaml` regenerated (`--frozen-lockfile` verified); no version was
+  added, removed, upgraded or downgraded in the process — the lockfile
+  resolves to the exact same package set as before. `pnpm audit` clean.
+
 - **Unified tsdown workspace build.** `pnpm build` now runs a single tsdown
   process in workspace mode (root `tsdown.config.ts`,
   `workspace: ["packages/*", "app/*"]`) instead of a `pnpm -r build` fan-out.
