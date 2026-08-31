@@ -93,6 +93,26 @@ from "commander"` — a phantom dependency satisfied only through sibling
 
 ### Changed
 
+- **Packaging unblocked: the `@tau/*` family now ships together.** Resolves
+  the structural gap tracked in #23: the packed `@tau/cli` tarball could not
+  be installed outside the workspace (`pnpm pack` rewrites the `@tau/*`
+  `workspace:*` dependencies to their workspace versions, and `npm install`
+  then 404s on the unpublished scoped packages — `@tau/agent@0.1.0`, verified
+  2026-08), so release-checklist steps 5-6 were marked blocked. Decision
+  (evidence table in #23): **family publishing** via `pnpm publish -r` —
+  bundling the siblings into the CLI would break `@tau/webui`'s
+  `import.meta.url`-based client-asset resolution and the MCP SDK
+  optional-dependency boundary, and GitHub Releases distribution conflicts
+  with the documented npm publish goal. Concretely: all 11 publishable
+  workspace packages now declare `publishConfig: { access: "public" }`
+  (scoped packages refuse to publish without it); the release checklist
+  bumps every package in lockstep and publishes with `pnpm publish -r`,
+  which rewrites `workspace:*` and `catalog:` specifiers to real versions
+  on the fly (verified on packed tarballs); the pack smoke test installs
+  the whole tarball family into a scratch project and exercises the `tau`
+  bin before any registry publish. `AGENTS/release.md` and the
+  `tau-release` skill document the unblocked flow.
+
 - **SKILL.md files now follow a three-layer placement model** — L1 root
   dev-workflow skills, L2 package tool-layer skills, L3 shipped product
   content (normative in `AGENTS/skills.md` "SKILL.md files in THIS repo" and

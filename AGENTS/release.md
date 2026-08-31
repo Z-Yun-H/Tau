@@ -57,30 +57,60 @@ versions, but must be called out in CHANGELOG under a **Breaking** header.
 
 1. `npm run lint && npm run typecheck && npm run test:cov` green
 2. Update CHANGELOG.md: move **Unreleased** → new version + date (today)
-3. Bump `version` in `app/cli/package.json` (the published `@tau/cli` —
-   it owns the `tau` bin and the release version): run
-   `npm version <major|minor|patch>` inside `app/cli/` — makes the commit
-   - tag
+3. Bump versions in lockstep — the `@tau/*` packages ship as a version-locked
+   family, and `pnpm publish` rewrites `workspace:*` to these very numbers,
+   so all 11 workspace packages must carry the release version:
+
+   ```bash
+   pnpm -r exec pnpm version <major|minor|patch> --no-git-tag-version
+   git add -A && git commit -m "chore(release): v<x.y.z>" && git tag v<x.y.z>
+   ```
+
+   (`-r` covers the publishable workspace packages; the private root is
+   skipped. `@tau/cli` owns the `tau` bin, but it is no longer the only
+   published package — its ten `@tau/*` siblings are published with it.)
+
 4. `pnpm build` (unified tsdown workspace build) — confirm
    `app/cli/dist/index.js` starts with `#!/usr/bin/env node` and
    `node app/cli/dist/index.js --help` works
-5. Smoke test the packed artifact: `pnpm pack` inside `app/cli/` produces
-   `tau-cli-<ver>.tgz` (the tarball name follows the `@tau/cli` package
-   name, NOT the repo name), then in a scratch dir
-   `npm install -g <path>/tau-cli-<ver>.tgz`, run `tau --version`,
-   `tau skill list`, `tau ask "find ts files" --yes` (mock provider needs
-   no network)
+5. Smoke test the packed family — the tarballs depend on each other by the
+   exact workspace version, so they are packed and installed together:
 
-   > **Known gap (blocked — track it in the packaging issue #23):** the
-   > smoke test above currently CANNOT pass. `pnpm pack` rewrites the
-   > `@tau/*` `workspace:*` dependencies to workspace versions, and
-   > `npm install` then 404s resolving the unpublished scoped packages from
-   > the public registry (`@tau/agent@0.1.0` → 404, verified 2026-08).
-   > Pick a publish strategy first — self-contained CLI bundle with
-   > `publishConfig`, family publishing via `pnpm publish`, or GitHub
-   > Releases artifacts — then unblock steps 5-6.
+   ```bash
+   pnpm -r pack   # → all tarballs land in the repo root, NOT next to each package.json
+   ```
 
-6. `npm publish` (CI or maintainer) — blocked by the same gap
+   Note: `-r pack` also emits a pack-only `tau-tool-<ver>.tgz` for the
+   private root (empty, no deps) — `pnpm publish -r` ignores it.
+
+   Then, in a scratch dir, install the whole family from the local
+   tarballs and exercise the bin (npm dedupes the root tarball installs
+   with the CLI's transitive `@tau/*@<ver>` requirements):
+
+   ```bash
+   mkdir -p /tmp/tau-smoke && cd /tmp/tau-smoke && npm init -y
+   npm install $(ls <repo>/tau-*.tgz | grep -v '/tau-tool-')
+   ./node_modules/.bin/tau --version
+   ./node_modules/.bin/tau skill list
+   ./node_modules/.bin/tau skill new demo test   # proves bundled/ + templates/ ship
+   ./node_modules/.bin/tau ask "find ts files" --yes   # mock provider needs no network
+   ```
+
+   The tarball name follows each `@tau/*` package name (`@tau/cli` →
+   `tau-cli-<ver>.tgz`), NOT the repo name. Structural gate: the packed
+   manifests must contain no `workspace:` / `catalog:` specifiers —
+   `pnpm pack` rewrites both (`for t in tau-*.tgz; do tar -xOzf "$t"
+package/package.json | grep -E 'workspace:|catalog:' && echo "FAIL $t";
+done` must find nothing). After the first real publish, a plain
+   `npm install -g @tau/cli@<ver>` in a clean environment is the stronger
+   regression check.
+
+6. `pnpm publish -r --access public --no-git-checks` from the repo root
+   (CI or maintainer): pnpm rewrites `workspace:*` and `catalog:` on the
+   fly, publishes in dependency order, and skips the private root. Each
+   package already declares `publishConfig: { access: "public" }` —
+   scoped packages refuse to publish without it. Requires an npm account
+   with access to the `@tau` scope.
 
 ## What ships in the packages (package.json "files")
 
@@ -90,10 +120,10 @@ versions, but must be called out in CHANGELOG under a **Breaking** header.
 
 Careful: `templates/` and `bundled/` are resolved relative to the `@tau/skills`
 package root at runtime via `packages/skills/src/assets.ts packageRoot()`. If
-you move them, update that function — the smoke test below breaks, that's your
+you move them, update that function — the smoke test above breaks, that's your
 signal. Note that today they ship inside the `@tau/skills` artifact, while the
-`tau` bin ships as `@tau/cli` — the pack/publish flow must keep the two
-consistent (see the packaging gap note above).
+`tau` bin ships as `@tau/cli` — both artifacts publish in the same lockstep
+family release, which is what keeps the pair consistent.
 
 ## After release
 
