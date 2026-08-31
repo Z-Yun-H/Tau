@@ -10,9 +10,13 @@ Run the build pipeline in order. Each step must pass before the next:
 ```bash
 npm run typecheck   # tsc --noEmit — all TypeScript in src/ and tests/
 npm run lint        # oxlint (.oxlintrc.json)
-pnpm build          # unified tsdown workspace build (all 11 packages)
+pnpm build          # unified tsdown workspace build (packages/* + app/cli)
 node app/cli/dist/index.js --help   # verify the bundle actually runs
 ```
+
+`@tau/tui` and `@tau/webui` build with **vite** (node/SSR mode), not tsdown:
+`pnpm --filter @tau/tui build && pnpm --filter @tau/webui build` — both must
+still produce a runnable `dist/index.js` starting with `#!/usr/bin/env node`.
 
 ## Expectations
 
