@@ -101,9 +101,14 @@ describe("MCP integration (real stdio transport, spawned server)", () => {
     async () => {
       const fs = await import("node:fs");
       const path = await import("node:path");
+      const { fileURLToPath } = await import("node:url");
       // The child resolves the SDK/zod from node_modules upward, so the
-      // scratch dir must live INSIDE the project, not in the OS tmpdir.
-      const dir = fs.mkdtempSync(path.join(process.cwd(), ".tmp-mcp-e2e-"));
+      // scratch dir must live INSIDE the owning package (packages/plugins/),
+      // not in the OS tmpdir and not at the repo root — under pnpm's isolated
+      // layout only this package's node_modules links the MCP SDK, and the
+      // root vitest cwd cannot see it.
+      const pkgRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+      const dir = fs.mkdtempSync(path.join(pkgRoot, ".tmp-mcp-e2e-"));
       try {
         await runStdioE2E(dir);
       } finally {
