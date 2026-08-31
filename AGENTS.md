@@ -5,6 +5,12 @@
 repository. Humans are welcome too — it doubles as the fastest tour of the
 codebase.
 
+> **MANDATORY for AI agents:** besides this file, read
+> [`AGENTS/collaboration.md`](./AGENTS/collaboration.md) — the AI
+> collaboration operating norms (issue→PR flow, AI labeling, changelog
+> fragments, merge policy). It is binding; violating it is a process
+> failure even when the code itself is correct.
+
 > Detailed rulebooks live in [`AGENTS/`](./AGENTS/). The split:
 > this file = what you must know in 60 seconds; AGENTS = what you need when
 > you actually touch a subsystem.
@@ -103,6 +109,7 @@ docs/                       human-facing deep dives (architecture, safety, skill
 
 | File                                                   | Read it when...                                                 |
 | ------------------------------------------------------ | --------------------------------------------------------------- |
+| [AGENTS/collaboration.md](./AGENTS/collaboration.md)   | **always — AI collaboration norms (mandatory, normative)**      |
 | [AGENTS/architecture.md](./AGENTS/architecture.md)     | you add/modify any module, command, or the plan pipeline        |
 | [AGENTS/conventions.md](./AGENTS/conventions.md)       | you write any TypeScript in this repo                           |
 | [AGENTS/testing.md](./AGENTS/testing.md)               | you write or run tests                                          |
@@ -122,9 +129,12 @@ docs/                       human-facing deep dives (architecture, safety, skill
 - [ ] Plugin-related change? → AGENTS/plugins.md checklist
 - [ ] `docs/safety.md` still truthful after your change
 - [ ] CHANGELOG.md entry under **Unreleased**
-- [ ] Commit authored by an AI agent? → `AI-declaration:` block in the
-      commit message, presented to the human BEFORE committing
-      (AGENTS/release.md)
+- [ ] AI-authored? → PR body notes "此 PR 由 AI 生成"；every AI commit carries
+      the `AI-Generated:` prefix line AND the `AI-declaration:` block,
+      presented to the human BEFORE committing (AGENTS/collaboration.md,
+      AGENTS/release.md)
+- [ ] PR title tagged `[REFACTOR]` / `[ARCHITECTURE]` when applicable; AI
+      never merges — human review required
 
 ## Commit style
 

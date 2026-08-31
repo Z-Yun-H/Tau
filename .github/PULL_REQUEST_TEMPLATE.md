@@ -1,12 +1,21 @@
 <!--
-  Every change lands on main through a PR (see CONTRIBUTING.md / AGENTS/release.md).
-  Keep PRs to one logical change. Run the pre-PR gate before opening:
+  Every change lands on main through a PR (see CONTRIBUTING.md / AGENTS/collaboration.md).
+  Keep PRs to one logical change, linked to its Issue. Run the pre-PR gate before opening:
   pnpm lint && pnpm typecheck && pnpm test
 -->
 
 ## What & why
 
 <!-- One paragraph: what changed and why it is needed. Link the issue if any. -->
+<!-- Refactor or architecture change? Tag the PR title [REFACTOR] / [ARCHITECTURE]
+     and include motivation, impact scope, risks and a structure-impact statement. -->
+
+## 结构影响说明 (structure impact)
+
+<!-- New/changed modules & responsibilities; dependency changes (catalog?);
+     coupling points or risks. Required for every PR. -->
+
+> 此 PR 由 AI 生成（AI-authored PRs must state this; human PRs remove the line）
 
 ## How it was tested
 
@@ -30,6 +39,7 @@
 
 - [ ] User-facing changes documented in BOTH `README.md` and `README.zh-CN.md`
 - [ ] `CHANGELOG.md` entry under **Unreleased**
-- [ ] Affected `AGENTS/*.md` / `docs/*.md` rulebooks updated
-- [ ] AI-authored commits carry the `AI-declaration:` block
-      (see [AGENTS/release.md](../AGENTS/release.md))
+- [ ] Affected `AGENTS/*.md` / `.claude/skills/` / `docs/*.md` updated
+- [ ] AI-authored? → PR body notes "此 PR 由 AI 生成"; commits carry the
+      `AI-Generated:` line + `AI-declaration:` block
+      (see [AGENTS/collaboration.md](../AGENTS/collaboration.md))

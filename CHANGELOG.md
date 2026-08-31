@@ -41,6 +41,20 @@ from "commander"` — a phantom dependency satisfied only through sibling
 
 ### Added
 
+- **AI collaboration operating norms** (`AGENTS/collaboration.md`, normative
+  in Chinese). Transcribes the maintainer's collaboration contract into the
+  repo's must-read chain: systematic project understanding before code;
+  Issue-first with one-PR-per-Issue (`Closes #N`); standalone dependency PRs
+  with audit + test reports; doc sync in the same PR; `[REFACTOR]` /
+  `[ARCHITECTURE]` PR tags with structure-impact statements; "此 PR 由 AI 生成"
+  in AI PR bodies plus the `AI-Generated:` commit prefix line (alongside the
+  existing `AI-declaration:` block); a CHANGELOG fragment in every PR;
+  `AGENTS.md`/`.claude/skills/` update duties; AI never merges (human review
+  mandatory, extra approval for architecture/safety PRs); CI compliance and
+  traceability. Wired into AGENTS.md (mandatory-read notice + index),
+  CLAUDE.md, CONTRIBUTING.md, AGENTS/release.md, `.gitmessage` and the PR
+  template (structure-impact section + AI note).
+
 - **CI gate workflow** (`.github/workflows/ci.yml`). CONTRIBUTING.md claimed
   "CI runs the same gate" — now it actually does: every push to `main` and
   every PR runs the frozen-lockfile install, `pnpm lint`, `pnpm format:check`,

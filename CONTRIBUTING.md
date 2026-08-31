@@ -37,8 +37,12 @@ Direct pushes to `main` are reserved for maintainers' exceptional housekeeping
 Commits authored by an AI agent are welcome but must never be silent: the
 agent presents an **AI commit declaration** before committing and the commit
 message ends with the `AI-declaration:` trailer block (format in
-[AGENTS/release.md](AGENTS/release.md), template in `.gitmessage`). Human
-authors never add the block.
+[AGENTS/release.md](AGENTS/release.md), template in `.gitmessage`). AI agents
+additionally carry the `AI-Generated: <说明>` prefix line in the commit
+message, note "此 PR 由 AI 生成" in the PR body, and follow the full
+collaboration norms in [AGENTS/collaboration.md](AGENTS/collaboration.md)
+(issue→PR flow, `[REFACTOR]`/`[ARCHITECTURE]` tags, changelog fragments,
+no self-merging). Human authors never add the AI markers.
 
 ## Ground rules
 
