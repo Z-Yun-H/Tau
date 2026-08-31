@@ -109,7 +109,7 @@ docs/                       human-facing deep dives (architecture, safety, skill
 
 | File                                                   | Read it when...                                                 |
 | ------------------------------------------------------ | --------------------------------------------------------------- |
-| [AGENTS/collaboration.md](./AGENTS/collaboration.md)   | **always — AI collaboration norms (mandatory, normative)**        |
+| [AGENTS/collaboration.md](./AGENTS/collaboration.md)   | **always — AI collaboration norms (mandatory, normative)**      |
 | [AGENTS/architecture.md](./AGENTS/architecture.md)     | you add/modify any module, command, or the plan pipeline        |
 | [AGENTS/conventions.md](./AGENTS/conventions.md)       | you write any TypeScript in this repo                           |
 | [AGENTS/testing.md](./AGENTS/testing.md)               | you write or run tests                                          |
