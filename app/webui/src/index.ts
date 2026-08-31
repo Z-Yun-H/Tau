@@ -10,6 +10,7 @@
  */
 
 import { pathToFileURL } from "node:url";
+import { realpathSync } from "node:fs";
 import { startWebUi } from "./server.js";
 
 export { createRequestListener, startWebUi } from "./server.js";
@@ -18,8 +19,18 @@ export type { RunningWebUi, StartWebUiOptions } from "./server.js";
 const DEFAULT_PORT = 8787;
 
 // Only auto-run when executed directly as the tau-web binary.
-const invokedDirectly =
-  process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
+// Installed bins run through a symlink (npm/pnpm .bin, `pnpm link`), so
+// argv[1] must be resolved to its realpath before comparing against
+// import.meta.url (Node ESM reports this module under its real path).
+const invokedDirectly = (() => {
+  const entry = process.argv[1];
+  if (entry === undefined) return false;
+  try {
+    return import.meta.url === pathToFileURL(realpathSync(entry)).href;
+  } catch {
+    return false;
+  }
+})();
 
 if (invokedDirectly) {
   const argIndex = process.argv.indexOf("--port");

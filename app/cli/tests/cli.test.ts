@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { main, buildProgram } from "../src/index.js";
 
 const ORIGINAL_CWD = process.cwd();
@@ -117,5 +119,27 @@ describe("CLI integration (in-process)", () => {
     await run("--provider", "mock", "--yes", "ask", "find files"); // before
     await run("ask", "find files", "--provider", "mock", "--yes"); // after
     expect(process.exitCode ?? 0).toBe(0);
+  });
+});
+
+describe("bin invocation (packaged layout)", () => {
+  it("runs when launched through a symlinked bin path (npm/pnpm .bin, pnpm link)", () => {
+    const dist = fileURLToPath(new URL("../../dist/index.js", import.meta.url));
+    if (!fs.existsSync(dist)) {
+      // dist is produced by `pnpm build`; the pack smoke test covers this
+      // path on a clean clone. Skip here rather than fail the unit gate.
+      return;
+    }
+    const link = path.join(tmp, "tau-via-bin-link");
+    fs.symlinkSync(dist, link, "file");
+    const res = spawnSync(process.execPath, [link, "--version"], {
+      encoding: "utf8",
+    });
+    expect(res.error).toBeUndefined();
+    expect(res.status).toBe(0);
+    // The historical bug: the entry guard compared import.meta.url with the
+    // raw argv[1], so every symlinked invocation silently exited 0 with no
+    // output. A symlinked bin MUST print the version.
+    expect(res.stdout.trim()).toMatch(/^\d+\.\d+\.\d+$/);
   });
 });

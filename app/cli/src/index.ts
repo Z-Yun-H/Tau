@@ -23,6 +23,7 @@
 import { Command } from "commander";
 import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
+import { realpathSync } from "node:fs";
 import { registerCoreTools, registerTools, resetRegistry } from "@tau/tools";
 import { scanSkills } from "@tau/skills";
 import { buildSkillTools } from "@tau/agent";
@@ -103,8 +104,18 @@ export async function main(inputArgv = process.argv): Promise<void> {
 }
 
 // Only auto-run when executed directly (not when imported by tests).
-const invokedDirectly =
-  process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
+// Installed bins run through a symlink (npm/pnpm .bin, `pnpm link`), so
+// argv[1] must be resolved to its realpath before comparing against
+// import.meta.url (Node ESM reports this module under its real path).
+const invokedDirectly = (() => {
+  const entry = process.argv[1];
+  if (entry === undefined) return false;
+  try {
+    return import.meta.url === pathToFileURL(realpathSync(entry)).href;
+  } catch {
+    return false;
+  }
+})();
 
 if (invokedDirectly) {
   main().catch((error) => {
