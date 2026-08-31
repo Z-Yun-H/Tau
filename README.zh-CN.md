@@ -166,8 +166,8 @@ tau skill validate my-skill    # frontmatter + 黑名单扫描
 tau git-helper status          # 声明式命令自动成为 CLI + AI 可调用工具
 ```
 
-内置示例：[`skills/git-helper`](skills/git-helper/SKILL.md)、
-[`skills/docker-helper`](skills/docker-helper/SKILL.md)。
+内置示例：[`packages/skills/bundled/git-helper`](packages/skills/bundled/git-helper/SKILL.md)、
+[`packages/skills/bundled/docker-helper`](packages/skills/bundled/docker-helper/SKILL.md)。
 编写指南：[docs/skills-authoring.md](docs/skills-authoring.md)。
 
 ## Plugins：通过 MCP 驱动外部工具

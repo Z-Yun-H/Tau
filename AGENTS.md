@@ -47,7 +47,8 @@ independent execution paths.)
    `text.replace`). `execute:true` is always an explicit, visible choice.
 4. **No new runtime dependencies** without updating AGENTS/architecture.md
    and justifying it in the PR description. Runtime deps live in the package
-   that actually imports them: commander (`@tau/cli`/`@tau/tui`), chalk
+   that actually imports them: commander (`@tau/cli`; type-only devDep in
+   `@tau/tui`), chalk
    (`@tau/ui`), yaml+zod (`@tau/skills`), zod (`@tau/ai`). The only sanctioned
    exceptions are optionalDependencies (the MCP SDK `@modelcontextprotocol/sdk`
    for plugins and the DeepSeek Harness seam `@deepseek-ai/dsh-llm` for the

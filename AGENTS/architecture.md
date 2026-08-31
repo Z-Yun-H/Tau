@@ -64,10 +64,31 @@ package and run by the single root vitest config (aliases `@tau/*` → source).
 | add a command family (e.g. `tau pkg`)       | new `packages/tools/src/pkg.ts` + `app/cli/src/pkg.ts` + register both in `app/cli/src/index.ts buildProgram()` + update this file + both READMEs                                                                      |
 | add an AI provider                          | implement AIProvider in `packages/ai/src/providers/<name>.ts` + register in `packages/ai/src/registry.ts` + config defaults in `packages/core/src/config/store.ts DEFAULT_CONFIG.providers` + AGENTS/ai-integration.md |
 | integrate an external tool server (MCP)     | nothing to code — `tau plugin add`; changing the MCP layer itself → `packages/plugins/src/*` + AGENTS/plugins.md (plugin tools are ALWAYS medium risk)                                                                 |
-| add a bundled skill                         | new dir `skills/<name>/SKILL.md` (spec: AGENTS/skills.md) — no TS code required for declarative commands                                                                                                               |
+| add a bundled skill                         | new dir `packages/skills/bundled/<name>/SKILL.md` (spec: AGENTS/skills.md) — no TS code required for declarative commands                                                                                              |
 | change the plan schema                      | `packages/ai/src/prompt.ts planSchema` + safety reviewer expectations + tests + this diagram                                                                                                                           |
 | change config keys                          | `packages/core/src/types.ts TauConfig` + `packages/core/src/config/store.ts` (defaults + VALID_KEYS) + READMEs                                                                                                         |
 | add model discovery to a provider           | optional `listModels()` on the provider (throw on failure) + `packages/ai/src/models.ts` handles caching; UI via `tau provider` (app/cli/src/provider.ts); contract in AGENTS/ai-integration.md                        |
+
+## Directory governance (normative)
+
+Where things live — and must KEEP living. Root vs package placement is not
+accidental; do not relocate these without updating this table in the same PR.
+
+| Location                 | Contents                                                                                                 | Why here                                                                                                                                            |
+| ------------------------ | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **repo root**            | `AGENTS.md`, `AGENTS/`                                                                                   | AI agent entry + per-subsystem rulebooks (mandatory read chain)                                                                                     |
+| repo root                | `.claude/skills/*/SKILL.md`                                                                              | dev-workflow skills for AI coding agents (tau-build, tau-test, tau-release, tau-skill-new) — this repo's "SKILL.md role"; there is NO root SKILL.md |
+| repo root                | `docs/`, `.github/`, `.devcontainer/`, `.gitmessage`                                                     | human deep dives, CI/PR automation, commit template                                                                                                 |
+| repo root                | `package.json`, `pnpm-workspace.yaml` (catalog), `tsdown.config.ts`, `vitest.config.ts`, `tsconfig.json` | workspace-wide tooling; dependency versions live ONLY in the catalog                                                                                |
+| **`packages/skills/`**   | `bundled/<name>/SKILL.md`                                                                                | user-facing skills that SHIP with the CLI — resolved at runtime via `packageRoot()` (moving them breaks `tau skill list`)                           |
+| `packages/skills/`       | `templates/skill-template/`                                                                              | scaffold source for `tau skill new` — read at RUNTIME; keep in `ignorePatterns` of oxfmt (`{{placeholders}}` must survive) and in package `files`   |
+| **runtime `$TAU_HOME/`** | `skills/<name>/` (user scope), `config.json`, `history.jsonl`                                            | never committed; tests override `TAU_HOME`                                                                                                          |
+| runtime workspace        | `./skills/`, `./.tau/skills/`                                                                            | workspace-scope skills of the _user's_ project — never Tau's own skills                                                                             |
+
+Rule of thumb: AI _behavior_ docs → root (`AGENTS*`); AI _executable dev
+skills_ → root (`.claude/skills/`); _shipped user skills and the scaffold_ →
+`packages/skills/`; _everything the CLI reads at runtime from the user's
+machine_ → `$TAU_HOME`/workspace scope, never the repo.
 
 ## Runtime data layout ($TAU_HOME, default ~/.tau)
 
