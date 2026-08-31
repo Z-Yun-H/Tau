@@ -32,18 +32,33 @@ const MIME: Record<string, string> = {
   ".svg": "image/svg+xml",
   ".png": "image/png",
   ".ico": "image/x-icon",
+  ".map": "application/json; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
 };
 
-/** Locate public/ assets whether running from src (tsx) or the dist bundle. */
-function resolvePublicDir(): string {
+/**
+ * Locate the built client assets (dist/client from the vite client build);
+ * fall back to the raw client/ sources so the API server can also serve a
+ * page before the first build (and tests can exercise the static path).
+ */
+function resolveStaticDir(): string {
   let dir = path.dirname(fileURLToPath(import.meta.url));
   for (let i = 0; i < 4; i++) {
-    if (fs.existsSync(path.join(dir, "package.json"))) return path.join(dir, "public");
+    if (fs.existsSync(path.join(dir, "package.json"))) {
+      const pkgRoot = dir;
+      for (const candidate of [
+        path.join(pkgRoot, "dist", "client"),
+        path.join(pkgRoot, "client"),
+      ]) {
+        if (fs.existsSync(path.join(candidate, "index.html"))) return candidate;
+      }
+      return pkgRoot;
+    }
     const parent = path.dirname(dir);
     if (parent === dir) break;
     dir = parent;
   }
-  return path.resolve(process.cwd(), "public");
+  return path.resolve(process.cwd(), "dist", "client");
 }
 
 function sendJson(res: http.ServerResponse, status: number, payload: unknown): void {
@@ -99,7 +114,7 @@ async function statusPayload(): Promise<Record<string, unknown>> {
 }
 
 export function createRequestListener(): http.RequestListener {
-  const publicDir = resolvePublicDir();
+  const staticDir = resolveStaticDir();
   return async (req, res) => {
     const url = new URL(req.url ?? "/", "http://localhost");
     try {
@@ -190,8 +205,8 @@ export function createRequestListener(): http.RequestListener {
         return;
       }
       const requested = url.pathname === "/" ? "/index.html" : url.pathname;
-      const target = path.resolve(publicDir, "." + requested);
-      if (!target.startsWith(publicDir + path.sep) || !fs.existsSync(target)) {
+      const target = path.resolve(staticDir, "." + requested);
+      if (!target.startsWith(staticDir + path.sep) || !fs.existsSync(target)) {
         res.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
         res.end("not found");
         return;

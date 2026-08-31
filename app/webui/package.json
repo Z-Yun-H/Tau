@@ -1,7 +1,7 @@
 {
   "name": "@tau/webui",
   "version": "0.1.0",
-  "description": "Tau local web interface — zero-dependency HTTP server + static UI (bin: tau-web)",
+  "description": "Tau local web interface — node HTTP API + Vue 3 / UnoCSS client (bin: tau-web)",
   "license": "MIT",
   "author": "Z-Yun-H",
   "type": "module",
@@ -21,11 +21,16 @@
     "tau-web": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsdown"
+    "dev": "vite dev",
+    "dev:server": "tsx --conditions=development src/index.ts",
+    "build": "vite build && vite build -c vite.server.config.ts"
   },
   "devDependencies": {
-    "commander": "catalog:",
-    "tsdown": "catalog:"
+    "@vitejs/plugin-vue": "catalog:",
+    "tsx": "catalog:",
+    "unocss": "catalog:",
+    "vite": "catalog:",
+    "vue": "catalog:"
   },
   "dependencies": {
     "@tau/core": "workspace:*",
