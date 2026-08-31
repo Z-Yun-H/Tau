@@ -103,6 +103,8 @@ packages/                   engine layer (each with a public src/index.ts barrel
   ui/src/                   chalk theme, confirm prompt, list picker
 tests                       live INSIDE each package: <pkg>/tests/*.test.ts
 AGENTS/                     deep-dive rulebooks for agents (see below)
+.claude/skills/             root dev-workflow skills for coding agents; package
+                            tool-layer skills live at packages/<pkg>/SKILL.md
 docs/                       human-facing deep dives (architecture, safety, skills, plugins)
 ```
 

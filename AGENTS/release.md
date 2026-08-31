@@ -57,16 +57,30 @@ versions, but must be called out in CHANGELOG under a **Breaking** header.
 
 1. `npm run lint && npm run typecheck && npm run test:cov` green
 2. Update CHANGELOG.md: move **Unreleased** → new version + date (today)
-3. Bump `version` in package.json (`npm version <major|minor|patch>` makes
-   the commit + tag)
+3. Bump `version` in `app/cli/package.json` (the published `@tau/cli` —
+   it owns the `tau` bin and the release version): run
+   `npm version <major|minor|patch>` inside `app/cli/` — makes the commit
+   - tag
 4. `pnpm build` (unified tsdown workspace build) — confirm
    `app/cli/dist/index.js` starts with `#!/usr/bin/env node` and
    `node app/cli/dist/index.js --help` works
-5. Smoke test the packed artifact:
-   `npm pack` then in a scratch dir `npm install -g tau-tool-<ver>.tgz`,
-   run `tau --version`, `tau skill list`, `tau ask "find ts files" --yes`
-   (mock provider needs no network)
-6. `npm publish` (CI or maintainer)
+5. Smoke test the packed artifact: `pnpm pack` inside `app/cli/` produces
+   `tau-cli-<ver>.tgz` (the tarball name follows the `@tau/cli` package
+   name, NOT the repo name), then in a scratch dir
+   `npm install -g <path>/tau-cli-<ver>.tgz`, run `tau --version`,
+   `tau skill list`, `tau ask "find ts files" --yes` (mock provider needs
+   no network)
+
+   > **Known gap (blocked — track it in the packaging issue #23):** the
+   > smoke test above currently CANNOT pass. `pnpm pack` rewrites the
+   > `@tau/*` `workspace:*` dependencies to workspace versions, and
+   > `npm install` then 404s resolving the unpublished scoped packages from
+   > the public registry (`@tau/agent@0.1.0` → 404, verified 2026-08).
+   > Pick a publish strategy first — self-contained CLI bundle with
+   > `publishConfig`, family publishing via `pnpm publish`, or GitHub
+   > Releases artifacts — then unblock steps 5-6.
+
+6. `npm publish` (CI or maintainer) — blocked by the same gap
 
 ## What ships in the packages (package.json "files")
 
@@ -77,7 +91,9 @@ versions, but must be called out in CHANGELOG under a **Breaking** header.
 Careful: `templates/` and `bundled/` are resolved relative to the `@tau/skills`
 package root at runtime via `packages/skills/src/assets.ts packageRoot()`. If
 you move them, update that function — the smoke test below breaks, that's your
-signal.
+signal. Note that today they ship inside the `@tau/skills` artifact, while the
+`tau` bin ships as `@tau/cli` — the pack/publish flow must keep the two
+consistent (see the packaging gap note above).
 
 ## After release
 

@@ -83,6 +83,8 @@ Tau 将"AI 行为准则"与"AI 可执行技能"分别存放：
 
 - 新增或修改 **AI 行为准则、工作流程** → 更新 `AGENTS.md` 或 `AGENTS/` 对应规则本。
 - 新增或修改 **AI 可执行技能、工具调用方式** → 更新 `.claude/skills/<name>/SKILL.md`（仓库根目录的 dev-workflow 技能，即本项目承载 SKILL.md 职责的位置）。
+- 新增或修改**单包领域的工具技能**（仅与某一个包相关的知识）→ 更新 `packages/<pkg>/SKILL.md`（工具层，随包版本化维护）；如需保持根级触发词可发现性，可在 `.claude/skills/` 保留一个指向它的薄路由。三层归属模型以 `AGENTS/skills.md`（"SKILL.md files in THIS repo — three layers"）与 `AGENTS/architecture.md` 治理表为规范来源。
+- **注意区分**：`packages/skills/bundled/` 与 `templates/` 下的 SKILL.md 是随 CLI 发售的**用户产品数据**（运行时数据，非代理技能），不属于上述任何一层，按产品内容层治理。
 - **必须**在 PR 描述中说明是否涉及上述文件的更新，并列出具体修改内容。
 - **禁止**在未检查这两处是否需要更新的情况下提交 PR。
 

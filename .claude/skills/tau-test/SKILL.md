@@ -27,11 +27,12 @@ npm run test:cov    # with coverage thresholds (pre-PR gate)
 1. **safety.test.ts failures** — you (or someone) changed DENY_PATTERNS or
    the reviewer. This is the most important file in the repo; restore
    behavior or add the missing benign-lookalike test.
-2. **integration/cli.test.ts timeouts** — likely a confirm() prompt waiting
+2. **app/cli/tests/cli.test.ts timeouts** — likely a confirm() prompt waiting
    on stdin; the test env is non-TTY so runPlan must be called with
    `assumeYes` or `autoApproveAll`.
 3. **skills tests failing after schema edits** — update the fixture
-   SKILL.md files AND the spec in AGENTS.d/skills.md together.
+   SKILL.md files AND the spec in AGENTS/skills.md together; the authoring
+   workflow itself lives in the tool-layer skill `packages/skills/SKILL.md`.
 
 ## Before you say "done"
 

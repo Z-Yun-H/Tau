@@ -3,11 +3,18 @@
 A Tau skill is a directory with one `SKILL.md` file. That's it — no build
 step, no code required (helper scripts are optional and never auto-executed).
 
+> **Contributing to Tau itself?** For AI agents, the executable authoring
+> workflow is the tool-layer skill [`packages/skills/SKILL.md`](../packages/skills/SKILL.md),
+> and the normative rules are [`AGENTS/skills.md`](../AGENTS/skills.md).
+> This guide covers the user-facing (product) side; the repo-side placement
+> model for SKILL.md files — root / tool / product — is defined in
+> `AGENTS/skills.md`.
+
 ## Where skills live
 
 | Scope     | Location                                      | Wins when              |
 | --------- | --------------------------------------------- | ---------------------- |
-| bundled   | `<package>/skills/`                           | base                   |
+| bundled   | `packages/skills/bundled/` (in the Tau repo)  | base                   |
 | user      | `$TAU_HOME/skills/` (default `~/.tau/skills`) | same name as bundled   |
 | workspace | `./skills/` or `./.tau/skills/`               | same name as the above |
 
@@ -98,6 +105,7 @@ $ tau pr-summarizer open           # run a declarative command
 ## Publishing
 
 Skills are just directories — commit them to your repo's `skills/` folder
-(workspace scope) and collaborators get them on clone. To propose a skill for
-Tau's bundled set, open a PR against `skills/` and include the output of
+(workspace scope — your project's skills, not Tau's own) and collaborators
+get them on clone. To propose a skill for Tau's bundled set, open a PR
+against `packages/skills/bundled/` in the Tau repo and include the output of
 `tau skill validate <name>`.

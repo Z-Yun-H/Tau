@@ -105,11 +105,14 @@ API keys, so it is written with chmod 0600 and keys are masked on display),
 The normative table is in `AGENTS/architecture.md`; the short version:
 
 - **Repo root**: `AGENTS.md` + `AGENTS/` (AI behavior rulebooks), `.claude/skills/`
-  (dev-workflow SKILL.md files for coding agents — there is no root SKILL.md),
-  `docs/`, `.github/`, workspace tooling.
+  (root-layer dev-workflow SKILL.md files for coding agents — tau-skill-new is
+  a thin router; there is no root SKILL.md), `docs/`, `.github/`, workspace
+  tooling. Package-bound agent skills live at `packages/<pkg>/SKILL.md`
+  (tool layer — today only `packages/skills/SKILL.md`).
 - **`packages/skills/`**: `bundled/<name>/SKILL.md` (skills that ship with the
   CLI, resolved at runtime via `packageRoot()`) and `templates/` (the
-  `tau skill new` scaffold, read at runtime).
+  `tau skill new` scaffold, read at runtime) — these are product content
+  (runtime data for the CLI), not agent skills.
 - **Runtime, never committed**: `$TAU_HOME/skills/` (user skills), `config.json`,
   `history.jsonl`; plus the _user's_ project `./skills/` / `./.tau/skills/`
   scopes. Tau's own repo never contains user-scope skills.
