@@ -79,6 +79,18 @@ from "commander"` — a phantom dependency satisfied only through sibling
 
 ### Changed
 
+- **`@tau/tui` builds with vite.** The interactive terminal app now uses
+  vite (v8, node/SSR mode, `app/tui/vite.config.ts`) for build and
+  `vite build --watch` for its dev loop; the unified tsdown workspace build
+  narrows to `packages/* + app/cli`. Vite does not guarantee bin shebangs,
+  so a small `tau-bin-shebang` plugin re-adds `#!/usr/bin/env node` and
+  marks `dist/index.js` executable (verified by smoke test). Output and
+  runtime behavior are unchanged: `@tau/*` siblings stay external, source
+  runs via `tsx --conditions=development` are unaffected. Rationale: one
+  frontend toolchain across the two UI apps (WebUI follows), per the
+  maintainer's tooling directive. `.claude/skills/tau-build` updated to
+  describe the split build.
+
 - **Shared UI session services in `@tau/agent`.** The facts and flows that
   the two interactive front doors (TUI REPL, WebUI server) both present and
   drive now live in one place: `packages/agent/src/session.ts` exports

@@ -34,8 +34,13 @@ auto-approve mode — same semantics as `tau ask --yes`).
 ## Development
 
 ```bash
-pnpm dev:tui                        # run from source
-pnpm --filter @tau/tui build
+pnpm dev:tui                        # run from source (tsx, dev condition)
+pnpm --filter @tau/tui dev          # vite build --watch (dev loop)
+pnpm --filter @tau/tui build        # vite build (node/SSR mode, dist/index.js)
 ```
+
+Build: vite in node/SSR mode (see `vite.config.ts`) — workspace `@tau/*`
+siblings stay external and the `#!/usr/bin/env node` shebang is re-added to
+`dist/index.js` so the `bin` stays executable.
 
 No new execution channels: the TUI is a front door, the engine is the door.
