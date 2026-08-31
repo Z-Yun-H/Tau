@@ -5,6 +5,23 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+### Fixed
+
+- **Fresh-clone gate repairs** — the pre-PR gate (`pnpm lint && pnpm typecheck
+  && pnpm test`) failed on a fresh clone under pnpm's isolated `node_modules`
+  layout, even though it passed on the maintainer's machine:
+  - `pnpm build` could not resolve `tsdown` from the root script (it was
+    declared only in each sub-package); `tsdown` now sits in the root
+    `devDependencies` so the unified workspace build works everywhere.
+  - `pnpm typecheck` failed on `@tau/webui`'s type-only `import type { Command }
+    from "commander"` — a phantom dependency satisfied only through sibling
+    hoisting. `commander` is now declared (as a devDependency — it is erased at
+    runtime) in `@tau/webui`.
+  - The MCP stdio E2E test created its scratch dir at the vitest cwd, so the
+    spawned `.mjs` server could not resolve `@modelcontextprotocol/sdk` when
+    the suite ran from the repo root. The scratch dir is now derived from the
+    test file location (inside `packages/plugins/`), independent of cwd.
+
 ### Added
 
 - **Per-package READMEs.** Every workspace package (`@tau/core`, `@tau/tools`,

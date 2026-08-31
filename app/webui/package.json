@@ -24,6 +24,7 @@
     "build": "tsdown"
   },
   "devDependencies": {
+    "commander": "^15.0.0",
     "tsdown": "^0.22.14"
   },
   "dependencies": {

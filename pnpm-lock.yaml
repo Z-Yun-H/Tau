@@ -20,6 +20,9 @@ importers:
       oxlint:
         specifier: ^1.80.0
         version: 1.80.0
+      tsdown:
+        specifier: ^0.22.14
+        version: 0.22.14(tsx@4.23.13)(typescript@7.0.2)
       tsx:
         specifier: ^4.23.13
         version: 4.23.13
@@ -116,6 +119,9 @@ importers:
         specifier: workspace:*
         version: link:../../packages/skills
     devDependencies:
+      commander:
+        specifier: ^15.0.0
+        version: 15.0.0
       tsdown:
         specifier: ^0.22.14
         version: 0.22.14(tsx@4.23.13)(typescript@7.0.2)
