@@ -9,10 +9,19 @@ plans demand the explicit `confirmHighRisk` flag.
 
 ## Client stack
 
-- **Vue 3** (`client/App.vue`, single root component) — status chips, the
-  intent → plan → result chat column, Skills/History side tabs
-- **UnoCSS** (`uno.config.ts`, `presetWind3`) — theme tokens for the dark
-  terminal aesthetic + a few shortcuts (`tau-card`, `tau-btn`, …)
+- **Vue 3** — a slim shell (`client/App.vue`) over the component inventory
+  in `client/components/` (StatusHeader, PlanCard/StepRow, ResultCard,
+  ErrorCard, SidePanel with Skills/History/Tools, Composer, RiskBadge,
+  EmptyState); state lives in `client/composables/` (module singletons, no
+  state library), HTTP in `client/lib/api.ts`
+- **UnoCSS** (`uno.config.ts`, `presetWind3`) — the design tokens (neutral
+  ramp + the risk palette as THE semantic system) and shared shortcuts;
+  typography and motion tokens in `client/theme.css`
+- **Design system**: "terminal precision" — data in mono, prose in sans, no
+  gradients/shadows/emoji; responsive (≥1024px two-column rail, below that
+  a single flow with sticky composer); restrained motion with
+  `prefers-reduced-motion` support. Normative spec:
+  [SKILL.md](./SKILL.md) (`tau-webui-design`)
 - **Vite** (`vite.config.ts` client build → `dist/client/`;
   `vite.server.config.ts` node/SSR build of the server → `dist/index.js`
   with the `tau-bin-shebang` plugin keeping the bin executable)
@@ -28,9 +37,11 @@ identical in both modes. The `tau web` commander wiring lives in `@tau/cli`
 - bin `tau-web` (also `tau web` via the CLI)
 
 HTTP surface: `GET /api/status` (provider, model, availability, skill/plugin
-counts), `GET /api/skills` (with risk/origin), `GET /api/history`,
-`POST /api/plan` (intent → plan + deterministic review), `POST /api/execute`
-(request-as-approval; deny → 403, high risk requires `confirmHighRisk`).
+counts), `GET /api/skills` (with risk/origin), `GET /api/tools` (the tool
+layer inventory: name/description/risk/owner/params — pure data, never the
+executables), `GET /api/history`, `POST /api/plan` (intent → plan +
+deterministic review), `POST /api/execute` (request-as-approval; deny →
+403, high risk requires `confirmHighRisk`).
 
 ## Dependencies
 

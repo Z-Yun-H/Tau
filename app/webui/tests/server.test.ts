@@ -77,6 +77,25 @@ describe("GET API", () => {
     expect(body.some((skill: { name: string }) => skill.name === "git-helper")).toBe(true);
   });
 
+  it("lists the tool layer as pure data (no executables)", async () => {
+    const res = await get("/api/tools");
+    expect(res.status).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(Array.isArray(body)).toBe(true);
+    const names = body.map((tool: { name: string }) => tool.name);
+    expect(names).toContain("file.find");
+    expect(names).toContain("file.rename");
+    const find = body.find((tool: { name: string }) => tool.name === "file.find");
+    expect(find.risk).toBe("low");
+    expect(
+      find.params.some(
+        (p: { name: string; required: boolean }) => p.name === "pattern" && p.required,
+      ),
+    ).toBe(true);
+    // The serialized inventory is data, never the registry's run functions.
+    expect(res.body).not.toContain('"run"');
+  });
+
   it("returns history (possibly empty)", async () => {
     const body = JSON.parse((await get("/api/history")).body);
     expect(Array.isArray(body)).toBe(true);

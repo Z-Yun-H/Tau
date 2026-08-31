@@ -67,6 +67,16 @@ from "commander"` — a phantom dependency satisfied only through sibling
 
 ### Added
 
+- **WebUI Tools view — the tool layer, on screen.** The reference rail gains
+  a third tab next to Skills and History: every registered tool (built-in
+  `file`/`sys`/`net`/`text` families plus skill-owned tools) with its
+  intrinsic risk badge, owning skill, description, and its parameter spec
+  (`name type` chips, `*` marks required). Backed by a new read-only
+  `GET /api/tools` route and a `listToolSummaries()` session service in
+  `@tau/agent` (catalog built on demand; the serialized shape is pure data —
+  the registry's `run` executables never leave the process). Tests in the
+  agent and webui suites assert the shape and the no-executables guarantee.
+
 - **AI collaboration operating norms** (`AGENTS/collaboration.md`, normative
   in Chinese). Transcribes the maintainer's collaboration contract into the
   repo's must-read chain: systematic project understanding before code;
@@ -104,6 +114,32 @@ from "commander"` — a phantom dependency satisfied only through sibling
   `git config commit.template`) and a checklist item in the PR template.
 
 ### Changed
+
+- **WebUI client rebuilt as a design system** ("terminal precision"),
+  replacing the prototype single-file frontend. The 370-line `App.vue` is
+  now a slim shell over `client/components/` (StatusHeader, PlanCard /
+  StepRow, ResultCard, ErrorCard, SidePanel, Composer, RiskBadge,
+  EmptyState), `client/composables/` (module-singleton state — no state
+  library), and `client/lib/` (typed API client, formatters). The visual
+  language is derived from the product domain instead of dashboard
+  templates: the risk levels are the one semantic color system (green /
+  amber / red / dim, every risk indicator through `RiskBadge`), data renders
+  in monospace and prose in system sans, and gradients, shadows and emoji
+  are banned. Layout is adaptive — ≥1024px chat column + reference rail
+  with independent scrolling, below that a single flow with a sticky
+  composer, compact two-row header under 640px. Motion is restrained and
+  honest: 120–180ms color/border micro-transitions, staggered fade-rise
+  card entrances, a sliding tab indicator, a single pulsing dot as the only
+  running state (no fake progress), all disabled under
+  `prefers-reduced-motion`. Data the old UI ignored is now surfaced: plan
+  explanations, per-step reasons, history timestamps/step counts, provider
+  model, version and plugin counts. The high-risk confirmation is
+  card-local state — the old global `#confirm-high-risk` DOM id collided
+  across concurrent plan cards. Normative design spec lives in the new
+  tool-layer skill `app/webui/SKILL.md` (`tau-webui-design`); the L2 layer
+  definition in `AGENTS/skills.md` now covers `app/<app>/SKILL.md`.
+  Server-side, only an additive read-only route changed (see the Tools
+  entry under Added); the execution gate is untouched.
 
 - **Packaging unblocked: the `@tau/*` family now ships together.** Resolves
   the structural gap tracked in #23: the packed `@tau/cli` tarball could not

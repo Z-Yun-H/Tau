@@ -1,34 +1,118 @@
 /*
- * Base layer for the Tau WebUI — the dark terminal aesthetic (fonts, body
- * layout, shared element styles). Component-specific styling lives in
- * App.vue via UnoCSS utilities; theme tokens are in uno.config.ts.
+ * Tau WebUI — base layer and design tokens.
+ *
+ * The visual language is "terminal precision": a dark neutral ramp, ONE
+ * semantic color system (the risk levels: low green / medium amber / high
+ * red / blocked gray), monospace for data and system sans for prose.
+ * Decorative color, gradients and glass effects are deliberately absent —
+ * the UI is information-first, like the CLI it fronts.
+ *
+ * Color tokens live in uno.config.ts (`theme.colors.tau`) — the single
+ * source the utilities are generated from. This file owns typography,
+ * motion, focus, and element bases.
  */
 :root {
   color-scheme: dark;
+
+  /* Type: sans for prose/UI labels, mono for commands, args, paths, output. */
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* Motion: fast = color/border micro-transitions, med = entrances and
+     indicator slides, slow = layout-level shifts. One deceleration curve. */
+  --t-fast: 120ms;
+  --t-med: 180ms;
+  --t-slow: 280ms;
+  --ease: cubic-bezier(0.25, 0.8, 0.35, 1);
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  height: 100%;
+}
+
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: #0d1117;
-  color: #e6edf3;
+  background: #0a0d12;
+  color: #e3e9f0;
   font:
-    14px/1.5 ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    Consolas,
-    monospace;
+    13px/1.55 var(--font-ui),
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 #app {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+::selection {
+  background: rgba(94, 201, 122, 0.28);
+}
+
+/* Keyboard reachability: a visible, restrained ring on every focus. */
+:focus-visible {
+  outline: 2px solid #5ec97a;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Slim scrollbars — visible enough to grab, quiet at rest. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #2a3342 transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #2a3342;
+  border-radius: 4px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* One honest indeterminate state for background work (no fake progress). */
+@keyframes tau-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Card entrance: fade + a short rise, staggered by the caller. */
+@keyframes tau-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Reduced motion: keep the states, drop the movement. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
 }

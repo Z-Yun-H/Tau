@@ -15,6 +15,7 @@ import type { HistoryEntry, RiskLevel, SafetyReview } from "@tau/core";
 import { getProvider, providerNames, resolveProvider } from "@tau/ai";
 import { reviewPlan } from "@tau/engine";
 import { scanSkills } from "@tau/skills";
+import { allTools } from "@tau/tools";
 import {
   planIntent,
   prepareCatalog,
@@ -44,6 +45,25 @@ export interface SkillSummary {
   commands: number;
   risk: RiskLevel;
   origin: "bundled" | "user" | "workspace";
+}
+
+/** One tool parameter, shaped for list rendering (no defaults plumbing). */
+export interface ToolParamInfo {
+  name: string;
+  type: "string" | "number" | "boolean" | "string[]";
+  description: string;
+  required: boolean;
+}
+
+/** Render-ready summary of one registered tool — never carries the executable. */
+export interface ToolSummary {
+  /** Dotted tool name, e.g. "file.find"; skill-owned tools are "git-helper.status" style. */
+  name: string;
+  description: string;
+  risk: RiskLevel;
+  /** "core" for built-ins, else the owning skill name. */
+  owner: string;
+  params: ToolParamInfo[];
 }
 
 /** Everything a UI status view needs, in one async snapshot. */
@@ -98,6 +118,27 @@ export function listSkillSummaries(): SkillSummary[] {
     commands: skill.commands.length,
     risk: skill.risk,
     origin: skill.origin,
+  }));
+}
+
+/**
+ * Registered tools shaped for list rendering. Builds the tool+skill catalog
+ * on demand (idempotent per process), so callers need no bootstrap ordering.
+ * The output is pure data — the executable `run` never leaves the registry.
+ */
+export function listToolSummaries(): ToolSummary[] {
+  ensureCatalog();
+  return allTools().map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    risk: tool.risk,
+    owner: tool.owner,
+    params: tool.params.map((param) => ({
+      name: param.name,
+      type: param.type,
+      description: param.description,
+      required: param.required,
+    })),
   }));
 }
 

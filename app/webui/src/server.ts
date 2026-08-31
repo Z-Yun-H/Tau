@@ -17,6 +17,7 @@ import {
   ensureCatalog,
   getSessionInfo,
   listSkillSummaries,
+  listToolSummaries,
   planAndReview,
   ProviderUnavailableError,
   readRecentHistory,
@@ -126,6 +127,12 @@ export function createRequestListener(): http.RequestListener {
         }
         if (req.method === "GET" && url.pathname === "/api/skills") {
           sendJson(res, 200, listSkillSummaries());
+          return;
+        }
+        if (req.method === "GET" && url.pathname === "/api/tools") {
+          // Read-only tool-layer inventory (name/description/risk/owner/params —
+          // never the executables). Built on demand like the planner does.
+          sendJson(res, 200, listToolSummaries());
           return;
         }
         if (req.method === "GET" && url.pathname === "/api/history") {
