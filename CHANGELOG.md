@@ -38,6 +38,20 @@ from "commander"` — a phantom dependency satisfied only through sibling
     spawned `.mjs` server could not resolve `@modelcontextprotocol/sdk` when
     the suite ran from the repo root. The scratch dir is now derived from the
     test file location (inside `packages/plugins/`), independent of cwd.
+- **Stale references repaired across the agent docs.** The dev-workflow
+  skills still pointed at the pre-rename `AGENTS.d/` rulebook directory
+  (`tau-test`, `tau-release`, `tau-skill-new`) and at pre-monorepo paths
+  (`tests/unit/skills.test.ts`, `tests/integration/cli.test.ts`, the bundled
+  scope written as `<package>/skills/`, "PR against `skills/`"); all now
+  point at current locations.
+- **Release checklist commands updated for the pnpm monorepo**
+  (`AGENTS/release.md` + the `tau-release` skill): the version bump happens
+  inside `app/cli/` (the published `@tau/cli`), `pnpm pack` produces
+  `tau-cli-<ver>.tgz` — not the single-package-era `tau-tool-<ver>.tgz` —
+  and build verify uses `app/cli/dist/index.js`. The pack/publish smoke
+  test is explicitly marked **blocked** with a pointer to the packaging
+  issue (#23): the tarball cannot be installed outside the workspace while
+  `@tau/*` dependencies use the `workspace:*` protocol.
 
 ### Added
 
@@ -78,6 +92,16 @@ from "commander"` — a phantom dependency satisfied only through sibling
   `git config commit.template`) and a checklist item in the PR template.
 
 ### Changed
+
+- **SKILL.md files now follow a three-layer placement model** — L1 root
+  dev-workflow skills, L2 package tool-layer skills, L3 shipped product
+  content (normative in `AGENTS/skills.md` "SKILL.md files in THIS repo" and
+  the governance table in `AGENTS/architecture.md`). The `tau-skill-new`
+  skill's content moved into the new tool-layer skill
+  `packages/skills/SKILL.md` (`tau-skills-authoring`, versioned with
+  `@tau/skills`); the root skill remains as a thin router with unchanged
+  trigger description. `AGENTS/collaboration.md` §8 now also covers
+  package-level skills. Documentation-only — no runtime code touched.
 
 - **Directory governance codified; stale skill paths repaired.** New
   normative "Directory governance" table in `AGENTS/architecture.md` (human

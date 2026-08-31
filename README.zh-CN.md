@@ -202,7 +202,7 @@ Tau 从设计上就是"给人用、给 AI 维护"的双端项目：
   [规范](AGENTS/conventions.md)、[测试](AGENTS/testing.md)、
   [技能](AGENTS/skills.md)、[插件](AGENTS/plugins.md)、
   [AI 集成](AGENTS/ai-integration.md)、[发布](AGENTS/release.md)
-- **[`.claude/skills/`](.claude/skills)** —— 开发工作流技能（tau-build / tau-test / tau-release / tau-skill-new）
+- **[`.claude/skills/`](.claude/skills)** —— 根级开发工作流技能（tau-build / tau-test / tau-release / tau-skill-new 路由）；包级工具技能位于 `packages/<pkg>/SKILL.md`（如 [`packages/skills/SKILL.md`](packages/skills/SKILL.md)）
 - **`CLAUDE.md`** 指针文件供 Claude Code 自动发现；安全模块完全确定性且有 1:1 测试覆盖
 - 233 个测试、严格 TypeScript，`pnpm lint && pnpm typecheck && pnpm test` 就是 agent 门禁
 

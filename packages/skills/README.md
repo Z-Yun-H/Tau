@@ -30,6 +30,15 @@ Everything is exported from the package barrel (`src/index.ts`):
 Both directories are listed in this package's `"files"` so they ship with the
 npm artifact.
 
+## Agent skill (tool layer)
+
+The authoring workflow for skills is codified in this package's
+[SKILL.md](./SKILL.md) (`tau-skills-authoring`) — a package-owned agent skill
+that is versioned with the package. The root-level
+[`.claude/skills/tau-skill-new`](../../.claude/skills/tau-skill-new/SKILL.md)
+is a thin router pointing at it. Placement follows the three-layer model in
+[`AGENTS/skills.md`](../../AGENTS/skills.md).
+
 ## Dependencies
 
 - Runtime: `yaml`, `zod`
@@ -43,4 +52,5 @@ pnpm test
 ```
 
 Authoring guide: [docs/skills-authoring.md](../../docs/skills-authoring.md),
-rules: [AGENTS/skills.md](../../AGENTS/skills.md).
+rules: [AGENTS/skills.md](../../AGENTS/skills.md), agent workflow:
+[SKILL.md](./SKILL.md) (this package's tool-layer skill).

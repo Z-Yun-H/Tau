@@ -210,7 +210,7 @@ Tau is designed to be _maintained by AI agents_ as much as used by humans:
   [conventions](AGENTS/conventions.md), [testing](AGENTS/testing.md),
   [skills](AGENTS/skills.md), [plugins](AGENTS/plugins.md),
   [ai-integration](AGENTS/ai-integration.md), [release](AGENTS/release.md)
-- **[`.claude/skills/`](.claude/skills)** — dev-workflow skills (tau-build, tau-test, tau-release, tau-skill-new)
+- **[`.claude/skills/`](.claude/skills)** — root dev-workflow skills (tau-build, tau-test, tau-release, tau-skill-new router); package-bound tool skills live at `packages/<pkg>/SKILL.md` (e.g. [`packages/skills/SKILL.md`](packages/skills/SKILL.md))
 - **`CLAUDE.md`** pointer for Claude Code; deterministic safety module with 1:1 test coverage
 - 233 tests, strict TypeScript, `pnpm lint && pnpm typecheck && pnpm test` as the agent gate
 
