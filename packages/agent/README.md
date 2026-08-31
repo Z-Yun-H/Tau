@@ -13,6 +13,13 @@ Everything is exported from the package barrel (`src/index.ts`):
   and `prepareCatalog()` assembles the tool + skill catalog (including
   plugin tools); `ProviderUnavailableError` carries the actionable hint
   (e.g. run `tau provider set-key`)
+- **Session services** (`src/session.ts`) — the facts and flows both
+  interactive front doors present: `getActiveProvider()`,
+  `listProviderAvailability()`, `listSkillSummaries()`, `readRecentHistory()`,
+  `getSessionInfo()`, `readTauVersion()`, `ensureCatalog()` (once-per-process
+  catalog bootstrap) and `planAndReview()` (intent → plan → deterministic
+  review, the shared front half of the ask flow). UIs render this data and
+  still execute through `@tau/engine`'s `runPlan()`
 - **Skill tools bridge** (`src/skill-tools.ts`) — `buildSkillTools()` maps
   skill commands into registry-compatible tool definitions so skills show up
   in the planning catalog of every UI
@@ -25,7 +32,7 @@ through this package — adding a new UI means consuming `@tau/agent` and
 
 - Runtime: none
 - Workspace: `@tau/core`, `@tau/tools`, `@tau/engine`, `@tau/ai`,
-  `@tau/skills`, `@tau/plugins`, `@tau/ui`
+  `@tau/skills`, `@tau/plugins`
 
 ## Development
 

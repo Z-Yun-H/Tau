@@ -79,6 +79,22 @@ from "commander"` — a phantom dependency satisfied only through sibling
 
 ### Changed
 
+- **Shared UI session services in `@tau/agent`.** The facts and flows that
+  the two interactive front doors (TUI REPL, WebUI server) both present and
+  drive now live in one place: `packages/agent/src/session.ts` exports
+  `getActiveProvider()`, `listProviderAvailability()`, `listSkillSummaries()`,
+  `readRecentHistory()`, `getSessionInfo()` (one async status snapshot:
+  version, TAU_HOME, provider + model, provider availability, skill/plugin
+  counts), `ensureCatalog()` (once-per-process catalog bootstrap) and
+  `planAndReview()` (intent → plan → deterministic safety review). `tau tui`
+  consumes them for `/provider` `/skills` `/history` `/status` and the intent
+  flow; `tau web` serves the same sources over `/api/*` (the status payload
+  additionally reports `provider.model` and `plugins`, and `/api/skills`
+  entries now include `risk` and `origin` — additive, clients unaffected).
+  Deduplicates catalog bootstrap, status assembly and the double
+  `reviewPlan()` call the two apps previously ran independently. No
+  execution-path change: plans still run exclusively through `runPlan()`.
+
 - **pnpm catalog adoption — one source of truth for dependency versions.**
   All 29 external dependency specifiers across the root and the 11 workspace
   packages now read `catalog:` from a single block in `pnpm-workspace.yaml`
