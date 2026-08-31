@@ -9,8 +9,11 @@
 #   1. Present the declaration to the human in the session (no silent AI
 #      commits), then
 #   2. Uncomment and fill the block below so it lands in the commit message.
+#      The AI-Generated prefix line goes at the END of the body (before the
+#      AI-declaration block). Norms: AGENTS/collaboration.md.
 # Human authors: leave the block commented out / delete it.
 #
+# AI-Generated: <one line — what the AI did>
 # AI-declaration: this commit was authored by an AI agent under human direction.
 # AI-agent: <agent name and model, e.g. Super Z (GLM)>
 # AI-scope: <one line — exactly what the AI did in this commit>
