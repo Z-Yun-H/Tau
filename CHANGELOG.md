@@ -24,6 +24,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Fixed
 
+- **`pnpm build` now also builds `@tau/tui` and `@tau/webui`.** After the
+  unified tsdown workspace build landed, the root build script was just
+  `tsdown` with `workspace: ["packages/*", "app/cli"]` — the two vite-based
+  apps were intentionally outside the glob, but nothing else ever triggered
+  their `vite build` either. `pnpm build` therefore left `app/tui/dist/`
+  and `app/webui/dist/` missing on a fresh clone, and the built CLI (which
+  imports `@tau/tui/dist/index.js`) crashed with `ERR_MODULE_NOT_FOUND` in
+  CI's "Smoke the built binaries" step on main. The root build is now
+  `tsdown && pnpm --filter @tau/tui build && pnpm --filter @tau/webui
+build`: unified tsdown keeps building the nine engine packages + CLI
+  from their own configs, and each vite app runs its own build, so the
+  pre-PR gate and CI exercise the full 11-package tree again. (#33)
+
 - **Installed `tau` bins no longer silently no-op.** The "am I the entry
   module?" guard in `@tau/cli`, `@tau/tui` and `@tau/webui` compared
   `import.meta.url` against the raw `process.argv[1]`; every installed
