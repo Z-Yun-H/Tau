@@ -23,12 +23,12 @@ passing a deterministic, tested gate that the AI does not control.**
 
 ## Risk levels
 
-| Level     | Meaning                                                          | What can run it                                 |
-| --------- | ---------------------------------------------------------------- | ----------------------------------------------- |
-| `low`     | read-only / harmless output                                      | everyone, `--yes` included                      |
-| `medium`  | mutating first-party tool, dry-run available                     | interactive confirm, or `--yes` + opt-in config |
-| `high`    | caution-list shell ops (`rm`, `chmod`, `kill`, force git ops...) | interactive confirm ONLY                        |
-| `blocked` | deny-list match or structural violation                          | NOBODY. Plan refused, exit 2                    |
+| Level     | Meaning                                                                                                                                                                            | What can run it                                 |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `low`     | read-only / harmless output                                                                                                                                                        | everyone, `--yes` included                      |
+| `medium`  | mutating first-party tool, dry-run available                                                                                                                                       | interactive confirm, or `--yes` + opt-in config |
+| `high`    | caution-list shell ops (`rm`, `chmod`, `kill`, force git ops, PowerShell destructives like `Remove-Item -Recurse` / `Format-Volume` / `Set-ExecutionPolicy` / `Invoke-Expression`) | interactive confirm ONLY                        |
+| `blocked` | deny-list match or structural violation                                                                                                                                            | NOBODY. Plan refused, exit 2                    |
 
 ## Deny list (verdict: deny, before any confirmation)
 

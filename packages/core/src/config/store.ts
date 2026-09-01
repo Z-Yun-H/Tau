@@ -13,6 +13,7 @@ export const DEFAULT_CONFIG: TauConfig = {
   provider: "mock",
   timeout: 30,
   allowMediumAutoApprove: false,
+  shell: "auto",
   aliases: {},
   plugins: [],
   providers: {
@@ -27,6 +28,7 @@ const VALID_KEYS = new Set<string>([
   "provider",
   "timeout",
   "allowMediumAutoApprove",
+  "shell",
   "aliases",
   "plugins",
   "providers",
@@ -197,6 +199,15 @@ export function setConfigValue(key: string, value: string): unknown {
     case "allowMediumAutoApprove":
       config.allowMediumAutoApprove = Boolean(parsed);
       break;
+    case "shell": {
+      const pref = String(parsed);
+      const allowed: ReadonlySet<string> = new Set(["auto", "bash", "pwsh", "powershell"]);
+      if (!allowed.has(pref)) {
+        throw new Error(`shell must be one of: auto, bash, pwsh, powershell (got "${pref}")`);
+      }
+      config.shell = pref as TauConfig["shell"];
+      break;
+    }
     default:
       throw new Error(
         `Key "${key}" is an object; edit ${configPath()} directly or use tau alias/history commands.`,

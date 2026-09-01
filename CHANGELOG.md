@@ -7,6 +7,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Added
 
+- **Shell adapter — PowerShell (pwsh) support + additive safety patterns.**
+  Plan shell-steps are no longer hardwired to `spawn(shell:true)` (cmd.exe on
+  Windows): a pure `buildShellInvocation()` resolves `auto | bash | pwsh |
+powershell` — explicit pwsh runs `-NoLogo -NoProfile -NonInteractive
+-Command` with portable exit-code propagation (`$LASTEXITCODE`), `auto`
+  picks pwsh/powershell up from the Windows PATH (synthetic-PATH testable)
+  and keeps POSIX byte-identical. New config key `tau config set shell <pref>`
+  (validated). `CAUTION_PATTERNS` gain six PowerShell-destructive entries
+  (`Remove-Item`, `Format-Volume`/`Clear-Disk`, `Set-ExecutionPolicy`,
+  `Invoke-Expression`/`iex`, `reg delete`, `bcdedit`/`dism`) — the reviewer is
+  only ever STRENGTHENED (golden rule 1); POSIX classifications unchanged.
+  Documented in both READMEs + `docs/safety.md` + the architecture diagram. (#56)
+
 - **Streaming plan events — optional `runPlan` `onEvent` hook.** `RunPlanOptions`
   gains an optional `onEvent` callback emitting typed lifecycle events
   (`step_start` / `step_output` / `step_end` / `plan_end`) over the engine's

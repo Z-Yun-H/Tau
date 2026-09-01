@@ -90,6 +90,12 @@ tau file rename " IMG_([0-9]+)" " -photo-$1"     # dry run first
 tau file rename " IMG_([0-9]+)" " -photo-$1" -e  # then apply
 ```
 
+**PowerShell users**: plan shell-steps run through your shell —
+`tau config set shell pwsh` forces an explicit non-profile, non-interactive
+PowerShell invocation with exit-code propagation (`bash` works too; the
+`auto` default picks pwsh automatically on Windows when it is on PATH and
+leaves POSIX untouched).
+
 ## The safety model in 30 seconds
 
 ```
@@ -101,8 +107,10 @@ intent ──► provider.plan() ──► validatePlanResponse() ──► revi
 
 - **Deny list**: `sudo`, `rm -rf /`, `curl | sh`, `dd of=/dev/*`, fork bombs,
   force-pushes, `DROP TABLE`, ... → plan refused before confirmation.
-- **Caution list**: `rm`, `chmod`, `kill`, `git reset --hard`, ... → high risk,
-  interactive confirmation mandatory.
+- **Caution list**: `rm`, `chmod`, `kill`, `git reset --hard`, PowerShell
+  destructives (`Remove-Item -Recurse`, `Format-Volume`,
+  `Set-ExecutionPolicy`, `Invoke-Expression`), ... → high risk, interactive
+  confirmation mandatory.
 - **--yes is honest**: it auto-approves low (and optionally medium with
   `config allowMediumAutoApprove true`) — never high, never blocked.
 - Full policy & rationale: [docs/safety.md](docs/safety.md).

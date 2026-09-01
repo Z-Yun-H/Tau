@@ -36,7 +36,8 @@ package and run by the single root vitest config (aliases `@tau/*` → source).
                  │      ├─ confirm UI          packages/ui/src/confirm.ts        │
                  │      ├─ executeStep()       packages/engine/src/executor.ts │
                  │      │    tool steps → registry.run                              │
-                 │      │    shell steps → spawn (shell:true)                       │
+                 │      │    shell steps → buildShellInvocation                    │
+                 │      │      (native shell:true | explicit pwsh argv)            │
                  │      └─ appendHistory()     packages/core/src/config/history.ts  │
                  └──────────────────────────────────────────────────────────────────┘
 
