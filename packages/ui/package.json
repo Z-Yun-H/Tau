@@ -1,7 +1,7 @@
 {
   "name": "@tau/ui",
   "version": "0.1.0",
-  "description": "Terminal UI primitives shared by Tau apps — theme, confirm, picker",
+  "description": "Terminal UI primitives shared by Tau apps \u2014 theme, confirm, picker",
   "license": "MIT",
   "author": "Z-Yun-H",
   "type": "module",
@@ -28,5 +28,8 @@
   },
   "dependencies": {
     "chalk": "catalog:"
+  },
+  "optionalDependencies": {
+    "sharp": "catalog:"
   }
 }

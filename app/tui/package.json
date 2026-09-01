@@ -34,6 +34,7 @@
     "@tau/agent": "workspace:*",
     "@tau/core": "workspace:*",
     "@tau/engine": "workspace:*",
+    "@tau/markdown": "workspace:*",
     "@tau/ui": "workspace:*"
   }
 }

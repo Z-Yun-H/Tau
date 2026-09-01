@@ -14,6 +14,9 @@ catalog:
   zod: ^4.5.4
   # ---- sanctioned UX additions (AGENTS/architecture.md dependency table) ----
   marked: ^18.0.11
+  # optionalDependency (dynamic import, never bundled, graceful degrade):
+  # terminal image rendering in @tau/ui — decode/resize when present
+  sharp: ^0.35.4
   # ---- optional SDKs (dynamically imported, never bundled) ----
   "@deepseek-ai/dsh-llm": ^0.0.1-rc.1
   "@modelcontextprotocol/sdk": ^1.30.0

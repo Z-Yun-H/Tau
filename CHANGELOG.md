@@ -7,6 +7,22 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Added
 
+- **TUI terminal-grade rendering — markdown previews, image views, planning
+  spinner.** Plan explanations now render as markdown through the shared
+  `@tau/markdown` ANSI renderer (`renderPlan` gained an optional explanation
+  formatter; CLI unchanged), and two new slash commands arrive: `/md <file>`
+  previews markdown files (binary-safe, size-capped), `/view <file>` previews
+  images inline — Kitty graphics protocol (kitty/ghostty/WezTerm) or iTerm2
+  inline images when the terminal advertises them (`TAU_IMAGE_PROTOCOL`
+  override; Windows Terminal honestly gets the metadata card), with PNG
+  pass-through and optional-`sharp` decode/convert for JPEG/WebP/GIF/AVIF
+  (never bundled, graceful degradation), 800px downscale budget. Image
+  metadata comes from an in-house fixed-offset header parser (PNG/JPEG/GIF/
+  WebP, bounded JPEG scan) — the `image-size` package was REJECTED: every
+  published version carries unpatched HIGH advisories (ICNS/JXL/HEIF
+  infinite-loop DoS) that the `pnpm audit --prod` gate refuses. Long-running
+  planning shows a readline-aware spinner. (#58)
+
 - **CLI lazy startup — every non-AI invocation stops paying for the AI
   chain.** `tau --version` used to import every command family, `@tau/tui`,
   `@tau/webui`, the `@tau/ai` zod graph and run the `scanSkills()` filesystem

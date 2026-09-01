@@ -223,7 +223,7 @@ API、依赖与开发命令。
 ```
 app/
   cli/            @tau/cli    —— bin `tau`：commander 应用 + `tau tui` / `tau web` 桥接
-  tui/            @tau/tui    —— bin `tau-tui`：交互式终端会话（REPL）
+  tui/            @tau/tui    —— bin `tau-tui`：交互式 REPL（markdown 与图片预览：/md、/view）
   webui/          @tau/webui  —— bin `tau-web`：本地 Web 界面（Vue 3 + UnoCSS 客户端，零依赖 node API）
 packages/
   core/           @tau/core    —— 领域类型、配置存储、历史、TAU_HOME 路径

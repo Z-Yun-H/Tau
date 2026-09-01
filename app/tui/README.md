@@ -16,6 +16,9 @@ start when stdin is not a TTY (use `tau ask` in scripts instead).
 | `/status`   | session summary (provider, model, counters) |
 | `/clear`    | reset the conversation view                 |
 
+Intents show a live planning spinner, and the plan explanation renders as
+markdown through the same `@tau/markdown` ANSI renderer.
+
 Anything that is not a slash command is treated as an intent: it is planned
 by the resolved provider, reviewed by the safety gate, and executed only
 after confirmation (or `autoApproveAll` when the session was started in
@@ -23,13 +26,12 @@ auto-approve mode — same semantics as `tau ask --yes`).
 
 ## Public API
 
-- `startTui()` — the REPL entry (bin `tau-tui`, also exposed as `tau tui`)
-- `startTui()` — the interactive session (wired into the CLI lazily via dynamic import)
+- `startTui()` — the REPL entry (bin `tau-tui`; wired into the CLI lazily via dynamic import)
 
 ## Dependencies
 
 - Runtime: none
-- Workspace: `@tau/agent`, `@tau/engine`, `@tau/ui`, `@tau/core`
+- Workspace: `@tau/agent`, `@tau/engine`, `@tau/markdown`, `@tau/ui`, `@tau/core`
 
 ## Development
 
