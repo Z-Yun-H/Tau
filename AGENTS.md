@@ -69,6 +69,13 @@ independent execution paths.)
 8. **Log each working day to `changelog/`**: append a per-day file
    `changelog/YYYY-MM-DD.md` (summary, type, Issue/PR refs, impact scope);
    `CHANGELOG.md` stays the release-level summary distilled from it.
+9. **Compound requests get decomposed, not squeezed.** A single request
+   spanning multiple change types or subsystems MUST be split into
+   independent, individually reviewable units — one Issue per unit, one PR
+   per Issue — with the decomposition plan published for the maintainer
+   BEFORE implementation (see AGENTS/collaboration.md §3
+   "compound-request decomposition"). Order: norms/docs → refactor →
+   feature.
 
 ## Command map
 
@@ -130,6 +137,8 @@ docs/                       human-facing deep dives (architecture, safety, skill
 
 - [ ] `pnpm lint && pnpm typecheck && pnpm test` green — results reported
       in the PR body
+- [ ] Compound request? → decomposed into one-Issue-one-PR units and the
+      decomposition plan published before implementation (golden rule 9)
 - [ ] New behavior has tests (see AGENTS/testing.md for patterns)
 - [ ] New user-facing flags/commands documented in both READMEs
 - [ ] Tool added? → registered in `packages/tools/src/<module>.ts`,

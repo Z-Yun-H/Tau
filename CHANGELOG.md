@@ -7,6 +7,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Added
 
+- **Compound-request decomposition codified in the AI collaboration norms.**
+  A maintainer request spanning multiple change types or subsystems must be
+  auto-decomposed into independently reviewable one-Issue-one-PR units
+  BEFORE implementation, with the decomposition plan published first (the
+  Issues are the publication); ordering follows norms/docs → refactor →
+  feature, and stacked units must declare their merge order.
+  `AGENTS/collaboration.md` §3 gains the normative subsection (+ English
+  TL;DR and pre-task self-check entries); `AGENTS.md` gains golden rule 9
+  plus a change-checklist item. (#35)
+
 - **AI collaboration norms v2 (updated 2026-09) + daily changelog folder.**
   `AGENTS/collaboration.md` now transcribes the maintainer's updated
   collaboration directive: daily `changelog/YYYY-MM-DD.md` files (summary /

@@ -13,7 +13,7 @@
 
 1. Understand the project systemically before touching code; keep docs in sync; if a required doc is missing, create it and justify it in the PR/report.
 2. Tech selection is frozen: no new framework, library or tool without an approved Issue; state rationale and impact in the PR.
-3. Flow by change type: features / refactors / architecture → Issue first, one PR = one Issue, PR body references it (`Closes #N`); simple, unambiguous fixes may be direct commits with clear messages — but Tau's `main` is protected, so even fixes land through a PR branch; never bypass PR for reviewable changes.
+3. Flow by change type: features / refactors / architecture → Issue first, one PR = one Issue, PR body references it (`Closes #N`); simple, unambiguous fixes may be direct commits with clear messages — but Tau's `main` is protected, so even fixes land through a PR branch; never bypass PR for reviewable changes. Compound requests spanning multiple change types or subsystems must be auto-decomposed into independently reviewable one-Issue-one-PR units BEFORE implementation, with the decomposition published first (§3).
 4. Dependency updates are standalone PRs with add/upgrade/remove lists, `pnpm audit` results, and full test results; never change workspace/dependency strategy without maintainer approval.
 5. Docs must be synced in the same PR (both READMEs, AGENTS, docs/); state doc status in the PR body; respect root-vs-subpackage doc responsibilities.
 6. Refactors / architecture changes: `[REFACTOR]` / `[ARCHITECTURE]` tag in PR title, motivation + impact + risk + structure-impact statement, and NEVER self-merge.
@@ -65,6 +65,14 @@
   - 若修复涉及行为改变、接口调整或可能影响其他功能，仍**必须**先创建 Issue 并走 PR 流程。
 - **禁止**将功能、重构等需要审核的变更以直接 commit 的方式绕过 PR 流程。
 - Tau 叠加约束：`main` 为保护分支（AGENTS/release.md "Never push directly to `main`"），因此**一切变更（含简单 fix）最终都经由 PR 落地**；"直接 commit" 指在特性分支上免 Issue 直接提交，随后仍以 PR 汇入。
+
+### 复合需求自动分解（compound-request decomposition）
+
+- 当维护者一次性下达跨越多个变更类型（docs / refactor / feat / fix）或多个子系统的**复合需求**时，AI **必须**先进行需求分解，**禁止**将复合需求整体压入单一 Issue 或 PR 处理。
+- 分解粒度以「**可独立评审、可独立回滚**」为标准；每个原子单元对应一个独立 Issue（标注变更类型与依赖顺序），一个 Issue 对应一个 PR。
+- 分解方案（单元清单、类型、顺序、相互依赖）**必须**在实施开始前向维护者公示（Issues 即公示载体）；维护者可增删单元或调整顺序。
+- 实施顺序按「**准则/文档先行 → 重构 → 功能**」排列，前序单元确立的规范约束作用于后续单元。
+- 单元之间确有依赖需要堆叠分支时，PR 必须声明依赖顺序与建议合并次序。
 
 ## 4. Monorepo 与依赖管理
 
@@ -160,6 +168,7 @@ Tau 将"AI 行为准则"与"AI 可执行技能"分别存放：
 - [ ] 是否已完成项目理解并形成结构化认知？
 - [ ] 是否检查了 `AGENTS.md`（与 `AGENTS/`）和 SKILL.md（`.claude/skills/` 与 `packages/<pkg>/SKILL.md`）并确认是否需要更新？
 - [ ] 是否根据变更类型选择了正确的流程（简单修复免 Issue 直接 commit（分支上），功能/重构走 Issue+PR）？
+- [ ] 复合需求是否已自动分解并在实施前公示分解方案（一单元一 Issue 一 PR，见 §3）？
 - [ ] 是否在 PR 描述或 commit 中包含 AI 标注、必要的结构影响说明？
 - [ ] 是否更新了相关文档并明确了目录职责？
 - [ ] 是否在 `changelog/` 文件夹中按日记录了当日变更？
