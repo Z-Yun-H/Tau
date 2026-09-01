@@ -10,6 +10,14 @@
 /** Risk classification used by the safety reviewer and every tool definition. */
 export type RiskLevel = "low" | "medium" | "high" | "blocked";
 
+/**
+ * Shell used for plan shell-steps. `auto` keeps platform defaults (POSIX
+ * unchanged; Windows prefers PowerShell when detectable, else COMSPEC).
+ * `pwsh`/`powershell` force an explicit non-profile non-interactive invocation
+ * with exit-code propagation — cross-platform (pwsh runs on Linux/macOS too).
+ */
+export type ShellPref = "auto" | "bash" | "pwsh" | "powershell";
+
 export const RISK_ORDER: Record<RiskLevel, number> = {
   low: 0,
   medium: 1,
@@ -43,6 +51,22 @@ export interface Plan {
   /** Provider's own opinion of the risk, reviewer has the final say. */
   selfAssessedRisk?: RiskLevel;
 }
+
+/**
+ * Lifecycle event emitted by runPlan while a plan moves through execution.
+ * Backends without UI (CLI) ignore them; front doors (WebUI streaming) mirror
+ * them to the client so progress renders live. Absent callback = zero
+ * behavior change.
+ */
+export type PlanEvent =
+  /** A step is about to execute (after its per-step gate). */
+  | { type: "step_start"; index: number; step: PlanStep }
+  /** Incremental output from a shell step's stdout/stderr (chunked). */
+  | { type: "step_output"; index: number; chunk: string }
+  /** A step finished; `skipped` marks gate-refused steps. */
+  | { type: "step_end"; index: number; ok: boolean; exitCode?: number; skipped?: boolean }
+  /** Terminal event — always emitted last, exactly once. */
+  | { type: "plan_end"; status: "ok" | "failed" | "cancelled" | "denied" };
 
 /** Structured issue raised while reviewing a plan or step. */
 export interface SafetyIssue {
@@ -226,6 +250,8 @@ export interface TauConfig {
   timeout: number;
   /** When true, `--yes` may auto-approve medium risk too (never high/blocked). */
   allowMediumAutoApprove: boolean;
+  /** Shell for plan shell-steps (default "auto" — see {@link ShellPref}). */
+  shell?: ShellPref;
   aliases: Record<string, string[]>;
   /** MCP servers whose tools join the AI planner catalog. */
   plugins: PluginConfig[];

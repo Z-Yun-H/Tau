@@ -10,8 +10,9 @@
  * Nothing here bypasses the pipeline: plan comes from /api/plan, execution
  * from /api/execute — the same runPlan() channel the CLI uses.
  */
-import { computed, ref, watch } from "vue";
-import { postJson, type ExecuteResponse, type PlanResponse } from "../lib/api.js";
+import { computed, reactive, ref, watch } from "vue";
+import { postJson, type PlanResponse } from "../lib/api.js";
+import { postNdjson, type StreamEvent } from "../lib/stream.js";
 import { useSession } from "./session.js";
 
 export interface UserCardState {
@@ -42,6 +43,8 @@ export interface ResultCardState {
   output: string;
   outcomes: { ok: boolean; skipped: boolean }[];
   intent: string;
+  /** True while the NDJSON stream is still delivering events. */
+  streaming?: boolean;
 }
 
 export interface ErrorCardState {
@@ -182,18 +185,23 @@ export function usePlanFlow() {
     void (async () => {
       try {
         const data = await postJson<PlanResponse>("/api/plan", { intent });
-        thread.cards.push({
-          type: "plan",
-          id: nextId++,
-          intent: data.intent,
-          plan: data.plan,
-          review: data.review ?? { verdict: "allow", overallRisk: "low", issues: [] },
-          provider: data.provider,
-          providerLabel: data.providerLabel,
-          warnings: data.warnings ?? [],
-          running: false,
-          confirmHighRisk: false,
-        });
+        // reactive() so post-push mutations (card.running during execute)
+        // go through the proxy — raw-object writes bypass reactivity and
+        // leave dependent computeds cached at their stale value.
+        thread.cards.push(
+          reactive({
+            type: "plan",
+            id: nextId++,
+            intent: data.intent,
+            plan: data.plan,
+            review: data.review ?? { verdict: "allow", overallRisk: "low", issues: [] },
+            provider: data.provider,
+            providerLabel: data.providerLabel,
+            warnings: data.warnings ?? [],
+            running: false,
+            confirmHighRisk: false,
+          }) as PlanCardState,
+        );
       } catch (error) {
         thread.cards.push({
           type: "error",
@@ -208,34 +216,83 @@ export function usePlanFlow() {
     })();
   }
 
+  /**
+   * Execute via the NDJSON streaming endpoint: a live result card appears
+   * immediately and grows as step events arrive (step_output chunks append,
+   * step_end tallies outcomes). The final aggregated `result` event is the
+   * authoritative state — it overwrites the incremental view. Any transport
+   * failure falls back to the error-card contract. Same gates as before:
+   * the stream endpoint re-runs reviewPlan and runPlan re-reviews inside
+   * the engine — nothing bypasses the pipeline.
+   */
   async function runPlan(card: PlanCardState): Promise<void> {
     const thread = ownerOf(card);
     card.running = true;
+    // reactive() so the streaming mutations below (step chunks, the
+    // authoritative result event, the streaming flag) trigger the render
+    // pipeline — raw writes bypass the proxy and the rendered markdown
+    // preview stays cached at its initial empty value.
+    const resultCard = reactive({
+      type: "result",
+      id: nextId++,
+      status: "running",
+      output: "",
+      outcomes: [],
+      intent: card.intent,
+      streaming: true,
+    }) as ResultCardState;
+    thread?.cards.push(resultCard);
     try {
-      const result = await postJson<ExecuteResponse>("/api/execute", {
-        intent: card.intent,
-        plan: card.plan,
-        provider: card.provider,
-        confirmHighRisk: card.confirmHighRisk,
-      });
-      thread?.cards.push({
-        type: "result",
-        id: nextId++,
-        status: result.status,
-        output: result.output || "(no output)",
-        outcomes: (result.outcomes ?? []).map((o) => ({ ok: o.ok, skipped: o.skipped })),
-        intent: card.intent,
-      });
-      dropCard(card);
+      await postNdjson(
+        "/api/execute/stream",
+        {
+          intent: card.intent,
+          plan: card.plan,
+          provider: card.provider,
+          confirmHighRisk: card.confirmHighRisk,
+        },
+        (event: StreamEvent) => {
+          const type = event["type"];
+          if (type === "step_output" && typeof event["chunk"] === "string") {
+            resultCard.output += event["chunk"];
+          } else if (type === "step_end") {
+            resultCard.outcomes.push({
+              ok: event["ok"] === true,
+              skipped: event["skipped"] === true,
+            });
+          } else if (type === "result") {
+            // authoritative final state
+            if (typeof event["status"] === "string") resultCard.status = event["status"];
+            if (typeof event["output"] === "string" && event["output"]) {
+              resultCard.output = event["output"];
+            }
+            if (Array.isArray(event["outcomes"])) {
+              resultCard.outcomes = (
+                event["outcomes"] as { ok?: boolean; skipped?: boolean }[]
+              ).map((o) => ({ ok: o.ok === true, skipped: o.skipped === true }));
+            }
+          } else if (type === "error") {
+            resultCard.status = "failed";
+            if (!resultCard.output) {
+              resultCard.output = `stream error: ${String(event["error"] ?? "unknown")}`;
+            }
+          }
+        },
+      );
+      if (resultCard.output === "") resultCard.output = "(no output)";
     } catch (error) {
+      // Transport-level failure: replace the live card with the error card.
+      const owner = thread ?? ownerOf(resultCard);
+      if (owner) owner.cards = owner.cards.filter((c) => c !== resultCard);
       thread?.cards.push({
         type: "error",
         id: nextId++,
         intent: card.intent,
         message: (error as Error).message,
       });
-      dropCard(card);
     } finally {
+      resultCard.streaming = false;
+      dropCard(card);
       card.running = false;
       if (thread) touch(thread);
       void refreshHistory();

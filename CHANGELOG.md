@@ -5,7 +5,117 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+(nothing yet)
+
+## 0.2.0 - 2026-09-01
+
+The UX-refactor release: terminal-grade TUI rendering, streaming WebUI,
+pwsh-aware shell adapter, lazy CLI startup, a shared markdown package, plan
+event streaming, end-to-end snapshots + committed run screenshots — all
+carried through the unified-merge flow (golden rule 10) with the safety
+model byte-for-byte unchanged.
+
 ### Added
+
+- **End-to-end snapshot tests + committed run screenshots for all three
+  apps (unit 8, #60).** Vitest e2e files spawn the REAL surfaces and snapshot
+  them portably: the CLI entry as a real child process (`--version`,
+  `--help`, a read-only `file find`, a config round-trip, `skill list`) and
+  the WebUI server over real HTTP (`/api/status`, `/api/plan`, `/api/execute`
+  and the NDJSON stream — sandbox paths and release version normalized).
+  Committed screenshots from real runs live in `app/<app>/docs/screenshots/`
+  (CLI + TUI: pty captures rendered to SVG by the new zero-dependency
+  `scripts/screenshot/term-svg.mjs`; WebUI: real headless-Chromium session
+  via `app/webui/scripts/screenshot.mjs` + `playwright-core`, dev-only).
+  Per-app READMEs embed the shots; every directory documents regeneration.
+- **WebUI streaming execution + shiki highlighting + vueuse.** New
+  `POST /api/execute/stream` (NDJSON): identical deterministic gates (deny /
+  high-risk refusals stay plain JSON), then a line-per-event mirror of
+  `runPlan`'s onEvent lifecycle ending in an authoritative `result` event.
+  The client consumes it via a DOM-free, unit-tested NDJSON line-buffer
+  (`lib/stream.ts`) — a live result card appears immediately and grows with
+  step output chunks; the final event overwrites with the aggregated truth.
+  Fenced code blocks highlight progressively with `shiki` (one shared
+  highlighter, dynamic import, silent no-op on failure) keyed off a new
+  `data-lang` attribute the shared markdown renderer emits. `@vueuse/core`
+  replaces hand-rolled clipboard/global-key/debounce logic (useClipboard,
+  useEventListener, watchDebounced streaming autoscroll). The WebUI's local
+  markdown renderer is deleted — it consumes `@tau/markdown` now. (#59)
+
+- **TUI terminal-grade rendering — markdown previews, image views, planning
+  spinner.** Plan explanations now render as markdown through the shared
+  `@tau/markdown` ANSI renderer (`renderPlan` gained an optional explanation
+  formatter; CLI unchanged), and two new slash commands arrive: `/md <file>`
+  previews markdown files (binary-safe, size-capped), `/view <file>` previews
+  images inline — Kitty graphics protocol (kitty/ghostty/WezTerm) or iTerm2
+  inline images when the terminal advertises them (`TAU_IMAGE_PROTOCOL`
+  override; Windows Terminal honestly gets the metadata card), with PNG
+  pass-through and optional-`sharp` decode/convert for JPEG/WebP/GIF/AVIF
+  (never bundled, graceful degradation), 800px downscale budget. Image
+  metadata comes from an in-house fixed-offset header parser (PNG/JPEG/GIF/
+  WebP, bounded JPEG scan) — the `image-size` package was REJECTED: every
+  published version carries unpatched HIGH advisories (ICNS/JXL/HEIF
+  infinite-loop DoS) that the `pnpm audit --prod` gate refuses. Long-running
+  planning shows a readline-aware spinner. (#58)
+
+- **CLI lazy startup — every non-AI invocation stops paying for the AI
+  chain.** `tau --version` used to import every command family, `@tau/tui`,
+  `@tau/webui`, the `@tau/ai` zod graph and run the `scanSkills()` filesystem
+  scan before answering. Now: `ask` and `tui` register as cheap commander
+  stubs whose actions dynamic-import their implementations (`runAsk`,
+  `startTui`); `tau web` and the `provider` family load `@tau/webui` /
+  `@tau/ai` inside their actions via a module-level lazy accessor;
+  skill-contributed tool registration moved out of `buildProgram` into the
+  paths that execute plans (`runAsk`; TUI/WebUI keep `ensureCatalog()`); and
+  `@tau/tui` drops its commander devDependency entirely. Measured: `tau
+--version` median 170 ms -> 139 ms (~-18%, node floor ~24 ms); the zod/
+  provider chain (66–113 ms) now loads only for `ask`/`provider`. (#57)
+
+- **Shell adapter — PowerShell (pwsh) support + additive safety patterns.**
+  Plan shell-steps are no longer hardwired to `spawn(shell:true)` (cmd.exe on
+  Windows): a pure `buildShellInvocation()` resolves `auto | bash | pwsh |
+powershell` — explicit pwsh runs `-NoLogo -NoProfile -NonInteractive
+-Command` with portable exit-code propagation (`$LASTEXITCODE`), `auto`
+  picks pwsh/powershell up from the Windows PATH (synthetic-PATH testable)
+  and keeps POSIX byte-identical. New config key `tau config set shell <pref>`
+  (validated). `CAUTION_PATTERNS` gain six PowerShell-destructive entries
+  (`Remove-Item`, `Format-Volume`/`Clear-Disk`, `Set-ExecutionPolicy`,
+  `Invoke-Expression`/`iex`, `reg delete`, `bcdedit`/`dism`) — the reviewer is
+  only ever STRENGTHENED (golden rule 1); POSIX classifications unchanged.
+  Documented in both READMEs + `docs/safety.md` + the architecture diagram. (#56)
+
+- **Streaming plan events — optional `runPlan` `onEvent` hook.** `RunPlanOptions`
+  gains an optional `onEvent` callback emitting typed lifecycle events
+  (`step_start` / `step_output` / `step_end` / `plan_end`) over the engine's
+  execution loop — shell output streams chunk-by-chunk with its step index,
+  gate-skipped steps surface as `step_end(skipped)`, and exactly one terminal
+  `plan_end` fires on every path (ok / failed / cancelled / denied). Strictly
+  backward compatible: absent callback = byte-identical behavior (asserted).
+  This is the foundation for the WebUI streaming endpoint (unit 7). `PlanEvent`
+  lives in `@tau/core` types. (#55)
+
+- **Shared `@tau/markdown` package — one markdown home for all front doors.**
+  New workspace package with two renderers: `renderToAnsi` (TUI) parses with
+  `marked` (per its documented lexer API) and walks the token tree to themed,
+  sanitized terminal output — injectable `AnsiTheme`, display-width wrapping
+  with CJK awareness (wide code points count 2 columns), terminal-escape/OSC
+  stripping so output can never reprogram the terminal, tables with CJK-aware
+  column alignment, task lists, fenced-code rules; `renderMarkdown` (WebUI)
+  ports the escape-first HTML renderer verbatim (security contract unchanged).
+  `marked` ^18.0.11 enters the catalog + the new normative runtime-dependency
+  table in `AGENTS/architecture.md` (golden rule 4). No app behavior change in
+  this unit — the TUI and WebUI adopt the package in their own units. (#54)
+
+- **Unified-merge & versioned-release norm for large refactors (collaboration
+  norms).** When a compound request amounts to a large refactor (3+ subsystems
+  or a version release as the deliverable), the decomposed unit PRs all target
+  an integration branch `release/vX.Y.Z-<slug>` and merge into it sequentially
+  (CI-gated, rebased), a release unit bumps workspace versions and archives
+  the changelog last, and ONE unified PR (integration branch → main) carries
+  the release notes and the full unit index — merged by a human maintainer.
+  Codified as `AGENTS.md` golden rule 10 (+ change-checklist item) and a new
+  normative subsection of `AGENTS/collaboration.md` §3 (+ English TL;DR and
+  pre-task self-check entries). (#53)
 
 - **Compound-request decomposition codified in the AI collaboration norms.**
   A maintainer request spanning multiple change types or subsystems must be
@@ -116,6 +226,21 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Fixed
 
+- **TUI confirm prompt raced the REPL readline (found by the unit-8 e2e
+  captures, #69): a second readline interface over the same stdin
+  double-echoed every keystroke (`yy`) and leaked the confirm answer back
+  into the session as a phantom intent.** The TUI now runs a single-reader
+  session — confirm prompts ride the session readline through an answer
+  slot; prompt text and y/yes, a/all, s/skip normalization are unchanged
+  and nothing is auto-approved.
+- **WebUI streaming result card rendered an empty output body in the
+  default rendered view (found by the unit-8 screenshots, #71): plan-flow
+  kept mutating raw card objects after pushing them into the reactive
+  threads array, bypassing Vue's proxy — the rendered-markdown computed
+  stayed cached at its initial empty value forever.** Pushed plan and
+  result cards are now `reactive(...)` at creation, so stream chunks, the
+  authoritative result event, and the running/streaming flags all trigger
+  the render pipeline; the raw view, endpoints, and parser are untouched.
 - **Structure & redundancy audit (unit A of #45): zero deletable files —
   the redundancy was in manifests and prose, now cleaned.** Removed four
   unused dependency declarations (`@tau/ai`, `@tau/skills` from both

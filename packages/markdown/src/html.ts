@@ -1,16 +1,19 @@
 /**
- * Minimal, dependency-free Markdown renderer for the WebUI preview surfaces
- * (plan explanations and result output). Golden rule 4: no new runtime
- * dependencies — this is ~130 lines instead of a parser package.
+ * Escape-first Markdown → HTML renderer (WebUI preview surfaces).
  *
- * Contract: string in → HTML string out, DOM-free (tests run in plain node)
- * and injection-safe. The input is HTML-escaped FIRST, so every inline rule
- * below operates on escaped text and the only tags ever emitted are the
- * ones this file writes itself.
+ * Ported verbatim from `app/webui/client/lib/markdown.ts` (its original home,
+ * pre-@tau/markdown). The contract is deliberate and security-relevant: the
+ * input is HTML-escaped FIRST, so every inline rule operates on escaped text
+ * and the only tags ever emitted are the ones this file writes itself. Do NOT
+ * replace this with a general-purpose markdown-to-HTML pipeline — the
+ * escape-first property + the external-links-only whitelist ARE the feature.
  *
  * Block: #–###### headings, ``` fences, --- hr, > blockquote, - / * lists,
  * 1. lists, paragraphs. Inline: `code`, **bold**, *italic*,
  * [text](http(s)://url) — external links only, always rel=noopener.
+ *
+ * Contract: string in → HTML string out, DOM-free (tests run in plain node)
+ * and injection-safe.
  */
 
 const ESCAPES: Record<string, string> = {
@@ -25,12 +28,14 @@ export function escapeHtml(input: string): string {
   return input.replace(/[&<>"']/g, (ch) => ESCAPES[ch] ?? ch);
 }
 
+// Private-use sentinels marking code-span positions inside escaped text.
+// escapeHtml passes \uE000/\uE001 through untouched, and no realistic input
+// produces them, so token/restore collisions are a non-issue.
+const OPEN = "\uE000";
+const CLOSE = "\uE001";
+
 /** Inline markup over already-escaped text; code spans are tokenized first. */
 function renderInline(text: string): string {
-  // Private-use sentinels: escapeHtml passes them through untouched, and no
-  // realistic input produces them, so token/restore collisions are a non-issue.
-  const OPEN = "\uE000";
-  const CLOSE = "\uE001";
   const codes: string[] = [];
   let out = text.replace(/`([^`]+)`/g, (_, code: string) => {
     codes.push(code);
@@ -42,7 +47,7 @@ function renderInline(text: string): string {
     /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g,
     '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>',
   );
-  return out.replace(/\uE000(\d+)\uE001/g, (_, index: string) => {
+  return out.replace(new RegExp(`${OPEN}(\\d+)${CLOSE}`, "g"), (_, index: string) => {
     const code = codes[Number(index)] ?? "";
     return `<code>${code}</code>`;
   });
@@ -73,9 +78,12 @@ export function renderMarkdown(source: string): string {
       continue;
     }
 
-    // Fenced code block — content stays pre-escaped, language label dropped.
-    const fence = line.match(/^```[\w-]*\s*$/);
+    // Fenced code block — content stays pre-escaped; when the fence carries a
+    // language label it survives as data-lang (the WebUI highlighter keys off
+    // it). The attr value comes from [\w-]* so it needs no escaping.
+    const fence = line.match(/^```([\w-]*)\s*$/);
     if (fence) {
+      const lang = fence[1] ?? "";
       const body: string[] = [];
       i++;
       while (i < lines.length && !/^```\s*$/.test(lines[i] ?? "")) {
@@ -83,7 +91,8 @@ export function renderMarkdown(source: string): string {
         i++;
       }
       i++; // skip the closing fence (or run past EOF)
-      out.push(`<pre><code>${body.join("\n")}</code></pre>`);
+      const attr = lang ? ` data-lang="${lang}"` : "";
+      out.push(`<pre><code${attr}>${body.join("\n")}</code></pre>`);
       continue;
     }
 

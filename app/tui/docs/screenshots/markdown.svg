@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="629" height="427" viewBox="0 0 629 427" font-family="ui-monospace, 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace" font-size="13">
+<rect width="629" height="427" rx="10" fill="#0e1218"/><rect x="1" y="1" width="627" height="425" rx="9" fill="none" stroke="#2a3140" stroke-width="1"/>
+<text x="16" y="22" fill="#8b95a7" xml:space="preserve" textLength="165" lengthAdjust="spacing">tau tui — /md demo.md</text><line x1="0" y1="34" x2="629" y2="34" stroke="#2a3140" stroke-width="1"/>
+<text x="16" y="63" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="71" lengthAdjust="spacing">τ tau tui</text>
+<rect x="86.64999999999999" y="52" width="172.7" height="19" fill="6578"/>
+<text x="86.64999999999999" y="63" fill="#5b6578" xml:space="preserve" textLength="173" lengthAdjust="spacing"> — interactive session</text>
+<rect x="16" y="71" width="408.2" height="19" fill="6578"/>
+<text x="16" y="82" fill="#5b6578" xml:space="preserve" textLength="409" lengthAdjust="spacing">type an intent, or /help for commands. Ctrl+D exits.</text>
+<text x="16" y="101" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="40" lengthAdjust="spacing">tau ❯</text>
+<text x="63.099999999999994" y="101" fill="#d6dce6" xml:space="preserve" textLength="87" lengthAdjust="spacing">/md demo.md</text>
+<text x="16" y="120" fill="#c8cfda" xml:space="preserve" font-weight="700" textLength="87" lengthAdjust="spacing">Tau UX Demo</text>
+<text x="16" y="139" fill="#d6dce6" xml:space="preserve" textLength="299" lengthAdjust="spacing">Markdown preview inside the terminal —</text>
+<text x="322.15" y="139" fill="#d6dce6" xml:space="preserve" font-weight="700" textLength="32" lengthAdjust="spacing">bold</text>
+<text x="353.54999999999995" y="139" fill="#d6dce6" xml:space="preserve" textLength="8" lengthAdjust="spacing">,</text>
+<text x="369.24999999999994" y="139" fill="#8f6c2c" xml:space="preserve" textLength="79" lengthAdjust="spacing">code spans</text>
+<text x="447.74999999999994" y="139" fill="#d6dce6" xml:space="preserve" textLength="165" lengthAdjust="spacing">, and a fenced block:</text>
+<rect x="16" y="147" width="62.8" height="19" fill="6578"/>
+<text x="16" y="158" fill="#5b6578" xml:space="preserve" textLength="63" lengthAdjust="spacing">── sh ──</text>
+<rect x="16" y="166" width="274.75" height="19" fill="8f"/>
+<text x="16" y="177" fill="#3d6b8f" xml:space="preserve" textLength="275" lengthAdjust="spacing">tau ask &quot;find all *.md files&quot; --yes</text>
+<rect x="16" y="185" width="62.8" height="19" fill="6578"/>
+<text x="16" y="196" fill="#5b6578" xml:space="preserve" textLength="63" lengthAdjust="spacing">────────</text>
+<text x="16" y="215" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="95" lengthAdjust="spacing">Safety model</text>
+<rect x="16" y="223" width="15.7" height="19" fill="6578"/>
+<text x="16" y="234" fill="#5b6578" xml:space="preserve" textLength="8" lengthAdjust="spacing">│</text>
+<text x="31.7" y="234" fill="#d6dce6" xml:space="preserve" textLength="322" lengthAdjust="spacing">AI proposes, deterministic code disposes.</text>
+<rect x="16" y="242" width="376.79999999999995" height="19" fill="6578"/>
+<text x="16" y="253" fill="#5b6578" xml:space="preserve" textLength="377" lengthAdjust="spacing">──────────┼─────────────────────────────┼───────</text>
+<text x="16" y="272" fill="#d6dce6" xml:space="preserve" textLength="40" lengthAdjust="spacing">layer</text>
+<rect x="86.64999999999999" y="261" width="7.85" height="19" fill="6578"/>
+<text x="86.64999999999999" y="272" fill="#5b6578" xml:space="preserve" textLength="8" lengthAdjust="spacing">│</text>
+<text x="94.49999999999999" y="272" fill="#d6dce6" xml:space="preserve" textLength="32" lengthAdjust="spacing">role</text>
+<rect x="314.29999999999995" y="261" width="7.85" height="19" fill="6578"/>
+<text x="314.29999999999995" y="272" fill="#5b6578" xml:space="preserve" textLength="8" lengthAdjust="spacing">│</text>
+<text x="322.15" y="272" fill="#d6dce6" xml:space="preserve" textLength="32" lengthAdjust="spacing">risk</text>
+<rect x="16" y="280" width="376.79999999999995" height="19" fill="6578"/>
+<text x="16" y="291" fill="#5b6578" xml:space="preserve" textLength="377" lengthAdjust="spacing">──────────┼─────────────────────────────┼───────</text>
+<text x="16" y="310" fill="#d6dce6" xml:space="preserve" textLength="63" lengthAdjust="spacing">provider</text>
+<rect x="86.64999999999999" y="299" width="7.85" height="19" fill="6578"/>
+<text x="86.64999999999999" y="310" fill="#5b6578" xml:space="preserve" textLength="8" lengthAdjust="spacing">│</text>
+<text x="94.49999999999999" y="310" fill="#d6dce6" xml:space="preserve" textLength="173" lengthAdjust="spacing">proposes a plan (JSON)</text>
+<rect x="314.29999999999995" y="299" width="7.85" height="19" fill="6578"/>
+<text x="314.29999999999995" y="310" fill="#5b6578" xml:space="preserve" textLength="8" lengthAdjust="spacing">│</text>
+<text x="322.15" y="310" fill="#d6dce6" xml:space="preserve" textLength="8" lengthAdjust="spacing">—</text>
+<text x="16" y="329" fill="#d6dce6" xml:space="preserve" textLength="48" lengthAdjust="spacing">engine</text>
+<rect x="86.64999999999999" y="318" width="7.85" height="19" fill="6578"/>
+<text x="86.64999999999999" y="329" fill="#5b6578" xml:space="preserve" textLength="8" lengthAdjust="spacing">│</text>
+<text x="94.49999999999999" y="329" fill="#d6dce6" xml:space="preserve" textLength="212" lengthAdjust="spacing">reviews + executes the plan</text>
+<rect x="314.29999999999995" y="318" width="7.85" height="19" fill="6578"/>
+<text x="314.29999999999995" y="329" fill="#5b6578" xml:space="preserve" textLength="8" lengthAdjust="spacing">│</text>
+<text x="322.15" y="329" fill="#d6dce6" xml:space="preserve" textLength="40" lengthAdjust="spacing">gated</text>
+<rect x="16" y="337" width="376.79999999999995" height="19" fill="6578"/>
+<text x="16" y="348" fill="#5b6578" xml:space="preserve" textLength="377" lengthAdjust="spacing">──────────┼─────────────────────────────┼───────</text>
+<text x="16" y="367" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="8" lengthAdjust="spacing">•</text>
+<text x="31.7" y="367" fill="#d6dce6" xml:space="preserve" textLength="220" lengthAdjust="spacing">读取文件（低风险，自动批准）</text>
+<text x="16" y="386" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="118" lengthAdjust="spacing">• tau on GitHub</text>
+<rect x="133.75" y="375" width="251.2" height="19" fill="6578"/>
+<text x="133.75" y="386" fill="#5b6578" xml:space="preserve" textLength="252" lengthAdjust="spacing">(https://github.com/Z-Yun-H/Tau)</text>
+<text x="16" y="405" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="40" lengthAdjust="spacing">tau ❯</text>
+<text x="63.099999999999994" y="405" fill="#d6dce6" xml:space="preserve" textLength="40" lengthAdjust="spacing">/exit</text>
+</svg>

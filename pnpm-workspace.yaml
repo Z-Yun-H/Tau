@@ -12,6 +12,13 @@ catalog:
   chalk: ^6.0.0
   yaml: ^2.9.0
   zod: ^4.5.4
+  # ---- sanctioned UX additions (AGENTS/architecture.md dependency table) ----
+  marked: ^18.0.11
+  # optionalDependency (dynamic import, never bundled, graceful degrade):
+  # terminal image rendering in @tau/ui — decode/resize when present
+  sharp: ^0.35.4
+  shiki: ^4.4.3
+  "@vueuse/core": ^14.4.0
   # ---- optional SDKs (dynamically imported, never bundled) ----
   "@deepseek-ai/dsh-llm": ^0.0.1-rc.1
   "@modelcontextprotocol/sdk": ^1.30.0
@@ -21,6 +28,9 @@ catalog:
   "@vitest/coverage-v8": ^4.1.11
   oxfmt: ^0.65.0
   oxlint: ^1.80.0
+  # exact pin on purpose: the registry version and the browser build
+  # installed for it must agree — see app/webui/scripts/screenshot.mjs
+  playwright-core: 1.57.0
   tsdown: ^0.22.14
   tsx: ^4.23.13
   typescript: ^7.0.2

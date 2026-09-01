@@ -55,6 +55,16 @@ export const CAUTION_PATTERNS: RegExp[] = [
   /\bdocker\s+(system\s+prune|rm|rmi)\b/,
   /\btruncate\b/,
   /\btee\s+\/etc\//,
+  // PowerShell-specific destructive operations (additive: the reviewer is
+  // only ever strengthened — golden rule 1). Aliases (ri/rd/del/erase) are
+  // covered by Remove-Item's canonical name matching via the common cases
+  // below; broader alias coverage is a maintainer decision.
+  /\bremove-item\b/i,
+  /\bformat-volume\b|\bclear-disk\b/i,
+  /\bset-executionpolicy\b/i,
+  /\binvoke-expression\b|\biex\b/i,
+  /\breg(\.exe)?\s+delete\b/i,
+  /\bbcdedit\b|\bdism\b/i,
 ];
 
 const MAX_SHELL_LENGTH = 2000;

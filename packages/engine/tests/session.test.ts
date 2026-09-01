@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { runPlan } from "../src/session.js";
+import { renderPlan, runPlan } from "../src/session.js";
 import { registerCoreTools, registerTools, getTool } from "@tau/tools";
 import { readHistory } from "@tau/core";
 import type { Plan, ToolDefinition } from "@tau/core";
@@ -219,5 +219,21 @@ describe("runPlan", () => {
     });
     expect(result.outcomes[0]?.skipped).toBe(true);
     expect(result.outcomes[0]?.output).toContain("high risk step requires interactive approval");
+  });
+});
+
+describe("renderPlan explanation formatter", () => {
+  it("uses the default plain styling when no formatter is given", () => {
+    const plan: Plan = { explanation: "plain **text**", steps: [] };
+    const out = renderPlan(plan, "low");
+    expect(out).toContain("plain **text**");
+  });
+
+  it("routes the explanation through the optional formatter (TUI markdown)", () => {
+    const plan: Plan = { explanation: "plain **text**", steps: [] };
+    const out = renderPlan(plan, "low", {
+      explanation: (md) => `FORMATTED<${md.replace(/\*\*/g, "")}>`,
+    });
+    expect(out).toContain("FORMATTED<plain text>");
   });
 });

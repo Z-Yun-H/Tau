@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { escapeHtml, renderMarkdown } from "../client/lib/markdown.js";
+import { escapeHtml, renderMarkdown } from "../src/html.js";
+
+// Ported from app/webui/tests/markdown.test.ts (the renderer's original home)
+// and extended. These tests ARE the security contract of the HTML renderer.
 
 describe("escapeHtml", () => {
   it("escapes the five markup-significant characters", () => {
@@ -15,13 +18,20 @@ describe("renderMarkdown — blocks", () => {
   it("keeps fenced code verbatim and escaped", () => {
     const md = '```ts\nconst s = "<b>&</b>";\n```';
     expect(renderMarkdown(md)).toBe(
-      "<pre><code>const s = &quot;&lt;b&gt;&amp;&lt;/b&gt;&quot;;</code></pre>",
+      '<pre><code data-lang="ts">const s = &quot;&lt;b&gt;&amp;&lt;/b&gt;&quot;;</code></pre>',
     );
   });
 
   it("renders unordered and ordered lists", () => {
     expect(renderMarkdown("- a\n- b")).toBe("<ul><li>a</li><li>b</li></ul>");
     expect(renderMarkdown("1. one\n2) two")).toBe("<ol><li>one</li><li>two</li></ol>");
+  });
+
+  it("keeps the fence language as data-lang for the highlighter", () => {
+    expect(renderMarkdown("```ts\nlet x = 1;\n```")).toBe(
+      '<pre><code data-lang="ts">let x = 1;</code></pre>',
+    );
+    expect(renderMarkdown("```\nbare\n```")).toBe("<pre><code>bare</code></pre>");
   });
 
   it("renders blockquote and hr", () => {

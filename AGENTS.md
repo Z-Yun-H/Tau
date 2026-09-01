@@ -80,6 +80,16 @@ independent execution paths.)
    BEFORE implementation (see AGENTS/collaboration.md §3
    "compound-request decomposition"). Order: norms/docs → refactor →
    feature.
+10. **Large refactors ship as a versioned release via unified merge.** When a
+    compound request amounts to a large refactor (three or more subsystems,
+    or a version release as its deliverable), the decomposed unit PRs all
+    target an integration branch `release/vX.Y.Z-<slug>` (not main) and merge
+    into it sequentially (CI-gated, rebased), a release unit bumps the
+    workspace version + archives the changelog last, and ONE unified PR
+    (integration branch → main) carries the release notes and the full unit
+    index. The unified PR is merged by a HUMAN maintainer — an AI never
+    merges it (see AGENTS/collaboration.md §3 "unified merge & versioned
+    release").
 
 ## Command map
 
@@ -100,7 +110,8 @@ independent execution paths.)
 
 ```
 app/                        UI layer (thin front doors, no engine logic)
-  cli/src/index.ts          bin `tau`: builds commander program, registers tools+skills
+  cli/src/index.ts          bin `tau`: builds commander program; heavy families (ask/tui/web)
+                            and @tau/ai load LAZILY in their actions; skills scan runs in ask/ensureCatalog
   cli/src/<family>.ts       thin commander wiring per command family (ask, file, sys, ...)
   tui/src/index.ts          bin `tau-tui`: interactive REPL (slash commands + intents)
   webui/src/server.ts       zero-dependency HTTP API over the engine; Vue 3 + UnoCSS client in webui/client/ (vite)
@@ -123,6 +134,8 @@ AGENTS/                     deep-dive rulebooks for agents (see below)
 .claude/skills/             root dev-workflow skills for coding agents; package/app
                             tool-layer skills live at packages/<pkg>/SKILL.md, app/<app>/SKILL.md
 changelog/                  daily AI work logs (YYYY-MM-DD.md; AGENTS/collaboration.md §8)
+scripts/screenshot/         run-screenshot tooling (term-svg.mjs pty→SVG renderer; per-app
+                            docs/screenshots/ hold the committed captures + regeneration docs)
 docs/                       human-facing deep dives (architecture, safety, skills, plugins)
 ```
 
@@ -145,6 +158,10 @@ docs/                       human-facing deep dives (architecture, safety, skill
       in the PR body
 - [ ] Compound request? → decomposed into one-Issue-one-PR units and the
       decomposition plan published before implementation (golden rule 9)
+- [ ] Large refactor / release batch? → unit PRs target the
+      `release/vX.Y.Z-*` integration branch, a release unit bumps versions
+      last, and ONE unified human-merged PR carries the release
+      (golden rule 10)
 - [ ] New behavior has tests (see AGENTS/testing.md for patterns)
 - [ ] New user-facing flags/commands documented in both READMEs
 - [ ] Tool added? → registered in `packages/tools/src/<module>.ts`,

@@ -5,7 +5,7 @@
 [![CI](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml/badge.svg)](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-274%20passing-success)](vitest.config.ts)
+[![Tests](https://img.shields.io/badge/tests-346%20passing-success)](vitest.config.ts)
 [![pnpm](https://img.shields.io/badge/pnpm-monorepo-F69220)](pnpm-workspace.yaml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 [![中文文档](https://img.shields.io/badge/docs-中文-red)](README.zh-CN.md)
@@ -65,6 +65,22 @@ cd app/cli && pnpm link --global   # provides the `tau` binary (run `pnpm setup`
 
 Requires Node.js ≥ 20 and pnpm ≥ 10 (corepack handles it: `corepack enable pnpm`).
 
+## Screenshots
+
+Real runs — the CLI/TUI captures are pty recordings rendered to SVG, the
+WebUI shots come from the actual server + client in headless Chromium (all
+offline, mock provider). Regeneration: `app/*/docs/screenshots/README.md`.
+
+<p align="center">
+  <img alt="tui plan flow" src="app/tui/docs/screenshots/plan-flow.svg" width="49%">
+  <img alt="tui markdown" src="app/tui/docs/screenshots/markdown.svg" width="49%">
+</p>
+
+<p align="center">
+  <img alt="webui plan" src="app/webui/docs/screenshots/plan.png" width="49%">
+  <img alt="webui result" src="app/webui/docs/screenshots/result.png" width="49%">
+</p>
+
 ## Quick start
 
 ```bash
@@ -90,6 +106,12 @@ tau file rename " IMG_([0-9]+)" " -photo-$1"     # dry run first
 tau file rename " IMG_([0-9]+)" " -photo-$1" -e  # then apply
 ```
 
+**PowerShell users**: plan shell-steps run through your shell —
+`tau config set shell pwsh` forces an explicit non-profile, non-interactive
+PowerShell invocation with exit-code propagation (`bash` works too; the
+`auto` default picks pwsh automatically on Windows when it is on PATH and
+leaves POSIX untouched).
+
 ## The safety model in 30 seconds
 
 ```
@@ -101,8 +123,10 @@ intent ──► provider.plan() ──► validatePlanResponse() ──► revi
 
 - **Deny list**: `sudo`, `rm -rf /`, `curl | sh`, `dd of=/dev/*`, fork bombs,
   force-pushes, `DROP TABLE`, ... → plan refused before confirmation.
-- **Caution list**: `rm`, `chmod`, `kill`, `git reset --hard`, ... → high risk,
-  interactive confirmation mandatory.
+- **Caution list**: `rm`, `chmod`, `kill`, `git reset --hard`, PowerShell
+  destructives (`Remove-Item -Recurse`, `Format-Volume`,
+  `Set-ExecutionPolicy`, `Invoke-Expression`), ... → high risk, interactive
+  confirmation mandatory.
 - **--yes is honest**: it auto-approves low (and optionally medium with
   `config allowMediumAutoApprove true`) — never high, never blocked.
 - Full policy & rationale: [docs/safety.md](docs/safety.md).
@@ -226,7 +250,7 @@ workspace resolves them at runtime. Every package and app ships its own
 ```
 app/
   cli/            @tau/cli    — bin `tau`: commander app + `tau tui` / `tau web` bridges
-  tui/            @tau/tui    — bin `tau-tui`: interactive terminal session (REPL)
+  tui/            @tau/tui    — bin `tau-tui`: interactive REPL (markdown & image previews: /md, /view)
   webui/          @tau/webui  — bin `tau-web`: local web interface (Vue 3 + UnoCSS client, zero-dependency node API)
 packages/
   core/           @tau/core    — types, config store, history, TAU_HOME paths

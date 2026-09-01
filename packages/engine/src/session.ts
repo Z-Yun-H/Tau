@@ -9,8 +9,8 @@ import { confirm } from "@tau/ui";
 import { getTool } from "@tau/tools";
 import { reviewPlan, scanShellCommand } from "./safety.js";
 import { executeStep, type StepOutcome } from "./executor.js";
-import { appendHistory } from "@tau/core";
-import type { Plan, RiskLevel } from "@tau/core";
+import { appendHistory, loadConfig } from "@tau/core";
+import type { Plan, PlanEvent, RiskLevel, ShellPref } from "@tau/core";
 
 /**
  * Session pipeline: plan -> safety review -> user confirmation -> execution -> history.
@@ -31,6 +31,13 @@ export interface RunPlanOptions {
   skipHistory?: boolean;
   /** Bypass interactive confirm (tests only — already-reviewed plans). */
   autoApproveAll?: boolean;
+  /**
+   * Optional lifecycle observer (streaming front doors). Absent = zero
+   * behavior change; present = exactly one terminal plan_end event, always.
+   */
+  onEvent?: (event: PlanEvent) => void;
+  /** Shell override for shell-steps (default: config `shell` → "auto"). */
+  shell?: ShellPref;
 }
 
 export interface RunPlanResult {
@@ -40,7 +47,19 @@ export interface RunPlanResult {
   output: string;
 }
 
-export function renderPlan(plan: Plan, overallRisk: RiskLevel): string {
+export interface RenderPlanOptions {
+  /**
+   * Optional formatter for the plan explanation — e.g. the TUI passes a
+   * markdown→ANSI renderer while the CLI keeps the default plain styling.
+   */
+  explanation?: (text: string) => string;
+}
+
+export function renderPlan(
+  plan: Plan,
+  overallRisk: RiskLevel,
+  options?: RenderPlanOptions,
+): string {
   const lines: string[] = [];
   lines.push(
     theme.title("Plan") +
@@ -48,7 +67,10 @@ export function renderPlan(plan: Plan, overallRisk: RiskLevel): string {
       theme.risk(overallRisk) +
       theme.muted(")"),
   );
-  lines.push(theme.info(plan.explanation));
+  const explanation = options?.explanation
+    ? options.explanation(plan.explanation)
+    : theme.info(plan.explanation);
+  lines.push(explanation);
   plan.steps.forEach((step, i) => {
     const what =
       step.kind === "tool"
@@ -78,12 +100,14 @@ export async function runPlan(
   plan: Plan,
   options: RunPlanOptions,
 ): Promise<RunPlanResult> {
+  const emit = options.onEvent ?? (() => {});
   const review = reviewPlan(plan);
 
   if (review.verdict === "deny") {
     if (!options.skipHistory) {
       appendHistory(intent, "plan", plan.steps, "denied", { provider: options.provider });
     }
+    emit({ type: "plan_end", status: "denied" });
     return { status: "denied", review, outcomes: [], output: renderReview(plan) };
   }
 
@@ -92,6 +116,7 @@ export async function runPlan(
   let approveAll = options.autoApproveAll === true;
   if (!approveAll && !options.assumeYes) {
     if (!interactive) {
+      emit({ type: "plan_end", status: "cancelled" });
       return {
         status: "cancelled",
         review,
@@ -108,6 +133,7 @@ export async function runPlan(
       if (!options.skipHistory) {
         appendHistory(intent, "plan", plan.steps, "cancelled", { provider: options.provider });
       }
+      emit({ type: "plan_end", status: "cancelled" });
       return { status: "cancelled", review, outcomes: [], output: "(cancelled by user)" };
     }
     if (answer === "all") approveAll = true;
@@ -116,6 +142,9 @@ export async function runPlan(
   // ---- Execution ----
   const outcomes: StepOutcome[] = [];
   let ok = true;
+  // Shell selection is config-driven (no new deps); POSIX `auto` keeps the
+  // historical spawn(shell:true) behavior byte-identical.
+  const shellPref = options.shell ?? loadConfig().shell ?? "auto";
   for (let i = 0; i < plan.steps.length; i++) {
     const step = plan.steps[i]!;
 
@@ -130,6 +159,7 @@ export async function runPlan(
           skipped: true,
         });
         ok = false;
+        emit({ type: "step_end", index: i, ok: false, skipped: true });
         continue;
       }
       if (options.assumeYes && risk === "medium" && !options.allowMediumAutoApprove) {
@@ -139,11 +169,21 @@ export async function runPlan(
       }
     }
 
+    emit({ type: "step_start", index: i, step });
     const outcome = await executeStep(step, i, {
       timeoutSec: options.timeoutSec,
       gate: () => allowed,
+      shell: shellPref,
+      onOutput: (chunk) => emit({ type: "step_output", index: i, chunk }),
     });
     outcomes.push(outcome);
+    emit({
+      type: "step_end",
+      index: i,
+      ok: outcome.ok,
+      exitCode: outcome.exitCode,
+      skipped: outcome.skipped,
+    });
     if (outcome.output && !outcome.skipped) {
       console.log(outcome.output);
     }
@@ -161,6 +201,7 @@ export async function runPlan(
       provider: options.provider,
     });
   }
+  emit({ type: "plan_end", status });
   return { status, review, outcomes, output: outcomes.map((o) => o.output).join("\n") };
 }
 

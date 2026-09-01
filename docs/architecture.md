@@ -108,7 +108,8 @@ The normative table is in `AGENTS/architecture.md`; the short version:
   (the root dev-tool skill router — top of the SKILL.md read chain),
   `.claude/skills/`
   (root-layer dev-workflow SKILL.md files for coding agents — tau-skill-new is
-  a thin router), `docs/`, `.github/`, workspace
+  a thin router), `docs/`, `.github/`, `scripts/screenshot/` (run-screenshot
+  tooling; captures live in each app's `docs/screenshots/`), workspace
   tooling. Package- and app-bound agent skills live at
   `packages/<pkg>/SKILL.md` and `app/<app>/SKILL.md`
   (tool layer — today: `packages/skills/SKILL.md` and `app/webui/SKILL.md`).
