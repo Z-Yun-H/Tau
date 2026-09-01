@@ -5,6 +5,23 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+### Added
+
+- **AI collaboration norms v2 (updated 2026-09) + daily changelog folder.**
+  `AGENTS/collaboration.md` now transcribes the maintainer's updated
+  collaboration directive: daily `changelog/YYYY-MM-DD.md` files (summary /
+  type / Issue-PR refs / impact) feeding the release-level `CHANGELOG.md`,
+  change-type flow split (Issue+PR for features/refactors/architecture,
+  direct commits on a branch only for simple unambiguous fixes — `main`
+  stays protected so everything lands via PR), a tech-selection freeze
+  (new framework/lib/tool requires an approved Issue first), dead-code &
+  hardcoded-logic cleanup duties, a dedicated testing & quality gate
+  (results reported in every PR body; CI failures root-caused, never
+  bypassed), doc root-vs-subpackage responsibilities, and a pre-task
+  self-check list. `AGENTS.md` (golden rules 7–8, change checklist, commit
+  style) and the dev-workflow skills (`.claude/skills/tau-release`,
+  `.claude/skills/tau-test`) were synced accordingly. (#31)
+
 ### Fixed
 
 - **Installed `tau` bins no longer silently no-op.** The "am I the entry

@@ -41,3 +41,8 @@ npm run lint && npm run typecheck && npm run test:cov
 ```
 
 All green, coverage at or above thresholds, no skipped tests added.
+
+Report the results in the PR body ("How it was tested" section + the
+commit's `AI-gate:` trailer) — tests never run is as bad as failing tests
+(AGENTS/collaboration.md §11). If CI fails: root-cause it, fix it, add or
+repair the missing test; never bypass a check.
