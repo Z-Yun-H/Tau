@@ -27,8 +27,8 @@ in [AGENTS/architecture.md](./architecture.md)):
 | **L3 product content**   | `packages/skills/bundled/<name>/SKILL.md`, `packages/skills/templates/skill-template/` | the tau CLI at RUNTIME (user-facing data, not agent skills)                        | the npm artifact |
 
 Today's inventory — root router: `/SKILL.md` (`tau-dev-router`); L1:
-`tau-build`, `tau-test`, `tau-release`, `tau-skill-new` (a thin ROUTER),
-`tau-tool-new` (a thin ROUTER);
+`tau-dev`, `tau-build`, `tau-test`, `tau-release`, `tau-skill-new` (a thin
+ROUTER), `tau-tool-new` (a thin ROUTER);
 L2: `packages/skills/SKILL.md`
 (`tau-skills-authoring`, owned by `@tau/skills`),
 `packages/tools/SKILL.md` (`tau-tools-authoring`, owned by `@tau/tools`) and
