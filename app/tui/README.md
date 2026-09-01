@@ -5,6 +5,22 @@ running session with slash commands while every intent still goes through the
 same plan → review → confirm → `runPlan()` pipeline as `tau ask`. Refuses to
 start when stdin is not a TTY (use `tau ask` in scripts instead).
 
+## Screenshots
+
+Real pty sessions driven with scripted keystrokes, rendered to SVG
+(regeneration: [docs/screenshots/README.md](./docs/screenshots/README.md)):
+
+**plan → confirm → run — the safety loop inside the session**
+
+![tui plan flow](./docs/screenshots/plan-flow.svg)
+
+**`/md` — markdown through the `@tau/markdown` ANSI renderer (tables, code, CJK)**
+
+![tui markdown](./docs/screenshots/markdown.svg)
+
+More: `overview.svg` (command surface), `image-view.svg` (inline image /
+metadata-card fallback).
+
 ## Slash commands
 
 | Command     | Effect                                      |

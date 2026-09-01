@@ -7,6 +7,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Added
 
+- **End-to-end snapshot tests + committed run screenshots for all three
+  apps (unit 8, #60).** Vitest e2e files spawn the REAL surfaces and snapshot
+  them portably: the CLI entry as a real child process (`--version`,
+  `--help`, a read-only `file find`, a config round-trip, `skill list`) and
+  the WebUI server over real HTTP (`/api/status`, `/api/plan`, `/api/execute`
+  and the NDJSON stream — sandbox paths and release version normalized).
+  Committed screenshots from real runs live in `app/<app>/docs/screenshots/`
+  (CLI + TUI: pty captures rendered to SVG by the new zero-dependency
+  `scripts/screenshot/term-svg.mjs`; WebUI: real headless-Chromium session
+  via `app/webui/scripts/screenshot.mjs` + `playwright-core`, dev-only).
+  Per-app READMEs embed the shots; every directory documents regeneration.
 - **WebUI streaming execution + shiki highlighting + vueuse.** New
   `POST /api/execute/stream` (NDJSON): identical deterministic gates (deny /
   high-risk refusals stay plain JSON), then a line-per-event mirror of

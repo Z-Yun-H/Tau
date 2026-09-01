@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="653" height="332" viewBox="0 0 653 332" font-family="ui-monospace, 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace" font-size="13">
+<rect width="653" height="332" rx="10" fill="#0e1218"/><rect x="1" y="1" width="651" height="330" rx="9" fill="none" stroke="#2a3140" stroke-width="1"/>
+<text x="16" y="22" fill="#8b95a7" xml:space="preserve" textLength="236" lengthAdjust="spacing">tau tui — plan → confirm → run</text><line x1="0" y1="34" x2="653" y2="34" stroke="#2a3140" stroke-width="1"/>
+<text x="16" y="63" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="71" lengthAdjust="spacing">τ tau tui</text>
+<rect x="86.64999999999999" y="52" width="172.7" height="19" fill="6578"/>
+<text x="86.64999999999999" y="63" fill="#5b6578" xml:space="preserve" textLength="173" lengthAdjust="spacing"> — interactive session</text>
+<rect x="16" y="71" width="408.2" height="19" fill="6578"/>
+<text x="16" y="82" fill="#5b6578" xml:space="preserve" textLength="409" lengthAdjust="spacing">type an intent, or /help for commands. Ctrl+D exits.</text>
+<text x="16" y="101" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="40" lengthAdjust="spacing">tau ❯</text>
+<text x="63.099999999999994" y="101" fill="#d6dce6" xml:space="preserve" textLength="150" lengthAdjust="spacing">find all *.md files</text>
+<rect x="16" y="109" width="620.15" height="19" fill="6578"/>
+<text x="16" y="120" fill="#5b6578" xml:space="preserve" textLength="621" lengthAdjust="spacing">planning with Mock (offline demo) (config) — risk gate is independent of the AI</text>
+<text x="16" y="139" fill="#c8cfda" xml:space="preserve" font-weight="700" textLength="32" lengthAdjust="spacing">Plan</text>
+<rect x="47.4" y="128" width="133.45" height="19" fill="6578"/>
+<text x="47.4" y="139" fill="#5b6578" xml:space="preserve" textLength="126" lengthAdjust="spacing">  (overall risk:</text>
+<text x="180.85" y="139" fill="#3f7d4e" xml:space="preserve" textLength="24" lengthAdjust="spacing">low</text>
+<rect x="204.39999999999998" y="128" width="7.85" height="19" fill="6578"/>
+<text x="204.39999999999998" y="139" fill="#5b6578" xml:space="preserve" textLength="8" lengthAdjust="spacing">)</text>
+<text x="16" y="158" fill="#d6dce6" xml:space="preserve" textLength="503" lengthAdjust="spacing">Recursively find files matching *.md under the current directory</text>
+<rect x="16" y="166" width="15.7" height="19" fill="6578"/>
+<text x="16" y="177" fill="#5b6578" xml:space="preserve" textLength="16" lengthAdjust="spacing">1.</text>
+<text x="31.7" y="177" fill="#d6dce6" xml:space="preserve" textLength="32" lengthAdjust="spacing">tool</text>
+<text x="70.95" y="177" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="71" lengthAdjust="spacing">file.find</text>
+<text x="141.6" y="177" fill="#d6dce6" xml:space="preserve" textLength="228" lengthAdjust="spacing">{&quot;pattern&quot;:&quot;*.md&quot;,&quot;path&quot;:&quot;.&quot;}</text>
+<rect x="16" y="185" width="211.95" height="19" fill="6578"/>
+<text x="16" y="196" fill="#5b6578" xml:space="preserve" textLength="212" lengthAdjust="spacing">keyword matched file lookup</text>
+<text x="16" y="215" fill="#8f6c2c" xml:space="preserve" textLength="8" lengthAdjust="spacing">?</text>
+<text x="23.85" y="215" fill="#d6dce6" xml:space="preserve" textLength="338" lengthAdjust="spacing">Run this plan? [y]es / [a]ll steps / [n]o y</text>
+<text x="16" y="234" fill="#d6dce6" xml:space="preserve" textLength="354" lengthAdjust="spacing">file.find in /tmp/tau-shot-demo — 3 match(es)</text>
+<text x="16" y="253" fill="#d6dce6" xml:space="preserve" textLength="55" lengthAdjust="spacing">demo.md</text>
+<text x="16" y="272" fill="#d6dce6" xml:space="preserve" textLength="103" lengthAdjust="spacing">docs/notes.md</text>
+<text x="16" y="291" fill="#d6dce6" xml:space="preserve" textLength="71" lengthAdjust="spacing">readme.md</text>
+<text x="16" y="310" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="40" lengthAdjust="spacing">tau ❯</text>
+<text x="63.099999999999994" y="310" fill="#d6dce6" xml:space="preserve" textLength="40" lengthAdjust="spacing">/exit</text>
+</svg>

@@ -5,7 +5,7 @@
 [![CI](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml/badge.svg)](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-274%20passing-success)](vitest.config.ts)
+[![Tests](https://img.shields.io/badge/tests-346%20passing-success)](vitest.config.ts)
 [![pnpm](https://img.shields.io/badge/pnpm-monorepo-F69220)](pnpm-workspace.yaml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 
@@ -60,6 +60,20 @@ cd app/cli && pnpm link --global   # 提供 `tau` 命令（若 pnpm 全局 bin �
 ```
 
 需要 Node.js ≥ 20 与 pnpm ≥ 10（corepack 可自动管理：`corepack enable pnpm`）。
+
+## 运行截图
+
+全部来自真实运行——CLI/TUI 为 pty 捕获渲染的 SVG，WebUI 为真实服务端 + 客户端在无头 Chromium 中的截图（全部离线、mock provider）。再生成方式见 `app/*/docs/screenshots/README.md`。
+
+<p align="center">
+  <img alt="tui plan flow" src="app/tui/docs/screenshots/plan-flow.svg" width="49%">
+  <img alt="tui markdown" src="app/tui/docs/screenshots/markdown.svg" width="49%">
+</p>
+
+<p align="center">
+  <img alt="webui plan" src="app/webui/docs/screenshots/plan.png" width="49%">
+  <img alt="webui result" src="app/webui/docs/screenshots/result.png" width="49%">
+</p>
 
 ## 快速上手
 

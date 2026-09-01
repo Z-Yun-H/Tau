@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="456" height="199" viewBox="0 0 456 199" font-family="ui-monospace, 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace" font-size="13">
+<rect width="456" height="199" rx="10" fill="#0e1218"/><rect x="1" y="1" width="454" height="197" rx="9" fill="none" stroke="#2a3140" stroke-width="1"/>
+<text x="16" y="22" fill="#8b95a7" xml:space="preserve" textLength="189" lengthAdjust="spacing">tau tui — /view logo.png</text><line x1="0" y1="34" x2="456" y2="34" stroke="#2a3140" stroke-width="1"/>
+<text x="16" y="63" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="71" lengthAdjust="spacing">τ tau tui</text>
+<rect x="86.64999999999999" y="52" width="172.7" height="19" fill="6578"/>
+<text x="86.64999999999999" y="63" fill="#5b6578" xml:space="preserve" textLength="173" lengthAdjust="spacing"> — interactive session</text>
+<rect x="16" y="71" width="408.2" height="19" fill="6578"/>
+<text x="16" y="82" fill="#5b6578" xml:space="preserve" textLength="409" lengthAdjust="spacing">type an intent, or /help for commands. Ctrl+D exits.</text>
+<text x="16" y="101" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="40" lengthAdjust="spacing">tau ❯</text>
+<text x="63.099999999999994" y="101" fill="#d6dce6" xml:space="preserve" textLength="110" lengthAdjust="spacing">/view logo.png</text>
+<text x="16" y="120" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="40" lengthAdjust="spacing">image</text>
+<text x="55.25" y="120" fill="#d6dce6" xml:space="preserve" textLength="63" lengthAdjust="spacing">logo.png</text>
+<rect x="16" y="128" width="54.949999999999996" height="19" fill="6578"/>
+<text x="16" y="139" fill="#5b6578" xml:space="preserve" textLength="55" lengthAdjust="spacing">format:</text>
+<text x="70.94999999999999" y="139" fill="#d6dce6" xml:space="preserve" textLength="24" lengthAdjust="spacing">png</text>
+<rect x="118.04999999999998" y="128" width="39.25" height="19" fill="6578"/>
+<text x="118.04999999999998" y="139" fill="#5b6578" xml:space="preserve" textLength="40" lengthAdjust="spacing">size:</text>
+<text x="157.29999999999998" y="139" fill="#d6dce6" xml:space="preserve" textLength="55" lengthAdjust="spacing">240×140</text>
+<rect x="235.79999999999998" y="128" width="47.099999999999994" height="19" fill="6578"/>
+<text x="235.79999999999998" y="139" fill="#5b6578" xml:space="preserve" textLength="48" lengthAdjust="spacing">bytes:</text>
+<text x="282.9" y="139" fill="#d6dce6" xml:space="preserve" textLength="32" lengthAdjust="spacing">3 KB</text>
+<text x="16" y="158" fill="#8f6c2c" xml:space="preserve" textLength="409" lengthAdjust="spacing">terminal does not advertise an inline-image protocol</text>
+<text x="16" y="177" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="40" lengthAdjust="spacing">tau ❯</text>
+<text x="63.099999999999994" y="177" fill="#d6dce6" xml:space="preserve" textLength="40" lengthAdjust="spacing">/exit</text>
+</svg>

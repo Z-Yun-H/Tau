@@ -134,6 +134,8 @@ AGENTS/                     deep-dive rulebooks for agents (see below)
 .claude/skills/             root dev-workflow skills for coding agents; package/app
                             tool-layer skills live at packages/<pkg>/SKILL.md, app/<app>/SKILL.md
 changelog/                  daily AI work logs (YYYY-MM-DD.md; AGENTS/collaboration.md §8)
+scripts/screenshot/         run-screenshot tooling (term-svg.mjs pty→SVG renderer; per-app
+                            docs/screenshots/ hold the committed captures + regeneration docs)
 docs/                       human-facing deep dives (architecture, safety, skills, plugins)
 ```
 

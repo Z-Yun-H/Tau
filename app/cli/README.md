@@ -4,6 +4,19 @@ The `tau` binary — the commander-based terminal app and the primary front
 door to the engine. Natural language in, safe commands out: every AI-proposed
 plan goes through review → confirm → `runPlan()` before anything executes.
 
+## Screenshots
+
+Real runs, captured through a pty and rendered to SVG (regeneration:
+[docs/screenshots/README.md](./docs/screenshots/README.md)):
+
+**`tau --help` — the command map**
+
+![tau --help](./docs/screenshots/help.svg)
+
+**`tau ask "find all *.md files" --yes` — natural language in, gated plan out**
+
+![tau ask](./docs/screenshots/ask.svg)
+
 ## Commands
 
 | Family                                 | What it does                                               |
