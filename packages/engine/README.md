@@ -9,7 +9,7 @@ timeouts and output caps, and runs the whole pipeline through `runPlan()`.
 Everything is exported from the package barrel (`src/index.ts`):
 
 - **Safety reviewer** (`src/safety.ts`) — `reviewPlan()` assigns verdicts
-  (`allow` / `confirm` / `blocked`) per step; `scanShellCommand()` deep-scans
+  (`allow` / `review` / `deny`) per step; `scanShellCommand()` deep-scans
   shell strings; the `DENY_PATTERNS` and `CAUTION_PATTERNS` tables are the
   single source of truth for risk classification
 - **Executor** (`src/executor.ts`) — `executeStep()` runs one approved step
@@ -19,14 +19,14 @@ Everything is exported from the package barrel (`src/index.ts`):
   (review → confirm → execute → history); `renderReview()` and
   `renderPlan()` produce the human-facing review output
 
-Invariants: `blocked` steps are never executed — no flag can override that;
-plugin tools always enter review as medium risk; mutating tools default to
-dry-run.
+Invariants: `deny`-verdict steps are never executed — no flag can override
+that; plugin tools always enter review as medium risk; mutating tools default
+to dry-run.
 
 ## Dependencies
 
 - Runtime: none
-- Workspace: `@tau/core`, `@tau/tools`
+- Workspace: `@tau/core`, `@tau/tools`, `@tau/ui` (review rendering)
 
 ## Development
 

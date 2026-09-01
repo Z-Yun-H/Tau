@@ -104,11 +104,14 @@ API keys, so it is written with chmod 0600 and keys are masked on display),
 
 The normative table is in `AGENTS/architecture.md`; the short version:
 
-- **Repo root**: `AGENTS.md` + `AGENTS/` (AI behavior rulebooks), `.claude/skills/`
+- **Repo root**: `AGENTS.md` + `AGENTS/` (AI behavior rulebooks), `SKILL.md`
+  (the root dev-tool skill router — top of the SKILL.md read chain),
+  `.claude/skills/`
   (root-layer dev-workflow SKILL.md files for coding agents — tau-skill-new is
-  a thin router; there is no root SKILL.md), `docs/`, `.github/`, workspace
-  tooling. Package-bound agent skills live at `packages/<pkg>/SKILL.md`
-  (tool layer — today only `packages/skills/SKILL.md`).
+  a thin router), `docs/`, `.github/`, workspace
+  tooling. Package- and app-bound agent skills live at
+  `packages/<pkg>/SKILL.md` and `app/<app>/SKILL.md`
+  (tool layer — today: `packages/skills/SKILL.md` and `app/webui/SKILL.md`).
 - **`packages/skills/`**: `bundled/<name>/SKILL.md` (skills that ship with the
   CLI, resolved at runtime via `packageRoot()`) and `templates/` (the
   `tau skill new` scaffold, read at runtime) — these are product content

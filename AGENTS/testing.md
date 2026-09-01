@@ -41,7 +41,7 @@ npx vitest run packages/engine   # one package's tests
 | tools                | happy path + error path per tool op; dry-run default for rename/replace; execute:true applies; SKIP_DIRS respected in text.search                                     |
 | skills               | valid SKILL.md parses; each frontmatter rule violation yields an issue; deny-listed skill command flagged; origin precedence user > bundled                           |
 | session/runPlan      | deny → no execution + history "denied"; confirm "no" → cancelled; mock provider end-to-end                                                                            |
-| CLI integration      | spawn-like runs through `main()` with argv; see tests/integration/cli.test.ts                                                                                         |
+| CLI integration      | spawn-like runs through `main()` with argv; see `app/cli/tests/cli.test.ts`                                                                                           |
 
 ## Test style
 
@@ -53,8 +53,9 @@ npx vitest run packages/engine   # one package's tests
   `scanSkills`) over internals. Reach into internals only when a behavior
   (like a regex) is hard to trigger end-to-end.
 - Snapshot tests: avoid, except CLI help output if ever needed.
-- Fixtures live in `tests/fixtures/`; generate tmp files at runtime when the
-  test mutates them.
+- Fixtures: there is no committed fixtures directory; tests generate tmp
+  files at runtime (under a sandboxed `TAU_HOME` or a mkdtemp dir) when they
+  need one, and clean up after themselves.
 
 ## Adding a tool? Copy this test skeleton
 

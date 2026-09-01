@@ -36,10 +36,8 @@
     "vue": "catalog:"
   },
   "dependencies": {
+    "@tau/agent": "workspace:*",
     "@tau/core": "workspace:*",
-    "@tau/engine": "workspace:*",
-    "@tau/ai": "workspace:*",
-    "@tau/skills": "workspace:*",
-    "@tau/agent": "workspace:*"
+    "@tau/engine": "workspace:*"
   }
 }

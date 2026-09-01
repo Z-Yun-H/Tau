@@ -6,7 +6,7 @@
   `packages/*` (see `pnpm-workspace.yaml`). Cross-package imports use the
   `@tau/*` name of a package declared in that package.json with `workspace:*`
   and import from its barrel (`@tau/core`), never deep paths.
-- Each package exports its public API from `app/cli/src/index.ts`. Its package.json
+- Each package exports its public API from its own `src/index.ts` barrel. Its package.json
   `exports` maps `types`/`development` to TypeScript source (so tsc and
   `tsx --conditions=development` run from source) and `import`/`default` to
   `dist/index.js` (so built apps resolve real artifacts).

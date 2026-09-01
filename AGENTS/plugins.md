@@ -46,7 +46,7 @@ messages.
 - The stdio test spawns a REAL child MCP server and asserts env passing and
   the full `run()` closure (fresh connect → call → close). Keep it.
 - Plugin CLI tests must clean up `$TAU_HOME` between cases (see
-  `tests/integration/plugins-cli.test.ts`).
+  `app/cli/tests/plugins-cli.test.ts`).
 
 ## Checklist for plugin-system changes
 
