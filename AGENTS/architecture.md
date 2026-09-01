@@ -7,11 +7,14 @@ pipeline, add a command family, or add a module.
 
 pnpm monorepo: UI apps in `app/*` (`@tau/cli`, `@tau/tui`, `@tau/webui`), the
 engine in `packages/*` (`@tau/core`, `@tau/tools`, `@tau/engine`, `@tau/ai`,
-`@tau/skills`, `@tau/plugins`, `@tau/agent`, `@tau/ui`). Every package exposes
+`@tau/skills`, `@tau/plugins`, `@tau/agent`, `@tau/ui`, `@tau/markdown`). Every
+package exposes
 its API through a `src/index.ts` barrel and is consumed only via declared
 `@tau/*` `workspace:*` deps. Dependency direction (no cycles):
 `core ← tools ← engine`; `core+tools ← ai|plugins`; `skills → core+engine+ui`;
-everything feeds `@tau/agent`; apps sit on top. Tests are colocated per
+`markdown` stands alone (marked + chalk only) and is consumed by front-door
+surfaces (TUI/WebUI) — never by the engine; everything feeds `@tau/agent`; apps
+sit on top. Tests are colocated per
 package and run by the single root vitest config (aliases `@tau/*` → source).
 
 ## The one diagram that matters
@@ -55,6 +58,21 @@ package and run by the single root vitest config (aliases `@tau/*` → source).
    `buildProgram()`, then skill tools. Name conflicts throw — including a
    skill shadowing a core tool (`file.find` as a skill command must fail).
 5. `blocked` risk is terminal. Nothing in the codebase may downgrade it.
+
+## Runtime dependencies (normative — golden rule 4 companion)
+
+The frozen runtime set lives in `pnpm-workspace.yaml` `catalog` (single source
+of truth; packages declare `catalog:` refs). Sanctioned additions beyond the
+original frozen set, each with its owner and justification:
+
+| Dependency | Owner package   | Why (and why not an alternative)                                                                                                                                                                                                                                                                                                                                                |
+| ---------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `marked`   | `@tau/markdown` | Spec-compliant GFM tokenizer for the shared markdown renderers (ANSI for TUI, per marked's documented lexer API); zero transitive deps. Alternatives rejected: hand-rolled second parser (duplicated escape/edge logic), `markdown-it` (plugin-system weight unneeded). The WebUI HTML path deliberately does NOT use marked — `renderMarkdown` stays escape-first by contract. |
+
+Optional SDKs (dynamic import, never bundled, graceful degradation):
+`@modelcontextprotocol/sdk` (`@tau/plugins`), `@deepseek-ai/dsh-llm` (`@tau/ai`).
+Any new runtime dependency MUST land here + the catalog in the same PR, with
+the alternative considered and rejected in the PR description.
 
 ## Where to add things (the "I want to..." table)
 

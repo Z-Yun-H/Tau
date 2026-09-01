@@ -9,9 +9,17 @@ import { defineConfig } from "vitest/config";
 const pkg = (name: string): string =>
   fileURLToPath(new URL(`./packages/${name}/src/index.ts`, import.meta.url));
 
-const workspaceAlias = ["core", "tools", "ui", "engine", "ai", "skills", "plugins", "agent"].map(
-  (name) => ({ find: new RegExp(`^@tau/${name}$`), replacement: pkg(name) }),
-);
+const workspaceAlias = [
+  "core",
+  "tools",
+  "ui",
+  "engine",
+  "ai",
+  "skills",
+  "plugins",
+  "agent",
+  "markdown",
+].map((name) => ({ find: new RegExp(`^@tau/${name}$`), replacement: pkg(name) }));
 
 export default defineConfig({
   resolve: { alias: workspaceAlias },

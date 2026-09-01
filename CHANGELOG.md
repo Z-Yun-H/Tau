@@ -7,6 +7,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Added
 
+- **Shared `@tau/markdown` package — one markdown home for all front doors.**
+  New workspace package with two renderers: `renderToAnsi` (TUI) parses with
+  `marked` (per its documented lexer API) and walks the token tree to themed,
+  sanitized terminal output — injectable `AnsiTheme`, display-width wrapping
+  with CJK awareness (wide code points count 2 columns), terminal-escape/OSC
+  stripping so output can never reprogram the terminal, tables with CJK-aware
+  column alignment, task lists, fenced-code rules; `renderMarkdown` (WebUI)
+  ports the escape-first HTML renderer verbatim (security contract unchanged).
+  `marked` ^18.0.11 enters the catalog + the new normative runtime-dependency
+  table in `AGENTS/architecture.md` (golden rule 4). No app behavior change in
+  this unit — the TUI and WebUI adopt the package in their own units. (#54)
+
 - **Unified-merge & versioned-release norm for large refactors (collaboration
   norms).** When a compound request amounts to a large refactor (3+ subsystems
   or a version release as the deliverable), the decomposed unit PRs all target
