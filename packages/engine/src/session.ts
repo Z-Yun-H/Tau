@@ -9,8 +9,8 @@ import { confirm } from "@tau/ui";
 import { getTool } from "@tau/tools";
 import { reviewPlan, scanShellCommand } from "./safety.js";
 import { executeStep, type StepOutcome } from "./executor.js";
-import { appendHistory } from "@tau/core";
-import type { Plan, PlanEvent, RiskLevel } from "@tau/core";
+import { appendHistory, loadConfig } from "@tau/core";
+import type { Plan, PlanEvent, RiskLevel, ShellPref } from "@tau/core";
 
 /**
  * Session pipeline: plan -> safety review -> user confirmation -> execution -> history.
@@ -36,6 +36,8 @@ export interface RunPlanOptions {
    * behavior change; present = exactly one terminal plan_end event, always.
    */
   onEvent?: (event: PlanEvent) => void;
+  /** Shell override for shell-steps (default: config `shell` → "auto"). */
+  shell?: ShellPref;
 }
 
 export interface RunPlanResult {
@@ -125,6 +127,9 @@ export async function runPlan(
   // ---- Execution ----
   const outcomes: StepOutcome[] = [];
   let ok = true;
+  // Shell selection is config-driven (no new deps); POSIX `auto` keeps the
+  // historical spawn(shell:true) behavior byte-identical.
+  const shellPref = options.shell ?? loadConfig().shell ?? "auto";
   for (let i = 0; i < plan.steps.length; i++) {
     const step = plan.steps[i]!;
 
@@ -153,6 +158,7 @@ export async function runPlan(
     const outcome = await executeStep(step, i, {
       timeoutSec: options.timeoutSec,
       gate: () => allowed,
+      shell: shellPref,
       onOutput: (chunk) => emit({ type: "step_output", index: i, chunk }),
     });
     outcomes.push(outcome);

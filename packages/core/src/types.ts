@@ -10,6 +10,14 @@
 /** Risk classification used by the safety reviewer and every tool definition. */
 export type RiskLevel = "low" | "medium" | "high" | "blocked";
 
+/**
+ * Shell used for plan shell-steps. `auto` keeps platform defaults (POSIX
+ * unchanged; Windows prefers PowerShell when detectable, else COMSPEC).
+ * `pwsh`/`powershell` force an explicit non-profile non-interactive invocation
+ * with exit-code propagation — cross-platform (pwsh runs on Linux/macOS too).
+ */
+export type ShellPref = "auto" | "bash" | "pwsh" | "powershell";
+
 export const RISK_ORDER: Record<RiskLevel, number> = {
   low: 0,
   medium: 1,
@@ -242,6 +250,8 @@ export interface TauConfig {
   timeout: number;
   /** When true, `--yes` may auto-approve medium risk too (never high/blocked). */
   allowMediumAutoApprove: boolean;
+  /** Shell for plan shell-steps (default "auto" — see {@link ShellPref}). */
+  shell?: ShellPref;
   aliases: Record<string, string[]>;
   /** MCP servers whose tools join the AI planner catalog. */
   plugins: PluginConfig[];

@@ -86,6 +86,11 @@ tau file rename " IMG_([0-9]+)" " -photo-$1"     # 先预览
 tau file rename " IMG_([0-9]+)" " -photo-$1" -e  # 确认后执行
 ```
 
+**PowerShell 用户**：计划中的 shell 步骤经由你的 shell 执行 ——
+`tau config set shell pwsh` 强制使用显式的无 profile、非交互 PowerShell 调用，
+并正确传播退出码（也支持 `bash`；默认 `auto` 在 Windows 上自动探测 PATH 中的
+pwsh，POSIX 行为保持不变）。
+
 ## 安全模型 30 秒版
 
 ```
@@ -97,8 +102,9 @@ tau file rename " IMG_([0-9]+)" " -photo-$1" -e  # 确认后执行
 
 - **黑名单**：`sudo`、`rm -rf /`、`curl | sh`、`dd of=/dev/*`、fork 炸弹、
   force-push、`DROP TABLE`…… 计划在确认之前就被拒绝。
-- ** caution 名单**：`rm`、`chmod`、`kill`、`git reset --hard`…… 高风险，
-  必须交互确认。
+- ** caution 名单**：`rm`、`chmod`、`kill`、`git reset --hard`、PowerShell 破坏性
+  操作（`Remove-Item -Recurse`、`Format-Volume`、`Set-ExecutionPolicy`、
+  `Invoke-Expression`）…… 高风险，必须交互确认。
 - **`--yes` 是诚实的**：它只自动批准低风险（配置 `allowMediumAutoApprove true`
   后含中风险）—— 永不碰高风险与 blocked。
 - 完整策略与设计动机：[docs/safety.md](docs/safety.md)。

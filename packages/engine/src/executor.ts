@@ -5,8 +5,11 @@
  */
 
 import { spawn } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
 import { getTool } from "@tau/tools";
-import type { PlanStep, ToolResult } from "@tau/core";
+import { loadConfig } from "@tau/core";
+import type { PlanStep, ShellPref, ToolResult } from "@tau/core";
 
 export interface StepOutcome {
   ok: boolean;
@@ -20,6 +23,97 @@ export interface ExecutorOptions {
   /** Called before each step; return false to skip the step. */
   gate?: (step: PlanStep, index: number) => Promise<boolean> | boolean;
   onOutput?: (chunk: string) => void;
+  /** Shell for shell-steps (default: config `shell`, itself defaulting to "auto"). */
+  shell?: ShellPref;
+}
+
+/**
+ * How a shell step will be spawned:
+ * - `native`: `spawn(command, { shell: true })` — Node resolves the platform
+ *   shell (POSIX /bin/sh; Windows COMSPEC/cmd.exe). The historical behavior,
+ *   kept byte-identical for `auto` on POSIX.
+ * - `argv`: explicit executable + args (pwsh/powershell/bash) — full control
+ *   over flags, no cmd.exe quoting layer.
+ */
+export type ShellInvocation = { mode: "native" } | { mode: "argv"; file: string; args: string[] };
+
+/**
+ * Windows PATH probe for PowerShell executables (pure over platform+env —
+ * tests inject a synthetic PATH; fs.existsSync treats any filename uniformly).
+ * Returns the BEST available: pwsh (PowerShell 7+) preferred over powershell
+ * (Windows PowerShell 5.1). Non-Windows platforms always return null.
+ */
+export function detectPwshWindows(
+  env: NodeJS.ProcessEnv = process.env,
+  platform: NodeJS.Platform = process.platform,
+): "pwsh" | "powershell" | null {
+  if (platform !== "win32") return null;
+  const pathVar = env["PATH"] ?? "";
+  for (const name of ["pwsh.exe", "powershell.exe"]) {
+    for (const dir of pathVar.split(";")) {
+      if (!dir.trim()) continue;
+      try {
+        // path.join keeps the function testable off-Windows (synthetic PATH
+        // dirs) while producing correct backslash joins on real Windows.
+        if (fs.existsSync(path.join(dir.trim(), name))) {
+          return name === "pwsh.exe" ? "pwsh" : "powershell";
+        }
+      } catch {
+        /* unreadable PATH entry — skip */
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Resolve how to spawn a shell step — PURE (no IO, no process state beyond
+ * the injected defaults) so shell selection is testable and auditable.
+ *
+ * - `pwsh`/`powershell`: explicit argv — no profile, non-interactive, and a
+ *   trailing exit-code propagation line (native commands set $LASTEXITCODE;
+ *   cmdlet-only sequences fall back to exit 0; PS errors exit 1).
+ * - `bash`: explicit `bash -c` (works everywhere bash exists).
+ * - `auto`: POSIX stays `native` (zero change); Windows prefers a detected
+ *   PowerShell and falls back to COMSPEC `native`.
+ */
+export function buildShellInvocation(
+  command: string,
+  pref: ShellPref,
+  opts: { platform?: NodeJS.Platform; env?: NodeJS.ProcessEnv } = {},
+): ShellInvocation {
+  const platform = opts.platform ?? process.platform;
+  const pwshArgs = (exe: string): ShellInvocation => ({
+    mode: "argv",
+    file: exe,
+    // `?? 0` requires PS7; `-ne $null` works on 5.1 AND 7+ — use the portable form.
+    args: [
+      "-NoLogo",
+      "-NoProfile",
+      "-NonInteractive",
+      "-Command",
+      `${command}\nif ($null -ne $LASTEXITCODE) { exit $LASTEXITCODE }`,
+    ],
+  });
+
+  switch (pref) {
+    case "pwsh":
+      return pwshArgs("pwsh");
+    case "powershell":
+      return pwshArgs("powershell");
+    case "bash":
+      return platform === "win32"
+        ? { mode: "native" } // no bash on stock Windows — defer to COMSPEC
+        : { mode: "argv", file: "bash", args: ["-c", command] };
+    case "auto":
+    default: {
+      if (platform === "win32") {
+        const detected = detectPwshWindows(opts.env, platform);
+        if (detected) return pwshArgs(detected);
+      }
+      return { mode: "native" };
+    }
+  }
 }
 
 export async function executeStep(
@@ -56,13 +150,23 @@ export async function executeStep(
 }
 
 export function runShell(command: string, options: ExecutorOptions): Promise<StepOutcome> {
+  const pref = options.shell ?? loadConfig().shell ?? "auto";
+  const invocation = buildShellInvocation(command, pref);
+  const child =
+    invocation.mode === "native"
+      ? spawn(command, {
+          shell: true,
+          cwd: process.cwd(),
+          env: process.env,
+          stdio: ["ignore", "pipe", "pipe"],
+        })
+      : spawn(invocation.file, invocation.args, {
+          shell: false,
+          cwd: process.cwd(),
+          env: process.env,
+          stdio: ["ignore", "pipe", "pipe"],
+        });
   return new Promise((resolve) => {
-    const child = spawn(command, {
-      shell: true,
-      cwd: process.cwd(),
-      env: process.env,
-      stdio: ["ignore", "pipe", "pipe"],
-    });
     let output = "";
     let finished = false;
     const timer = setTimeout(() => {
