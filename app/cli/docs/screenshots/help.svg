@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="982" height="560" viewBox="0 0 982 560" font-family="ui-monospace, 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace" font-size="13">
+<rect width="982" height="560" rx="10" fill="#0e1218"/><rect x="1" y="1" width="980" height="558" rx="9" fill="none" stroke="#2a3140" stroke-width="1"/>
+<text x="16" y="22" fill="#8b95a7" xml:space="preserve" textLength="95" lengthAdjust="spacing">$ tau --help</text><line x1="0" y1="34" x2="982" y2="34" stroke="#2a3140" stroke-width="1"/>
+<text x="16" y="63" fill="#d6dce6" xml:space="preserve" textLength="236" lengthAdjust="spacing">Usage: tau [options] [command]</text>
+<text x="16" y="101" fill="#d6dce6" xml:space="preserve" textLength="621" lengthAdjust="spacing">AI-powered unified terminal assistant — natural language in, safe commands out.</text>
+<text x="16" y="139" fill="#d6dce6" xml:space="preserve" textLength="63" lengthAdjust="spacing">Options:</text>
+<text x="16" y="158" fill="#d6dce6" xml:space="preserve" textLength="409" lengthAdjust="spacing">-V, --version              output the version number</text>
+<text x="16" y="177" fill="#d6dce6" xml:space="preserve" textLength="668" lengthAdjust="spacing">--provider &lt;name&gt;          AI provider for this run (mock|ollama|openai|deepseek|zai)</text>
+<text x="16" y="196" fill="#d6dce6" xml:space="preserve" textLength="935" lengthAdjust="spacing">--yes                      auto-approve low-risk steps (medium needs config allowMediumAutoApprove; never high/blocked)</text>
+<text x="16" y="215" fill="#d6dce6" xml:space="preserve" textLength="519" lengthAdjust="spacing">--json                     machine-readable output where supported</text>
+<text x="16" y="234" fill="#d6dce6" xml:space="preserve" textLength="401" lengthAdjust="spacing">-h, --help                 display help for command</text>
+<text x="16" y="272" fill="#d6dce6" xml:space="preserve" textLength="71" lengthAdjust="spacing">Commands:</text>
+<text x="16" y="291" fill="#d6dce6" xml:space="preserve" textLength="778" lengthAdjust="spacing">ask [options] &lt;intent...&gt;  Turn a natural-language intent into a reviewed, confirmed execution plan</text>
+<text x="16" y="310" fill="#d6dce6" xml:space="preserve" textLength="754" lengthAdjust="spacing">file                       Filesystem tools: find, stat, tree, batch rename (dry-run by default)</text>
+<text x="16" y="329" fill="#d6dce6" xml:space="preserve" textLength="668" lengthAdjust="spacing">sys                        System inspection tools: info, disk, processes (read-only)</text>
+<text x="16" y="348" fill="#d6dce6" xml:space="preserve" textLength="636" lengthAdjust="spacing">net                        Network diagnostics: port check, ping, fetch, local IP</text>
+<text x="16" y="367" fill="#d6dce6" xml:space="preserve" textLength="644" lengthAdjust="spacing">text                       Text tools: search, replace (dry-run by default), count</text>
+<text x="16" y="386" fill="#d6dce6" xml:space="preserve" textLength="495" lengthAdjust="spacing">skill                      Manage Tau skills (SKILL.md plugins)</text>
+<text x="16" y="405" fill="#d6dce6" xml:space="preserve" textLength="683" lengthAdjust="spacing">history                    Inspect and replay what Tau ran (JSONL store under TAU_HOME)</text>
+<text x="16" y="424" fill="#d6dce6" xml:space="preserve" textLength="589" lengthAdjust="spacing">alias                      Manage command aliases stored in your Tau config</text>
+<text x="16" y="443" fill="#d6dce6" xml:space="preserve" textLength="770" lengthAdjust="spacing">provider                   Manage AI providers: API keys, live model discovery and model selection</text>
+<text x="16" y="462" fill="#d6dce6" xml:space="preserve" textLength="660" lengthAdjust="spacing">config                     View and change Tau configuration (stored under TAU_HOME)</text>
+<text x="16" y="481" fill="#d6dce6" xml:space="preserve" textLength="785" lengthAdjust="spacing">plugin                     Manage MCP plugins (external tool servers: dsh, VS Code, filesystem, ...)</text>
+<text x="16" y="500" fill="#d6dce6" xml:space="preserve" textLength="558" lengthAdjust="spacing">tui                        Start an interactive terminal session (REPL)</text>
+<text x="16" y="519" fill="#d6dce6" xml:space="preserve" textLength="471" lengthAdjust="spacing">web [options]              Serve the Tau web UI on localhost</text>
+<text x="16" y="538" fill="#d6dce6" xml:space="preserve" textLength="401" lengthAdjust="spacing">help [command]             display help for command</text>
+</svg>

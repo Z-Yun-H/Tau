@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="535" height="484" viewBox="0 0 535 484" font-family="ui-monospace, 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace" font-size="13">
+<rect width="535" height="484" rx="10" fill="#0e1218"/><rect x="1" y="1" width="533" height="482" rx="9" fill="none" stroke="#2a3140" stroke-width="1"/>
+<text x="16" y="22" fill="#8b95a7" xml:space="preserve" textLength="275" lengthAdjust="spacing">tau tui — /help, /status, /provider</text><line x1="0" y1="34" x2="535" y2="34" stroke="#2a3140" stroke-width="1"/>
+<text x="16" y="63" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="71" lengthAdjust="spacing">τ tau tui</text>
+<rect x="86.64999999999999" y="52" width="172.7" height="19" fill="6578"/>
+<text x="86.64999999999999" y="63" fill="#5b6578" xml:space="preserve" textLength="173" lengthAdjust="spacing"> — interactive session</text>
+<rect x="16" y="71" width="408.2" height="19" fill="6578"/>
+<text x="16" y="82" fill="#5b6578" xml:space="preserve" textLength="409" lengthAdjust="spacing">type an intent, or /help for commands. Ctrl+D exits.</text>
+<text x="16" y="101" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="40" lengthAdjust="spacing">tau ❯</text>
+<text x="63.099999999999994" y="101" fill="#d6dce6" xml:space="preserve" textLength="40" lengthAdjust="spacing">/help</text>
+<text x="16" y="120" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="63" lengthAdjust="spacing">commands</text>
+<rect x="16" y="128" width="376.79999999999995" height="19" fill="6578"/>
+<text x="16" y="139" fill="#5b6578" xml:space="preserve" textLength="377" lengthAdjust="spacing">  /provider   active provider, source, and model</text>
+<rect x="16" y="147" width="251.2" height="19" fill="6578"/>
+<text x="16" y="158" fill="#5b6578" xml:space="preserve" textLength="252" lengthAdjust="spacing">  /skills     list loaded skills</text>
+<rect x="16" y="166" width="290.45" height="19" fill="6578"/>
+<text x="16" y="177" fill="#5b6578" xml:space="preserve" textLength="291" lengthAdjust="spacing">  /history    last 10 history entries</text>
+<rect x="16" y="185" width="384.65" height="19" fill="6578"/>
+<text x="16" y="196" fill="#5b6578" xml:space="preserve" textLength="385" lengthAdjust="spacing">  /status     runtime locations and catalog sizes</text>
+<rect x="16" y="204" width="416.04999999999995" height="19" fill="6578"/>
+<text x="16" y="215" fill="#5b6578" xml:space="preserve" textLength="417" lengthAdjust="spacing">  /md &lt;file&gt;  preview a markdown file (ANSI-rendered)</text>
+<rect x="16" y="223" width="502.4" height="19" fill="6578"/>
+<text x="16" y="234" fill="#5b6578" xml:space="preserve" textLength="503" lengthAdjust="spacing">  /view &lt;file&gt;  preview an image (inline image or metadata card)</text>
+<rect x="16" y="242" width="235.5" height="19" fill="6578"/>
+<text x="16" y="253" fill="#5b6578" xml:space="preserve" textLength="236" lengthAdjust="spacing">  /clear      clear the screen</text>
+<rect x="16" y="261" width="345.4" height="19" fill="6578"/>
+<text x="16" y="272" fill="#5b6578" xml:space="preserve" textLength="346" lengthAdjust="spacing">  /exit       leave the session (also /quit)</text>
+<rect x="16" y="280" width="431.75" height="19" fill="6578"/>
+<text x="16" y="291" fill="#5b6578" xml:space="preserve" textLength="432" lengthAdjust="spacing">  anything else is treated as a natural-language intent</text>
+<text x="16" y="310" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="40" lengthAdjust="spacing">tau ❯</text>
+<text x="63.099999999999994" y="310" fill="#d6dce6" xml:space="preserve" textLength="55" lengthAdjust="spacing">/status</text>
+<rect x="16" y="318" width="39.25" height="19" fill="6578"/>
+<text x="16" y="329" fill="#5b6578" xml:space="preserve" textLength="40" lengthAdjust="spacing">home:</text>
+<text x="55.25" y="329" fill="#d6dce6" xml:space="preserve" textLength="181" lengthAdjust="spacing">/tmp/tau-shot-demo/home</text>
+<rect x="16" y="337" width="70.64999999999999" height="19" fill="6578"/>
+<text x="16" y="348" fill="#5b6578" xml:space="preserve" textLength="71" lengthAdjust="spacing">provider:</text>
+<text x="86.64999999999999" y="348" fill="#d6dce6" xml:space="preserve" textLength="32" lengthAdjust="spacing">mock</text>
+<rect x="125.89999999999999" y="337" width="117.75" height="19" fill="6578"/>
+<text x="125.89999999999999" y="348" fill="#5b6578" xml:space="preserve" textLength="118" lengthAdjust="spacing">— model: (auto)</text>
+<rect x="16" y="356" width="54.949999999999996" height="19" fill="6578"/>
+<text x="16" y="367" fill="#5b6578" xml:space="preserve" textLength="55" lengthAdjust="spacing">skills:</text>
+<text x="70.94999999999999" y="367" fill="#d6dce6" xml:space="preserve" textLength="8" lengthAdjust="spacing">2</text>
+<rect x="16" y="375" width="62.8" height="19" fill="6578"/>
+<text x="16" y="386" fill="#5b6578" xml:space="preserve" textLength="63" lengthAdjust="spacing">plugins:</text>
+<text x="78.8" y="386" fill="#d6dce6" xml:space="preserve" textLength="8" lengthAdjust="spacing">0</text>
+<rect x="16" y="394" width="78.5" height="19" fill="6578"/>
+<text x="16" y="405" fill="#5b6578" xml:space="preserve" textLength="79" lengthAdjust="spacing">providers:</text>
+<text x="94.5" y="405" fill="#d6dce6" xml:space="preserve" textLength="95" lengthAdjust="spacing">5 registered</text>
+<text x="16" y="424" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="40" lengthAdjust="spacing">tau ❯</text>
+<text x="63.099999999999994" y="424" fill="#d6dce6" xml:space="preserve" textLength="71" lengthAdjust="spacing">/provider</text>
+<text x="16" y="443" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="150" lengthAdjust="spacing">Mock (offline demo)</text>
+<rect x="165.15" y="432" width="188.39999999999998" height="19" fill="6578"/>
+<text x="165.15" y="443" fill="#5b6578" xml:space="preserve" textLength="189" lengthAdjust="spacing">(config) — model: (auto)</text>
+<text x="16" y="462" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="40" lengthAdjust="spacing">tau ❯</text>
+<text x="63.099999999999994" y="462" fill="#d6dce6" xml:space="preserve" textLength="40" lengthAdjust="spacing">/exit</text>
+</svg>

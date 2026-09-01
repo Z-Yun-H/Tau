@@ -7,6 +7,20 @@ plan → review → confirm → `runPlan()` pipeline through `@tau/agent`.
 Binds to 127.0.0.1; deny verdicts are refused server-side and high-risk
 plans demand the explicit `confirmHighRisk` flag.
 
+## Screenshots
+
+Real end-to-end sessions: the actual server + client in headless Chromium
+with the offline mock provider (regeneration:
+[docs/screenshots/README.md](./docs/screenshots/README.md)):
+
+**the reviewed plan — risk badge, steps, Run plan / Discard**
+
+![webui plan](./docs/screenshots/plan.png)
+
+**the streaming result — NDJSON events rendered live**
+
+![webui result](./docs/screenshots/result.png)
+
 ## Client stack
 
 - **Vue 3** — a slim shell (`client/App.vue`) over the component inventory

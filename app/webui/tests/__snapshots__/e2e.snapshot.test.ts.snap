@@ -1,0 +1,14 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`WebUI e2e — real HTTP snapshots > GET /api/status reports the runtime inventory 1`] = `"{"version":"<version>","tauHome":"<sandbox>/home","provider":{"name":"mock","label":"Mock (offline demo)","source":"config","model":"(auto)"},"providers":[{"name":"deepseek","available":false},{"name":"mock","available":true},{"name":"ollama","available":false},{"name":"openai","available":false},{"name":"zai","available":false}],"skills":2,"plugins":0}"`;
+
+exports[`WebUI e2e — real HTTP snapshots > POST /api/execute runs the plan through the real engine 1`] = `"{"status":"ok","output":"file.find in <sandbox> — 2 match(es)\\ndocs/notes.md\\nreadme.md","outcomes":[{"ok":true,"skipped":false,"output":"file.find in <sandbox> — 2 match(es)\\ndocs/notes.md\\nreadme.md"}]}"`;
+
+exports[`WebUI e2e — real HTTP snapshots > POST /api/execute/stream emits the full NDJSON lifecycle 1`] = `
+"{"type":"step_start","index":0,"step":{"kind":"tool","tool":"file.find","args":{"pattern":"*.md","path":"."},"reason":"keyword matched file lookup"}}
+{"type":"step_end","index":0,"ok":true,"exitCode":0}
+{"type":"plan_end","status":"ok"}
+{"type":"result","status":"ok","output":"file.find in <sandbox> — 2 match(es)\\ndocs/notes.md\\nreadme.md","outcomes":[{"ok":true,"skipped":false,"output":"file.find in <sandbox> — 2 match(es)\\ndocs/notes.md\\nreadme.md"}]}"
+`;
+
+exports[`WebUI e2e — real HTTP snapshots > POST /api/plan returns a reviewed mock plan 1`] = `"{"intent":"find all *.md files","plan":{"explanation":"Recursively find files matching *.md under the current directory","steps":[{"kind":"tool","tool":"file.find","args":{"pattern":"*.md","path":"."},"reason":"keyword matched file lookup"}],"selfAssessedRisk":"low"},"review":{"verdict":"allow","overallRisk":"low","issues":[]},"provider":"mock","providerLabel":"Mock (offline demo)","warnings":[]}"`;
