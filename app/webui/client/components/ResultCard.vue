@@ -6,9 +6,11 @@
  * The raw view is always one click away — the preview never hides what the
  * steps actually printed.
  */
-import { computed, ref } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
+import { useClipboard } from "@vueuse/core";
+import { renderMarkdown } from "@tau/markdown";
 import type { ResultCardState } from "../composables/plan-flow.js";
-import { renderMarkdown } from "../lib/markdown.js";
+import { highlightPreBlocks } from "../lib/highlight.js";
 import RiskBadge from "./RiskBadge.vue";
 
 const props = defineProps<{ card: ResultCardState; enterIndex?: number }>();
@@ -17,21 +19,33 @@ const enterDelay = computed(() => `${Math.min((props.enterIndex ?? 0) * 40, 200)
 
 const view = ref<"rendered" | "raw">("rendered");
 const expanded = ref(false);
-const copied = ref(false);
-let copiedTimer: ReturnType<typeof setTimeout> | undefined;
+const rootEl = ref<HTMLElement | null>(null);
 
 const html = computed(() => renderMarkdown(props.card.output));
 
+// vueuse useClipboard — copied auto-resets; silent on permission errors.
+const { copy: copyText, copied, isSupported } = useClipboard({ legacy: true });
+
 async function copy(): Promise<void> {
+  if (!isSupported.value) return;
   try {
-    await navigator.clipboard.writeText(props.card.output);
-    copied.value = true;
-    clearTimeout(copiedTimer);
-    copiedTimer = setTimeout(() => (copied.value = false), 1200);
+    await copyText(props.card.output);
   } catch {
-    // Clipboard unavailable (permissions/insecure context) — no-op.
+    // clipboard unavailable — no-op
   }
 }
+
+// Progressive shiki highlighting: plain escaped markdown first, upgraded
+// in place after each render (streaming updates re-trigger this watch).
+watch(
+  [html, view],
+  () => {
+    void nextTick(() => {
+      if (rootEl.value && view.value === "rendered") void highlightPreBlocks(rootEl.value);
+    });
+  },
+  { immediate: true },
+);
 
 const tally = computed(() => {
   const oks = props.card.outcomes.filter((o) => o.ok && !o.skipped).length;
@@ -45,12 +59,18 @@ const tally = computed(() => {
 });
 
 const statusLevel = computed(() =>
-  props.card.status === "ok" ? "ok" : props.card.status === "denied" ? "blocked" : "danger",
+  props.card.status === "running"
+    ? "review"
+    : props.card.status === "ok"
+      ? "ok"
+      : props.card.status === "denied"
+        ? "blocked"
+        : "danger",
 );
 </script>
 
 <template>
-  <article class="tau-card result-enter">
+  <article ref="rootEl" class="tau-card result-enter">
     <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
       <span class="font-mono text-[11px] uppercase tracking-1px text-tau-faint">result</span>
       <span class="text-tau-muted text-[12px] min-w-0 truncate" :title="card.intent">
@@ -58,6 +78,9 @@ const statusLevel = computed(() =>
       </span>
       <RiskBadge :level="statusLevel" :label="card.status" />
       <span v-if="tally" class="font-mono text-[11px] text-tau-faint">{{ tally }}</span>
+      <span v-if="card.streaming" class="font-mono text-[11px] text-tau-ok tau-pulse"
+        >streaming…</span
+      >
       <span class="flex-1" />
       <span class="view-toggle">
         <button
@@ -143,5 +166,31 @@ const statusLevel = computed(() =>
 
 .out.expanded {
   max-height: none;
+}
+
+/* shiki blocks replace the inner pre — blend them into the card shell */
+.out :deep(pre.shiki) {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.tau-pulse {
+  animation: tau-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes tau-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
 }
 </style>

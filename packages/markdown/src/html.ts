@@ -78,9 +78,12 @@ export function renderMarkdown(source: string): string {
       continue;
     }
 
-    // Fenced code block — content stays pre-escaped, language label dropped.
-    const fence = line.match(/^```[\w-]*\s*$/);
+    // Fenced code block — content stays pre-escaped; when the fence carries a
+    // language label it survives as data-lang (the WebUI highlighter keys off
+    // it). The attr value comes from [\w-]* so it needs no escaping.
+    const fence = line.match(/^```([\w-]*)\s*$/);
     if (fence) {
+      const lang = fence[1] ?? "";
       const body: string[] = [];
       i++;
       while (i < lines.length && !/^```\s*$/.test(lines[i] ?? "")) {
@@ -88,7 +91,8 @@ export function renderMarkdown(source: string): string {
         i++;
       }
       i++; // skip the closing fence (or run past EOF)
-      out.push(`<pre><code>${body.join("\n")}</code></pre>`);
+      const attr = lang ? ` data-lang="${lang}"` : "";
+      out.push(`<pre><code${attr}>${body.join("\n")}</code></pre>`);
       continue;
     }
 

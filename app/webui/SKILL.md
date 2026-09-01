@@ -102,7 +102,7 @@ browser-reserved chords like Ctrl+T/W/N).
   `k="v"` args via `lib/format.ts formatArgs`, the AI's reason as secondary
   line, verdict banner, card-local high-risk checkbox (never a global DOM id).
 - `ResultCard` — status badge, honest per-step tally, output block with a
-  rendered/raw preview toggle (markdown via `lib/markdown.ts`, escaped
+  rendered/raw preview toggle (markdown via `@tau/markdown` (shared package), escaped
   first), one-click copy, expand/collapse.
 - `ErrorCard` — intent + message + the two concrete ways out.
 - `SidePanel` — Skills / History / Tools tabs; sliding indicator; keyboard
@@ -116,14 +116,26 @@ and `composables/plan-flow.ts` (thread + cards state machine, persisted to
 `localStorage` as a UI convenience — the server history stays the durable
 record). HTTP: `lib/api.ts` (hand-mirrored server payloads; no runtime
 dependency on @tau/* — keep it that way so the client bundle stays
-engine-agnostic). Markdown preview: `lib/markdown.ts` (dependency-free,
-DOM-free, escape-first — never introduce an HTML-sanitization gap here).
+engine-agnostic). Markdown preview: `@tau/markdown` (the SHARED escape-first
+renderer — never introduce an HTML-sanitization gap here; fenced code carries
+`data-lang` for the highlighter). Streaming: `lib/stream.ts` (DOM-free NDJSON
+line-buffer, unit-tested) consumed by plan-flow's execute path — a live
+result card appears immediately and grows with `step_output` chunks; the
+final `result` event is authoritative. Highlighting: `lib/highlight.ts`
+(shiki, one shared highlighter, progressive in-place upgrade, silent no-op
+on any failure — plain text is always a valid final state). vueuse is the
+sanctioned client-utility layer: useClipboard (copy), useEventListener +
+watchDebounced (global keys, streaming autoscroll).
 
 ## Backend surface rules
 
 - The server (src/server.ts) exposes read-only GETs: `/api/status`,
-  `/api/skills`, `/api/tools`, `/api/history`, plus `POST /api/plan` and
-  `POST /api/execute` (the gated flow). New UI data goes through a session
+  `/api/skills`, `/api/tools`, `/api/history`, plus `POST /api/plan`,
+  `POST /api/execute` and `POST /api/execute/stream` (NDJSON: the same
+  deterministic gates refuse deny/high-risk plans as plain JSON — never a
+  stream; a 200 stream mirrors runPlan's onEvent lifecycle events line by
+  line and ends with an authoritative `result` event). New UI data goes
+  through a session
   service in `@tau/agent` first; the UI only renders.
 - `/api/tools` must stay pure data: name/description/risk/owner/params —
   never serialize the registry's `run` executables.

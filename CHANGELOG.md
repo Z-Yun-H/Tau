@@ -7,6 +7,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Added
 
+- **WebUI streaming execution + shiki highlighting + vueuse.** New
+  `POST /api/execute/stream` (NDJSON): identical deterministic gates (deny /
+  high-risk refusals stay plain JSON), then a line-per-event mirror of
+  `runPlan`'s onEvent lifecycle ending in an authoritative `result` event.
+  The client consumes it via a DOM-free, unit-tested NDJSON line-buffer
+  (`lib/stream.ts`) — a live result card appears immediately and grows with
+  step output chunks; the final event overwrites with the aggregated truth.
+  Fenced code blocks highlight progressively with `shiki` (one shared
+  highlighter, dynamic import, silent no-op on failure) keyed off a new
+  `data-lang` attribute the shared markdown renderer emits. `@vueuse/core`
+  replaces hand-rolled clipboard/global-key/debounce logic (useClipboard,
+  useEventListener, watchDebounced streaming autoscroll). The WebUI's local
+  markdown renderer is deleted — it consumes `@tau/markdown` now. (#59)
+
 - **TUI terminal-grade rendering — markdown previews, image views, planning
   spinner.** Plan explanations now render as markdown through the shared
   `@tau/markdown` ANSI renderer (`renderPlan` gained an optional explanation

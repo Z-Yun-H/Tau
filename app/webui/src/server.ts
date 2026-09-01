@@ -114,6 +114,27 @@ async function statusPayload(): Promise<Record<string, unknown>> {
   };
 }
 
+/**
+ * Shared body parsing for /api/execute and /api/execute/stream.
+ * Returns an error message string, or the validated execute request.
+ */
+async function readExecuteRequest(
+  req: http.IncomingMessage,
+): Promise<string | { intent: string; plan: Plan; confirmHighRisk: boolean; provider?: string }> {
+  const body = await readJsonBody(req);
+  const intent = typeof body["intent"] === "string" ? body["intent"].trim() : "";
+  const plan = body["plan"] as Plan | undefined;
+  if (!intent || !plan || !Array.isArray(plan.steps)) {
+    return "intent (string) and plan (with steps[]) are required";
+  }
+  return {
+    intent,
+    plan,
+    confirmHighRisk: body["confirmHighRisk"] === true,
+    provider: typeof body["provider"] === "string" ? body["provider"] : undefined,
+  };
+}
+
 export function createRequestListener(): http.RequestListener {
   const staticDir = resolveStaticDir();
   return async (req, res) => {
@@ -164,14 +185,12 @@ export function createRequestListener(): http.RequestListener {
           return;
         }
         if (req.method === "POST" && url.pathname === "/api/execute") {
-          const body = await readJsonBody(req);
-          const intent = typeof body["intent"] === "string" ? body["intent"].trim() : "";
-          const plan = body["plan"] as Plan | undefined;
-          const confirmHighRisk = body["confirmHighRisk"] === true;
-          if (!intent || !plan || !Array.isArray(plan.steps)) {
-            sendJson(res, 400, { error: "intent (string) and plan (with steps[]) are required" });
+          const parsed = await readExecuteRequest(req);
+          if (typeof parsed === "string") {
+            sendJson(res, 400, { error: parsed });
             return;
           }
+          const { intent, plan, confirmHighRisk, provider } = parsed;
           // Deterministic gate before the engine's own re-review inside runPlan.
           const review: SafetyReview = reviewPlan(plan);
           if (review.verdict === "deny") {
@@ -189,7 +208,7 @@ export function createRequestListener(): http.RequestListener {
           // full plan + review first). runPlan re-reviews and still refuses
           // deny verdicts internally.
           const result = await runPlan(intent, plan, {
-            provider: typeof body["provider"] === "string" ? body["provider"] : undefined,
+            provider,
             assumeYes: true,
             allowMediumAutoApprove: true,
             timeoutSec: WEBUI_TIMEOUT_SEC,
@@ -204,6 +223,65 @@ export function createRequestListener(): http.RequestListener {
               output: outcome.output,
             })),
           });
+          return;
+        }
+        if (req.method === "POST" && url.pathname === "/api/execute/stream") {
+          const parsed = await readExecuteRequest(req);
+          if (typeof parsed === "string") {
+            sendJson(res, 400, { error: parsed });
+            return;
+          }
+          const { intent, plan, confirmHighRisk, provider } = parsed;
+          // IDENTICAL deterministic gates — a streamed refusal is still a
+          // refusal (plain JSON, not a stream).
+          const review: SafetyReview = reviewPlan(plan);
+          if (review.verdict === "deny") {
+            sendJson(res, 403, { error: "plan denied by safety review", review });
+            return;
+          }
+          if (review.overallRisk === "high" && !confirmHighRisk) {
+            sendJson(res, 403, {
+              error: "high-risk plan requires confirmHighRisk: true",
+              review,
+            });
+            return;
+          }
+          res.writeHead(200, {
+            "content-type": "application/x-ndjson; charset=utf-8",
+            "cache-control": "no-store",
+          });
+          const write = (event: unknown): void => {
+            res.write(JSON.stringify(event) + "\n");
+          };
+          try {
+            // runPlan re-reviews inside the engine (same as /api/execute);
+            // onEvent mirrors the lifecycle events verbatim to the client.
+            const result = await runPlan(intent, plan, {
+              provider,
+              assumeYes: true,
+              allowMediumAutoApprove: true,
+              timeoutSec: WEBUI_TIMEOUT_SEC,
+              autoApproveAll: true,
+              onEvent: (event) => write(event),
+            });
+            write({
+              type: "result",
+              status: result.status,
+              output: result.output,
+              outcomes: result.outcomes.map((outcome) => ({
+                ok: outcome.ok,
+                skipped: outcome.skipped === true,
+                output: outcome.output,
+              })),
+            });
+          } catch (error) {
+            write({
+              type: "error",
+              error: error instanceof Error ? error.message : String(error),
+            });
+          } finally {
+            res.end();
+          }
           return;
         }
         sendJson(res, 404, { error: `unknown API route: ${req.method} ${url.pathname}` });

@@ -1,7 +1,7 @@
 {
   "name": "@tau/webui",
   "version": "0.1.0",
-  "description": "Tau local web interface — node HTTP API + Vue 3 / UnoCSS client (bin: tau-web)",
+  "description": "Tau local web interface \u2014 node HTTP API + Vue 3 / UnoCSS client (bin: tau-web)",
   "license": "MIT",
   "author": "Z-Yun-H",
   "type": "module",
@@ -38,6 +38,9 @@
   "dependencies": {
     "@tau/agent": "workspace:*",
     "@tau/core": "workspace:*",
-    "@tau/engine": "workspace:*"
+    "@tau/engine": "workspace:*",
+    "@tau/markdown": "workspace:*",
+    "@vueuse/core": "catalog:",
+    "shiki": "catalog:"
   }
 }
