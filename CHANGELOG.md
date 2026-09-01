@@ -7,6 +7,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Added
 
+- **Streaming plan events — optional `runPlan` `onEvent` hook.** `RunPlanOptions`
+  gains an optional `onEvent` callback emitting typed lifecycle events
+  (`step_start` / `step_output` / `step_end` / `plan_end`) over the engine's
+  execution loop — shell output streams chunk-by-chunk with its step index,
+  gate-skipped steps surface as `step_end(skipped)`, and exactly one terminal
+  `plan_end` fires on every path (ok / failed / cancelled / denied). Strictly
+  backward compatible: absent callback = byte-identical behavior (asserted).
+  This is the foundation for the WebUI streaming endpoint (unit 7). `PlanEvent`
+  lives in `@tau/core` types. (#55)
+
 - **Shared `@tau/markdown` package — one markdown home for all front doors.**
   New workspace package with two renderers: `renderToAnsi` (TUI) parses with
   `marked` (per its documented lexer API) and walks the token tree to themed,

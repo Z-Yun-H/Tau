@@ -44,6 +44,22 @@ export interface Plan {
   selfAssessedRisk?: RiskLevel;
 }
 
+/**
+ * Lifecycle event emitted by runPlan while a plan moves through execution.
+ * Backends without UI (CLI) ignore them; front doors (WebUI streaming) mirror
+ * them to the client so progress renders live. Absent callback = zero
+ * behavior change.
+ */
+export type PlanEvent =
+  /** A step is about to execute (after its per-step gate). */
+  | { type: "step_start"; index: number; step: PlanStep }
+  /** Incremental output from a shell step's stdout/stderr (chunked). */
+  | { type: "step_output"; index: number; chunk: string }
+  /** A step finished; `skipped` marks gate-refused steps. */
+  | { type: "step_end"; index: number; ok: boolean; exitCode?: number; skipped?: boolean }
+  /** Terminal event — always emitted last, exactly once. */
+  | { type: "plan_end"; status: "ok" | "failed" | "cancelled" | "denied" };
+
 /** Structured issue raised while reviewing a plan or step. */
 export interface SafetyIssue {
   level: RiskLevel;
