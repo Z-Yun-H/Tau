@@ -16,6 +16,21 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   `AGENTS/collaboration.md` §3 gains the normative subsection (+ English
   TL;DR and pre-task self-check entries); `AGENTS.md` gains golden rule 9
   plus a change-checklist item. (#35)
+- **WebUI agent mode — conversations, threads, keyboard, markdown preview.**
+  The chat stream becomes a real conversation: user bubbles + assistant
+  turns with the plan card and result card in the same turn; multiple
+  conversations persist locally (`localStorage` threads — server history
+  stays the durable record) with a new/switch/delete sidebar (two-step
+  inline delete) that becomes an overlay drawer on narrow screens. Full
+  keyboard contract: Enter send, Shift+Enter newline, Ctrl/⌘+K focus,
+  `?` shortcuts panel, Alt+N new thread, Alt+S reference-rail toggle, Esc
+  close — documented in-app via ShortcutsModal and the composer hint row.
+  Results and plan explanations preview as markdown via a dependency-free,
+  escape-first renderer (`client/lib/markdown.ts`) with rendered/raw
+  toggle, one-click copy and expand; the composer is an auto-growing
+  textarea. Server: `GET /api/history` accepts `?limit=` (default 20,
+  cap 500). No new runtime dependencies; the safety pipeline is untouched —
+  the WebUI remains a front door over the same `runPlan()` channel. (#37)
 
 - **AI collaboration norms v2 (updated 2026-09) + daily changelog folder.**
   `AGENTS/collaboration.md` now transcribes the maintainer's updated

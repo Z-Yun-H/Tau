@@ -10,10 +10,18 @@ plans demand the explicit `confirmHighRisk` flag.
 ## Client stack
 
 - **Vue 3** — a slim shell (`client/App.vue`) over the component inventory
-  in `client/components/` (StatusHeader, PlanCard/StepRow, ResultCard,
-  ErrorCard, SidePanel with Skills/History/Tools, Composer, RiskBadge,
-  EmptyState); state lives in `client/composables/` (module singletons, no
-  state library), HTTP in `client/lib/api.ts`
+  in `client/components/` (StatusHeader, SessionSidebar with local chat
+  threads, ShortcutsModal, PlanCard/StepRow, ResultCard, ErrorCard,
+  SidePanel with Skills/History/Tools, Composer, RiskBadge, EmptyState);
+  state lives in `client/composables/` (module singletons, no state
+  library), HTTP in `client/lib/api.ts`, preview in `client/lib/markdown.ts`
+- **Agent mode** — the stream is a conversation: user bubbles + assistant
+  turns (plan card, then result card in the same turn); threads persist to
+  `localStorage` (server history stays the durable record); keyboard-first
+  (Enter send / Shift+Enter newline / Ctrl+K focus / `?` shortcuts panel /
+  Alt+N new thread / Alt+S rail toggle); markdown preview with rendered/raw
+  toggle, copy and expand — rendered by the zero-dependency, escape-first
+  `lib/markdown.ts`, never a sanitizer gap
 - **UnoCSS** (`uno.config.ts`, `presetWind3`) — the design tokens (neutral
   ramp + the risk palette as THE semantic system) and shared shortcuts;
   typography and motion tokens in `client/theme.css`
@@ -39,9 +47,9 @@ identical in both modes. The `tau web` commander wiring lives in `@tau/cli`
 HTTP surface: `GET /api/status` (provider, model, availability, skill/plugin
 counts), `GET /api/skills` (with risk/origin), `GET /api/tools` (the tool
 layer inventory: name/description/risk/owner/params — pure data, never the
-executables), `GET /api/history`, `POST /api/plan` (intent → plan +
-deterministic review), `POST /api/execute` (request-as-approval; deny →
-403, high risk requires `confirmHighRisk`).
+executables), `GET /api/history` (`?limit=` optional, default 20, cap 500),
+`POST /api/plan` (intent → plan + deterministic review), `POST /api/execute`
+(request-as-approval; deny → 403, high risk requires `confirmHighRisk`).
 
 ## Dependencies
 

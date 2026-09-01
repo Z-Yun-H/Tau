@@ -136,7 +136,12 @@ export function createRequestListener(): http.RequestListener {
           return;
         }
         if (req.method === "GET" && url.pathname === "/api/history") {
-          sendJson(res, 200, readRecentHistory(20));
+          // Optional ?limit= (default 20, hard cap 500) — the client-side
+          // thread list replays more history when asked to.
+          const raw = url.searchParams.get("limit");
+          const parsed = raw === null ? Number.NaN : Number(raw);
+          const limit = Number.isInteger(parsed) && parsed > 0 ? Math.min(parsed, 500) : 20;
+          sendJson(res, 200, readRecentHistory(limit));
           return;
         }
         if (req.method === "POST" && url.pathname === "/api/plan") {

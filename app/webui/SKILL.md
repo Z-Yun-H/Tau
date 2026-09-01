@@ -57,12 +57,23 @@ never fill large surfaces with it. No other colors, no gradients.
 
 ## Layout contract
 
-- `≥1024px` (`lg:`): grid `[minmax(0,1fr) 320px]` — chat column + reference
-  rail, each independently scrollable, viewport-locked (`h-dvh` app shell).
+- `≥1024px` (`lg:`): grid — chat threads (`240px`, left) + chat column
+  (`minmax(0,1fr)`) + reference rail (`320px`, `Alt+S`-toggleable), each
+  independently scrollable, viewport-locked (`h-dvh` app shell).
 - `<1024px`: one scrolling flow — chat, sticky composer, reference rail
-  below (max 45vh).
+  below (max 45vh). The thread list becomes an overlay drawer behind the
+  `chats` button (backdrop click / selecting a thread closes it).
 - `<640px`: header drops the tauHome chip; `md:` chips hide.
-- Page content is centered with `max-w-[1400px]`.
+- Page content is centered with `max-w-[1600px]`.
+
+## Keyboard contract
+
+Global (App.vue `keydown`): Enter send · Shift+Enter newline · `Ctrl/⌘+K`
+focus composer · `?` opens ShortcutsModal (composer empty) · `Alt+N` new
+thread · `Alt+S` toggles the rail · Esc closes the modal. The contract is
+documented in ShortcutsModal and the composer hint row — if you add a
+shortcut, update both, and keep every binding browser-safe (never intercept
+browser-reserved chords like Ctrl+T/W/N).
 
 ## Motion spec
 
@@ -81,21 +92,32 @@ never fill large surfaces with it. No other colors, no gradients.
 ## Component inventory (client/components/)
 
 - `StatusHeader` — identity + runtime facts; wraps on narrow screens.
+- `SessionSidebar` — local conversation threads (newest first); two-step
+  inline delete (arm, then confirm — no `window.confirm`); drawer on
+  narrow screens.
+- `ShortcutsModal` — the keyboard contract overlay (Esc/backdrop closes).
 - `EmptyState` — the contract text; keycap-styled control references.
 - `RiskBadge` — the only place a risk level becomes color.
 - `PlanCard` / `StepRow` — the review surface: steps on a rail, kind tags,
   `k="v"` args via `lib/format.ts formatArgs`, the AI's reason as secondary
   line, verdict banner, card-local high-risk checkbox (never a global DOM id).
-- `ResultCard` — status badge, honest per-step tally, mono output block.
+- `ResultCard` — status badge, honest per-step tally, output block with a
+  rendered/raw preview toggle (markdown via `lib/markdown.ts`, escaped
+  first), one-click copy, expand/collapse.
 - `ErrorCard` — intent + message + the two concrete ways out.
 - `SidePanel` — Skills / History / Tools tabs; sliding indicator; keyboard
   arrows; `role=tablist`.
-- `Composer` — intent input; pending state in the button.
+- `Composer` — auto-growing textarea; Enter/Shift+Enter semantics; hint row
+  with the live shortcuts; pending state in the button; exposes `focus()`
+  for Ctrl/⌘+K.
 
 State: `composables/session.ts` (module-singleton refs — no state library)
-and `composables/plan-flow.ts` (cards state machine). HTTP: `lib/api.ts`
-(hand-mirrored server payloads; no runtime dependency on @tau/* — keep it
-that way so the client bundle stays engine-agnostic).
+and `composables/plan-flow.ts` (thread + cards state machine, persisted to
+`localStorage` as a UI convenience — the server history stays the durable
+record). HTTP: `lib/api.ts` (hand-mirrored server payloads; no runtime
+dependency on @tau/* — keep it that way so the client bundle stays
+engine-agnostic). Markdown preview: `lib/markdown.ts` (dependency-free,
+DOM-free, escape-first — never introduce an HTML-sanitization gap here).
 
 ## Backend surface rules
 
