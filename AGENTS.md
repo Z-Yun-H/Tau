@@ -115,16 +115,16 @@ docs/                       human-facing deep dives (architecture, safety, skill
 
 ## AGENTS index — read the relevant file BEFORE touching that subsystem
 
-| File                                                   | Read it when...                                                 |
-| ------------------------------------------------------ | --------------------------------------------------------------- |
+| File                                                   | Read it when...                                                                                                                                    |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [AGENTS/collaboration.md](./AGENTS/collaboration.md)   | **always — AI collaboration norms v2 (mandatory, normative; updated 2026-09: daily `changelog/` files, change-type flow, dead-code & test gates)** |
-| [AGENTS/architecture.md](./AGENTS/architecture.md)     | you add/modify any module, command, or the plan pipeline        |
-| [AGENTS/conventions.md](./AGENTS/conventions.md)       | you write any TypeScript in this repo                           |
-| [AGENTS/testing.md](./AGENTS/testing.md)               | you write or run tests                                          |
-| [AGENTS/skills.md](./AGENTS/skills.md)                 | you touch skills/, templates/, or the SKILL.md parser           |
-| [AGENTS/plugins.md](./AGENTS/plugins.md)               | you touch packages/plugins/src/, MCP integration, or plugin CLI |
-| [AGENTS/ai-integration.md](./AGENTS/ai-integration.md) | you touch packages/ai/src/, safety, or provider code            |
-| [AGENTS/release.md](./AGENTS/release.md)               | you cut a release or bump versions                              |
+| [AGENTS/architecture.md](./AGENTS/architecture.md)     | you add/modify any module, command, or the plan pipeline                                                                                           |
+| [AGENTS/conventions.md](./AGENTS/conventions.md)       | you write any TypeScript in this repo                                                                                                              |
+| [AGENTS/testing.md](./AGENTS/testing.md)               | you write or run tests                                                                                                                             |
+| [AGENTS/skills.md](./AGENTS/skills.md)                 | you touch skills/, templates/, or the SKILL.md parser                                                                                              |
+| [AGENTS/plugins.md](./AGENTS/plugins.md)               | you touch packages/plugins/src/, MCP integration, or plugin CLI                                                                                    |
+| [AGENTS/ai-integration.md](./AGENTS/ai-integration.md) | you touch packages/ai/src/, safety, or provider code                                                                                               |
+| [AGENTS/release.md](./AGENTS/release.md)               | you cut a release or bump versions                                                                                                                 |
 
 ## Change checklist (every PR)
 
