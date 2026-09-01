@@ -38,7 +38,7 @@ export default defineConfig({
     minify: false,
     sourcemap: true,
     emptyOutDir: true,
-    rollupOptions: {
+    rolldownOptions: {
       output: { entryFileNames: "index.js" },
       external: [
         /^node:/,

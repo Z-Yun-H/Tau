@@ -94,6 +94,26 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   `SKILL.md` router gains the "Dev / run from source" row, so every stage
   (dev/build/test/release) has exactly one designated skill. (#47)
 
+### Changed
+
+- **Toolchain updated to registry latest, audited against the official
+  migration documents.** `packageManager` bumps to `pnpm@12.2.1` (major:
+  canonical peer-cycle breaking makes lockfiles a pure function of the
+  graph; unrecognized workspace settings now fail loudly — the three
+  settings this repo uses, `catalog`/`allowBuilds`/`minimumReleaseAgeExclude`,
+  are verified recognized; no git deps, no engineStrict → remaining majors
+  have no effect here). UnoCSS `^66.8.0` → `^66.9.1` (v66.9.0/66.9.1 are
+  purely additive; the hours-old release plus its `@unocss/*` transitives
+  are pinned in `minimumReleaseAgeExclude` following the existing
+  exact-version convention). Vite 8 docs alignment: `build.rollupOptions`
+  → `build.rolldownOptions` (the native Rolldown-core key) in the TUI SSR,
+  WebUI client and WebUI server configs — output semantics unchanged,
+  verified by build + bin smoke. `tsconfig.json` verified against the
+  TypeScript 7.0 announcement (no deprecated-in-6.0 constructs, explicit
+  strict flags match the new defaults) and `vitest.config.ts` against the
+  Vitest 4 migration guide (explicit `coverage.include`, no removed keys) —
+  both intentionally unchanged. Lockfile re-resolved under pnpm 12. (#51)
+
 ### Fixed
 
 - **Structure & redundancy audit (unit A of #45): zero deletable files —
