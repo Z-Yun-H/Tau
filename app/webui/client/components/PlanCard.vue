@@ -5,9 +5,10 @@
  * warnings. High-risk confirmation is card-local state (explicit intent, no
  * global checkbox). Deny verdicts hard-disable Run.
  */
-import { computed } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { renderMarkdown } from "@tau/markdown";
 import type { PlanCardState } from "../composables/plan-flow.js";
-import { renderMarkdown } from "../lib/markdown.js";
+import { highlightPreBlocks } from "../lib/highlight.js";
 import RiskBadge from "./RiskBadge.vue";
 import StepRow from "./StepRow.vue";
 
@@ -24,10 +25,17 @@ const enterDelay = computed(() => `${Math.min((props.enterIndex ?? 0) * 40, 200)
 const explanation = computed(() =>
   renderMarkdown(props.card.plan.explanation || `“${props.card.intent}”`),
 );
+
+const rootEl = ref<HTMLElement | null>(null);
+onMounted(() => {
+  void nextTick(() => {
+    if (rootEl.value) void highlightPreBlocks(rootEl.value);
+  });
+});
 </script>
 
 <template>
-  <article class="tau-card plan-enter">
+  <article ref="rootEl" class="tau-card plan-enter">
     <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
       <span class="font-mono text-[11px] uppercase tracking-1px text-tau-faint">plan</span>
       <RiskBadge :level="card.review.overallRisk" />

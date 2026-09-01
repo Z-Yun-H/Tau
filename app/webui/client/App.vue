@@ -15,7 +15,8 @@
  * threads are a UI grouping over the same /api/plan → /api/execute pipeline,
  * never an independent execution path.
  */
-import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { nextTick, onMounted, ref, watch } from "vue";
+import { useEventListener, watchDebounced } from "@vueuse/core";
 import Composer from "./components/Composer.vue";
 import EmptyState from "./components/EmptyState.vue";
 import ErrorCard from "./components/ErrorCard.vue";
@@ -75,12 +76,10 @@ onMounted(() => {
   void refreshStatus();
   void refreshSkills();
   void refreshHistory();
-  window.addEventListener("keydown", onKeydown);
 });
 
-onUnmounted(() => {
-  window.removeEventListener("keydown", onKeydown);
-});
+// vueuse useEventListener — auto cleanup on unmount
+useEventListener(window, "keydown", onKeydown);
 
 // Keep the newest card in view, but never steal scroll while the user reads up.
 function scrollToEnd(): void {
@@ -92,6 +91,15 @@ function scrollToEnd(): void {
 watch(
   () => cards.value.length,
   () => scrollToEnd(),
+);
+
+// Streaming autoscroll: follow live output growth (debounced so per-chunk
+// updates do not thrash smooth scrolling) — never steals scroll position
+// faster than the content grows.
+watchDebounced(
+  () => cards.value.reduce((n, c) => (c.type === "result" ? n + c.output.length : n), 0),
+  () => scrollToEnd(),
+  { debounce: 150, maxWait: 600 },
 );
 </script>
 

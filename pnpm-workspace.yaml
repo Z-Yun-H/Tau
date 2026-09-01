@@ -17,6 +17,8 @@ catalog:
   # optionalDependency (dynamic import, never bundled, graceful degrade):
   # terminal image rendering in @tau/ui — decode/resize when present
   sharp: ^0.35.4
+  shiki: ^4.4.3
+  "@vueuse/core": ^14.4.0
   # ---- optional SDKs (dynamically imported, never bundled) ----
   "@deepseek-ai/dsh-llm": ^0.0.1-rc.1
   "@modelcontextprotocol/sdk": ^1.30.0
