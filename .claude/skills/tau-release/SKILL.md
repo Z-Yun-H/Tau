@@ -7,7 +7,7 @@ description: Cut a Tau release: changelog, version bump, build verification, pac
 
 Follow the full checklist in AGENTS/release.md. Short form:
 
-1. **Gate**: `npm run lint && npm run typecheck && npm run test:cov` — all green.
+1. **Gate**: `pnpm lint && pnpm typecheck && pnpm test:cov` — all green.
 2. **Changelog**: move `## Unreleased` entries to `## vX.Y.Z - YYYY-MM-DD`
    (Conventional Commits since last tag decide minor vs patch; breaking →
    minor until 1.0, with a **Breaking** header). Distill from the daily

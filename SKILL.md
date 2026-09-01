@@ -31,6 +31,7 @@ AGENTS.md          (rules + 60-second tour — always first)
 
 | Dev tool / task                      | Designated skill                                                                                                                 | Normative spec                                         | Fast path                                                |
 | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------------- |
+| Dev / run from source                | [.claude/skills/tau-dev](./.claude/skills/tau-dev/SKILL.md)                                                                      | [AGENTS/conventions.md](./AGENTS/conventions.md)       | `pnpm dev -- file find "*.ts"`                           |
 | Build / typecheck                    | [.claude/skills/tau-build](./.claude/skills/tau-build/SKILL.md)                                                                  | [AGENTS/architecture.md](./AGENTS/architecture.md)     | `pnpm build`                                             |
 | Test / coverage                      | [.claude/skills/tau-test](./.claude/skills/tau-test/SKILL.md)                                                                    | [AGENTS/testing.md](./AGENTS/testing.md)               | `pnpm test:cov`                                          |
 | Release / version bump               | [.claude/skills/tau-release](./.claude/skills/tau-release/SKILL.md)                                                              | [AGENTS/release.md](./AGENTS/release.md)               | maintainer checklist, never `pnpm publish` from an agent |
@@ -50,6 +51,10 @@ rulebook — see the maintenance rule below.
 The designated skill owns the full workflow; these are the load-bearing
 rules to know before you even open it.
 
+- **Dev (run from source)** — `pnpm dev -- <args>` resolves every `@tau/*`
+  import to TypeScript via the development export condition (zero build);
+  sandbox manual runs with a temp `TAU_HOME`; WebUI in dev is two processes
+  (API server + vite client). The designated skill owns the full loop.
 - **Build** — gates in order: `typecheck → lint → pnpm build`. The root
   build also builds the two vite apps (`@tau/tui`, `@tau/webui`); every
   produced `dist/index.js` must start with `#!/usr/bin/env node`. Fix

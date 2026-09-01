@@ -82,6 +82,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   of "— (AGENTS rulebook governs)"; `AGENTS/skills.md` and
   `AGENTS/architecture.md` inventories synced. (#46)
 
+- **Stage norms normalized; dev-loop skill added (unit C of #47).** All L1
+  dev-workflow skills and the release rulebook now teach `pnpm` commands
+  (`npm run`/`npm test` copy-paste drift fixed in tau-build, tau-test,
+  tau-release, AGENTS/release.md); tau-build's external-warning claim now
+  matches the real tsdown configs (`@deepseek-ai/*`, `@modelcontextprotocol/*`
+  via neverBundle; `z-ai-web-dev-sdk` external via runtime-variable specifier).
+  New L1 `.claude/skills/tau-dev/SKILL.md` fills the missing stage — the dev
+  inner loop (pnpm dev bridge via the development export condition, per-app
+  dev entries, TAU_HOME sandboxing for manual runs, watch loops); the root
+  `SKILL.md` router gains the "Dev / run from source" row, so every stage
+  (dev/build/test/release) has exactly one designated skill. (#47)
+
 ### Fixed
 
 - **Structure & redundancy audit (unit A of #45): zero deletable files —

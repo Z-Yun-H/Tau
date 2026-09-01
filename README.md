@@ -211,7 +211,7 @@ Tau is designed to be _maintained by AI agents_ as much as used by humans:
   [conventions](AGENTS/conventions.md), [testing](AGENTS/testing.md),
   [skills](AGENTS/skills.md), [plugins](AGENTS/plugins.md),
   [ai-integration](AGENTS/ai-integration.md), [release](AGENTS/release.md)
-- **[`.claude/skills/`](.claude/skills)** — root dev-workflow skills (tau-build, tau-test, tau-release, plus the tau-skill-new / tau-tool-new routers), routed per dev tool by the root [`SKILL.md`](SKILL.md); package/app-bound tool skills live at `packages/<pkg>/SKILL.md` and `app/<app>/SKILL.md` (e.g. [`packages/skills/SKILL.md`](packages/skills/SKILL.md), [`packages/tools/SKILL.md`](packages/tools/SKILL.md), [`app/webui/SKILL.md`](app/webui/SKILL.md))
+- **[`.claude/skills/`](.claude/skills)** — root dev-workflow skills (tau-dev, tau-build, tau-test, tau-release, plus the tau-skill-new / tau-tool-new routers), routed per dev tool by the root [`SKILL.md`](SKILL.md); package/app-bound tool skills live at `packages/<pkg>/SKILL.md` and `app/<app>/SKILL.md` (e.g. [`packages/skills/SKILL.md`](packages/skills/SKILL.md), [`packages/tools/SKILL.md`](packages/tools/SKILL.md), [`app/webui/SKILL.md`](app/webui/SKILL.md))
 - **`CLAUDE.md`** pointer for Claude Code; deterministic safety module with 1:1 test coverage
 - 274 tests, strict TypeScript, `pnpm lint && pnpm typecheck && pnpm test` as the agent gate
 

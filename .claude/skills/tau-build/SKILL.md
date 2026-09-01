@@ -8,8 +8,8 @@ description: Build and typecheck the Tau CLI project. Use whenever you changed T
 Run the build pipeline in order. Each step must pass before the next:
 
 ```bash
-npm run typecheck   # tsc --noEmit — all TypeScript in src/ and tests/
-npm run lint        # oxlint (.oxlintrc.json)
+pnpm typecheck      # tsc --noEmit — all TypeScript in src/ and tests/
+pnpm lint           # oxlint (.oxlintrc.json)
 pnpm build          # unified tsdown workspace build (packages/* + app/cli)
 node app/cli/dist/index.js --help   # verify the bundle actually runs
 ```
@@ -21,8 +21,11 @@ still produce a runnable `dist/index.js` starting with `#!/usr/bin/env node`.
 ## Expectations
 
 - `dist/index.js` starts with `#!/usr/bin/env node`.
-- Build is clean: no warnings that reference missing externals other than
-  the intentional `z-ai-web-dev-sdk` external.
+- Build is clean: the only intentional externals are the optional,
+  dynamically-imported SDKs — `@deepseek-ai/*` and `@modelcontextprotocol/*`
+  via `deps.neverBundle` in their packages' tsdown configs, and
+  `z-ai-web-dev-sdk` (external because its import specifier is a runtime
+  variable in `packages/ai/src/providers/zai.ts`, not a config entry).
 - If typecheck fails on `noUncheckedIndexedAccess`, fix the code (add `??`
   fallbacks) — do NOT loosen tsconfig.
 

@@ -55,7 +55,7 @@ versions, but must be called out in CHANGELOG under a **Breaking** header.
 
 ## Release checklist
 
-1. `npm run lint && npm run typecheck && npm run test:cov` green
+1. `pnpm lint && pnpm typecheck && pnpm test:cov` green
 2. Update CHANGELOG.md: move **Unreleased** → new version + date (today)
 3. Bump versions in lockstep — the `@tau/*` packages ship as a version-locked
    family, and `pnpm publish` rewrites `workspace:*` to these very numbers,

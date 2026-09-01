@@ -8,9 +8,9 @@ description: Run the Tau test suite with proper isolation (TAU_HOME sandboxing) 
 ## Commands
 
 ```bash
-npm test            # full suite once
-npm run test:watch  # filtered dev loop: npm run test:watch -- safety
-npm run test:cov    # with coverage thresholds (pre-PR gate)
+pnpm test           # full suite once
+pnpm test:watch     # filtered dev loop: pnpm test:watch -- safety
+pnpm test:cov       # with coverage thresholds (pre-PR gate)
 ```
 
 ## Rules the suite depends on
@@ -37,7 +37,7 @@ npm run test:cov    # with coverage thresholds (pre-PR gate)
 ## Before you say "done"
 
 ```bash
-npm run lint && npm run typecheck && npm run test:cov
+pnpm lint && pnpm typecheck && pnpm test:cov
 ```
 
 All green, coverage at or above thresholds, no skipped tests added.
