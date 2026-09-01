@@ -118,9 +118,11 @@ packages/                   engine layer (each with a public src/index.ts barrel
   agent/src/                catalog prep + intent->plan pipeline shared by all UIs
   ui/src/                   chalk theme, confirm prompt, list picker
 tests                       live INSIDE each package: <pkg>/tests/*.test.ts
+SKILL.md                    root dev-tool skill router (top of the SKILL.md read chain)
 AGENTS/                     deep-dive rulebooks for agents (see below)
-.claude/skills/             root dev-workflow skills for coding agents; package
-                            tool-layer skills live at packages/<pkg>/SKILL.md
+.claude/skills/             root dev-workflow skills for coding agents; package/app
+                            tool-layer skills live at packages/<pkg>/SKILL.md, app/<app>/SKILL.md
+changelog/                  daily AI work logs (YYYY-MM-DD.md; AGENTS/collaboration.md §8)
 docs/                       human-facing deep dives (architecture, safety, skills, plugins)
 ```
 

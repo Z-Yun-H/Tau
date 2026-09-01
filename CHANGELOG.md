@@ -73,6 +73,22 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Fixed
 
+- **Structure & redundancy audit (unit A of #45): zero deletable files —
+  the redundancy was in manifests and prose, now cleaned.** Removed four
+  unused dependency declarations (`@tau/ai`, `@tau/skills` from both
+  `@tau/tui` and `@tau/webui` — neither app imports them; `@tau/agent`
+  declares them itself), synced every structure map with reality
+  (root `SKILL.md` + `changelog/` now appear in AGENTS.md's map, the
+  architecture governance table, and both READMEs' layout blocks), fixed
+  stale path references (`AGENTS/conventions.md` public-API barrel,
+  `AGENTS/testing.md` integration-test paths and fixtures claim,
+  `AGENTS/plugins.md` test path), corrected the test-count badge and claims
+  233 → 274, added the six #42 tools to both READMEs' feature tables,
+  fixed the broken install command (`pnpm --filter @tau/cli link` errors;
+  now `cd app/cli && pnpm link --global`), aligned `packages/engine/README.md`
+  with the real verdict vocabulary (`allow/review/deny`) and workspace list,
+  and corrected two factual slips in the day's changelog. (#45)
+
 - **`file.find --type file` no longer lists directories.** The type filter
   in `findTool` carried an unreachable branch (`type === "dir"` was checked
   inside the isFile-only path) and matching directories were pushed

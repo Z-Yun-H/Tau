@@ -5,7 +5,7 @@
 [![CI](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml/badge.svg)](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-233%20passing-success)](vitest.config.ts)
+[![Tests](https://img.shields.io/badge/tests-274%20passing-success)](vitest.config.ts)
 [![pnpm](https://img.shields.io/badge/pnpm-monorepo-F69220)](pnpm-workspace.yaml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 [![中文文档](https://img.shields.io/badge/docs-中文-red)](README.zh-CN.md)
@@ -41,25 +41,26 @@ around: **the AI proposes, deterministic code disposes.**
 
 ## Features
 
-| Area           | What you get                                                                        |
-| -------------- | ----------------------------------------------------------------------------------- |
-| `tau ask`      | NL intent → provider plan → safety review → confirm UI → execution → history        |
-| `tau file`     | glob find (prunes node_modules), tree, stat, regex batch rename (dry-run default)   |
-| `tau sys`      | OS/CPU/memory info, disk usage, top processes                                       |
-| `tau net`      | TCP port check, ping, SSRF-guarded fetch, local IPs                                 |
-| `tau text`     | regex search, project-wide replace (dry-run default), line/word stats               |
-| `tau skill`    | SKILL.md command packs: list/show/new/validate                                      |
-| `tau plugin`   | MCP servers as tool sources: dsh, VS Code, filesystem, ... (list/add/remove/tools)  |
-| `tau history`  | everything runs are recorded; inspect, replay, clear                                |
-| `tau alias`    | persistent command aliases (`tau ll` → anything)                                    |
-| `tau provider` | API keys + live model discovery: set a key, models auto-refresh, pick interactively |
-| `tau config`   | provider, timeout, risk policy — stored under `$TAU_HOME`                           |
+| Area           | What you get                                                                                                                   |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `tau ask`      | NL intent → provider plan → safety review → confirm UI → execution → history                                                   |
+| `tau file`     | glob find (prunes node_modules), tree, stat, line-numbered read (offset/limit), dir list, regex batch rename (dry-run default) |
+| `tau sys`      | OS/CPU/memory info, disk usage, top processes, datetime (local/ISO/epoch/tz), which, env lookup (one name, medium risk)        |
+| `tau net`      | TCP port check, ping, SSRF-guarded fetch, local IPs                                                                            |
+| `tau text`     | regex search, project-wide replace (dry-run default), line/word stats, sha256/sha1 hash                                        |
+| `tau skill`    | SKILL.md command packs: list/show/new/validate                                                                                 |
+| `tau plugin`   | MCP servers as tool sources: dsh, VS Code, filesystem, ... (list/add/remove/tools)                                             |
+| `tau history`  | everything runs are recorded; inspect, replay, clear                                                                           |
+| `tau alias`    | persistent command aliases (`tau ll` → anything)                                                                               |
+| `tau provider` | API keys + live model discovery: set a key, models auto-refresh, pick interactively                                            |
+| `tau config`   | provider, timeout, risk policy — stored under `$TAU_HOME`                                                                      |
 
 ## Install
 
 ```bash
 git clone https://github.com/Z-Yun-H/Tau.git
-cd tau && pnpm install && pnpm build && pnpm --filter @tau/cli link   # provides the `tau` binary
+cd tau && pnpm install && pnpm build
+cd app/cli && pnpm link --global   # provides the `tau` binary (run `pnpm setup` once first if pnpm's global bin dir is not on your PATH)
 ```
 
 Requires Node.js ≥ 20 and pnpm ≥ 10 (corepack handles it: `corepack enable pnpm`).
@@ -210,9 +211,9 @@ Tau is designed to be _maintained by AI agents_ as much as used by humans:
   [conventions](AGENTS/conventions.md), [testing](AGENTS/testing.md),
   [skills](AGENTS/skills.md), [plugins](AGENTS/plugins.md),
   [ai-integration](AGENTS/ai-integration.md), [release](AGENTS/release.md)
-- **[`.claude/skills/`](.claude/skills)** — root dev-workflow skills (tau-build, tau-test, tau-release, tau-skill-new router); package-bound tool skills live at `packages/<pkg>/SKILL.md` (e.g. [`packages/skills/SKILL.md`](packages/skills/SKILL.md))
+- **[`.claude/skills/`](.claude/skills)** — root dev-workflow skills (tau-build, tau-test, tau-release, tau-skill-new router), routed per dev tool by the root [`SKILL.md`](SKILL.md); package/app-bound tool skills live at `packages/<pkg>/SKILL.md` and `app/<app>/SKILL.md` (e.g. [`packages/skills/SKILL.md`](packages/skills/SKILL.md), [`app/webui/SKILL.md`](app/webui/SKILL.md))
 - **`CLAUDE.md`** pointer for Claude Code; deterministic safety module with 1:1 test coverage
-- 233 tests, strict TypeScript, `pnpm lint && pnpm typecheck && pnpm test` as the agent gate
+- 274 tests, strict TypeScript, `pnpm lint && pnpm typecheck && pnpm test` as the agent gate
 
 ## Project layout — pnpm monorepo
 
@@ -236,7 +237,8 @@ packages/
   plugins/        @tau/plugins — MCP plugin system
   agent/          @tau/agent   — orchestration shared by all UIs (catalog + intent→plan)
   ui/             @tau/ui      — theme, confirm, picker (terminal primitives)
-AGENTS/           agent rulebooks                     docs/  deep dives
+SKILL.md          root dev-tool skill router   AGENTS/  agent rulebooks
+docs/             deep dives                   changelog/  daily AI work logs
 ```
 
 Dependency direction (enforced by package boundaries): `core ← tools ← engine`,

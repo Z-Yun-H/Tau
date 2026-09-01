@@ -5,7 +5,7 @@
 [![CI](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml/badge.svg)](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-233%20passing-success)](vitest.config.ts)
+[![Tests](https://img.shields.io/badge/tests-274%20passing-success)](vitest.config.ts)
 [![pnpm](https://img.shields.io/badge/pnpm-monorepo-F69220)](pnpm-workspace.yaml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 
@@ -37,25 +37,26 @@ tau file find "*.ts"                    # 也可以直接用工具
 
 ## 功能总览
 
-| 命令族         | 能力                                                                             |
-| -------------- | -------------------------------------------------------------------------------- |
-| `tau ask`      | 自然语言 → Provider 计划 → 安全审查 → 确认 UI → 执行 → 历史                      |
-| `tau file`     | glob 查找（自动跳过 node_modules）、目录树、stat、正则批量重命名（默认 dry-run） |
-| `tau sys`      | 系统/CPU/内存信息、磁盘用量、CPU 排行进程                                        |
-| `tau net`      | TCP 端口检测、ping、防 SSRF 的 fetch、本机 IP                                    |
-| `tau text`     | 正则搜索、全项目替换（默认 dry-run）、行/词统计                                  |
-| `tau skill`    | SKILL.md 命令包：list/show/new/validate                                          |
-| `tau plugin`   | MCP 工具服务器接入：dsh、VS Code、文件系统……（list/add/remove/tools）            |
-| `tau history`  | 所有执行都有记录：查看、重放、清空                                               |
-| `tau alias`    | 持久化命令别名（`tau ll` → 任何命令）                                            |
-| `tau provider` | API key 管理 + 在线模型发现：配好 key 自动刷新模型列表，交互式选型               |
-| `tau config`   | Provider、超时、风险策略 —— 存在 `$TAU_HOME` 下                                  |
+| 命令族         | 能力                                                                                                                   |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `tau ask`      | 自然语言 → Provider 计划 → 安全审查 → 确认 UI → 执行 → 历史                                                            |
+| `tau file`     | glob 查找（自动跳过 node_modules）、目录树、stat、行号读取（offset/limit）、单目录清单、正则批量重命名（默认 dry-run） |
+| `tau sys`      | 系统/CPU/内存信息、磁盘用量、CPU 排行进程、日期时间（本地/ISO/epoch/时区）、which、环境变量查询（单名，medium 风险）   |
+| `tau net`      | TCP 端口检测、ping、防 SSRF 的 fetch、本机 IP                                                                          |
+| `tau text`     | 正则搜索、全项目替换（默认 dry-run）、行/词统计、sha256/sha1 哈希                                                      |
+| `tau skill`    | SKILL.md 命令包：list/show/new/validate                                                                                |
+| `tau plugin`   | MCP 工具服务器接入：dsh、VS Code、文件系统……（list/add/remove/tools）                                                  |
+| `tau history`  | 所有执行都有记录：查看、重放、清空                                                                                     |
+| `tau alias`    | 持久化命令别名（`tau ll` → 任何命令）                                                                                  |
+| `tau provider` | API key 管理 + 在线模型发现：配好 key 自动刷新模型列表，交互式选型                                                     |
+| `tau config`   | Provider、超时、风险策略 —— 存在 `$TAU_HOME` 下                                                                        |
 
 ## 安装
 
 ```bash
 git clone https://github.com/Z-Yun-H/Tau.git
-cd tau && pnpm install && pnpm build && pnpm --filter @tau/cli link   # 提供 `tau` 命令
+cd tau && pnpm install && pnpm build
+cd app/cli && pnpm link --global   # 提供 `tau` 命令（若 pnpm 全局 bin 目录不在 PATH，先执行一次 `pnpm setup`）
 ```
 
 需要 Node.js ≥ 20 与 pnpm ≥ 10（corepack 可自动管理：`corepack enable pnpm`）。
@@ -202,9 +203,9 @@ Tau 从设计上就是"给人用、给 AI 维护"的双端项目：
   [规范](AGENTS/conventions.md)、[测试](AGENTS/testing.md)、
   [技能](AGENTS/skills.md)、[插件](AGENTS/plugins.md)、
   [AI 集成](AGENTS/ai-integration.md)、[发布](AGENTS/release.md)
-- **[`.claude/skills/`](.claude/skills)** —— 根级开发工作流技能（tau-build / tau-test / tau-release / tau-skill-new 路由）；包级工具技能位于 `packages/<pkg>/SKILL.md`（如 [`packages/skills/SKILL.md`](packages/skills/SKILL.md)）
+- **[`.claude/skills/`](.claude/skills)** —— 根级开发工作流技能（tau-build / tau-test / tau-release / tau-skill-new 路由），由根级 [`SKILL.md`](SKILL.md) 按工具路由；包/应用级工具技能位于 `packages/<pkg>/SKILL.md` 与 `app/<app>/SKILL.md`（如 [`packages/skills/SKILL.md`](packages/skills/SKILL.md)、[`app/webui/SKILL.md`](app/webui/SKILL.md)）
 - **`CLAUDE.md`** 指针文件供 Claude Code 自动发现；安全模块完全确定性且有 1:1 测试覆盖
-- 233 个测试、严格 TypeScript，`pnpm lint && pnpm typecheck && pnpm test` 就是 agent 门禁
+- 274 个测试、严格 TypeScript，`pnpm lint && pnpm typecheck && pnpm test` 就是 agent 门禁
 
 ## 项目结构 —— pnpm monorepo
 
@@ -228,6 +229,7 @@ packages/
   agent/          @tau/agent   —— 所有 UI 共用的编排层（目录组装 + 意图→计划）
   ui/             @tau/ui      —— 主题、确认、列表选择（终端原语）
 AGENTS/           agent 规则书                 docs/  深度文档
+SKILL.md          根级开发工具技能路由         changelog/  每日 AI 工作日志
 ```
 
 依赖方向（由包边界强制）：`core ← tools ← engine`，`core+engine+ui ← skills`，

@@ -135,18 +135,12 @@ importers:
       '@tau/agent':
         specifier: workspace:*
         version: link:../../packages/agent
-      '@tau/ai':
-        specifier: workspace:*
-        version: link:../../packages/ai
       '@tau/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@tau/engine':
         specifier: workspace:*
         version: link:../../packages/engine
-      '@tau/skills':
-        specifier: workspace:*
-        version: link:../../packages/skills
       '@tau/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -163,18 +157,12 @@ importers:
       '@tau/agent':
         specifier: workspace:*
         version: link:../../packages/agent
-      '@tau/ai':
-        specifier: workspace:*
-        version: link:../../packages/ai
       '@tau/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@tau/engine':
         specifier: workspace:*
         version: link:../../packages/engine
-      '@tau/skills':
-        specifier: workspace:*
-        version: link:../../packages/skills
     devDependencies:
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
