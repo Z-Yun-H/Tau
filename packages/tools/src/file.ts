@@ -24,6 +24,16 @@ function resolveInside(cwd: string, target: string): string {
 /** Directories never worth searching (shared with tree/text). */
 export const PRUNE_DIRS = new Set(["node_modules", ".git", "dist", ".tau", "coverage"]);
 
+/**
+ * Binary sniff shared by the file and text families: a NUL byte in the first
+ * 1KB almost always means "not text" — skip instead of mangling it.
+ */
+export function isProbablyBinary(buffer: Buffer): boolean {
+  const slice = buffer.subarray(0, Math.min(buffer.length, 1024));
+  for (const byte of slice) if (byte === 0) return true;
+  return false;
+}
+
 async function findTool(args: Record<string, unknown>): Promise<ToolResult> {
   const cwd = process.cwd();
   const root = resolveInside(cwd, strArg(args, "path", ".") ?? ".");
@@ -163,6 +173,69 @@ async function treeTool(args: Record<string, unknown>): Promise<ToolResult> {
   return textResult(lines.join("\n"));
 }
 
+/** Read a text file with line numbers — offset/limit capped, binary-guarded. */
+async function readTool(args: Record<string, unknown>): Promise<ToolResult> {
+  const cwd = process.cwd();
+  const targetArg = strArg(args, "path");
+  if (!targetArg) throw new Error("read requires path");
+  const target = resolveInside(cwd, targetArg);
+  if (!fs.existsSync(target)) throw new Error(`Path does not exist: ${target}`);
+  const st = fs.statSync(target);
+  if (st.isDirectory()) throw new Error(`path is a directory: ${target}`);
+  if (st.size > 2_000_000) throw new Error(`file too large to read (>2MB): ${target}`);
+
+  const buf = fs.readFileSync(target);
+  if (isProbablyBinary(buf)) throw new Error(`refusing to read binary file: ${target}`);
+
+  const offset = Math.max(numArg(args, "offset", 1) ?? 1, 1);
+  const limit = Math.min(Math.max(numArg(args, "limit", 400) ?? 400, 1), 2000);
+  const lines = buf.toString("utf8").split("\n");
+  const total = lines.length;
+  const slice = lines.slice(offset - 1, offset - 1 + limit);
+  const numbered = slice.map((line, i) => {
+    const no = offset + i;
+    const display = line.length > 300 ? `${line.slice(0, 300)}…` : line;
+    return `${String(no).padStart(4, " ")}  ${display}`;
+  });
+  const truncated = offset - 1 + slice.length < total;
+  const head = `file.read ${targetArg} — lines ${offset}-${offset - 1 + slice.length} of ${total}${truncated ? " (truncated, raise limit or offset)" : ""}`;
+  return textResult([head, ...numbered].join("\n"), {
+    offset,
+    returned: slice.length,
+    totalLines: total,
+    truncated,
+  });
+}
+
+/** Single-directory listing (non-recursive): type, bytes, mtime, name. */
+async function listTool(args: Record<string, unknown>): Promise<ToolResult> {
+  const cwd = process.cwd();
+  const dirArg = strArg(args, "path", ".") ?? ".";
+  const dir = resolveInside(cwd, dirArg);
+  if (!fs.existsSync(dir)) throw new Error(`Path does not exist: ${dir}`);
+  const st = fs.statSync(dir);
+  if (!st.isDirectory()) throw new Error(`not a directory: ${dir}`);
+
+  const includeHidden = boolArg(args, "includeHidden", false);
+  const limit = Math.min(Math.max(numArg(args, "limit", 200) ?? 200, 1), 1000);
+  const entries = fs
+    .readdirSync(dir, { withFileTypes: true })
+    .filter((e) => includeHidden || !e.name.startsWith("."))
+    .sort(
+      (a, b) => Number(b.isDirectory()) - Number(a.isDirectory()) || a.name.localeCompare(b.name),
+    )
+    .slice(0, limit);
+
+  const rows = entries.map((entry) => {
+    const full = path.join(dir, entry.name);
+    const es = fs.statSync(full);
+    const kind = entry.isDirectory() ? "d" : entry.isFile() ? "f" : "?";
+    return `${kind}  ${String(es.size).padStart(9, " ")}  ${es.mtime.toISOString()}  ${entry.name}${entry.isDirectory() ? "/" : ""}`;
+  });
+  const head = `file.list ${dirArg} — ${rows.length} entr${rows.length === 1 ? "y" : "ies"}`;
+  return textResult([head, ...rows].join("\n"), { count: rows.length });
+}
+
 /** Batch rename. ALWAYS dry-run unless execute=true — safety first. */
 async function renameTool(args: Record<string, unknown>): Promise<ToolResult> {
   const cwd = process.cwd();
@@ -210,6 +283,41 @@ async function renameTool(args: Record<string, unknown>): Promise<ToolResult> {
 }
 
 export const fileTools: ToolDefinition[] = [
+  {
+    name: "file.read",
+    description:
+      "Read a text file with line numbers (offset/limit, refuses binaries and files over 2MB)",
+    risk: "low",
+    owner: "core",
+    params: [
+      { name: "path", type: "string", description: "File path", required: true },
+      {
+        name: "offset",
+        type: "number",
+        description: "1-based start line (default 1)",
+        required: false,
+      },
+      {
+        name: "limit",
+        type: "number",
+        description: "Max lines, cap 2000 (default 400)",
+        required: false,
+      },
+    ],
+    run: readTool,
+  },
+  {
+    name: "file.list",
+    description: "List one directory (non-recursive): type, bytes, mtime, name",
+    risk: "low",
+    owner: "core",
+    params: [
+      { name: "path", type: "string", description: "Directory (default cwd)", required: false },
+      { name: "limit", type: "number", description: "Max entries (default 200)", required: false },
+      { name: "includeHidden", type: "boolean", description: "Include dotfiles", required: false },
+    ],
+    run: listTool,
+  },
   {
     name: "file.find",
     description: "Recursively find files/directories by glob pattern under a path",

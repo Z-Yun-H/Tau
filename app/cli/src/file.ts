@@ -28,6 +28,34 @@ export function registerFileCommands(program: Command): void {
     });
 
   file
+    .command("read")
+    .description("Read a text file with line numbers (refuses binaries, 2MB cap)")
+    .argument("<path>", "file path")
+    .option("-o, --offset <n>", "1-based start line", "1")
+    .option("-l, --limit <n>", "max lines (cap 2000)", "400")
+    .action(async (path: string, opts) => {
+      await runToolDirect(
+        "file.read",
+        { path, offset: Number(opts.offset), limit: Number(opts.limit) },
+        `file read ${path}`,
+      );
+    });
+
+  file
+    .command("list")
+    .description("List one directory (non-recursive): type, bytes, mtime, name")
+    .argument("[path]", "directory", ".")
+    .option("-l, --limit <n>", "max entries", "200")
+    .option("-H, --include-hidden", "include dotfiles", false)
+    .action(async (path: string, opts) => {
+      await runToolDirect(
+        "file.list",
+        { path, limit: Number(opts.limit), includeHidden: opts.includeHidden === true },
+        `file list ${path}`,
+      );
+    });
+
+  file
     .command("stat")
     .description("Show size/type/mtime of a file or directory")
     .argument("<path>", "target path")

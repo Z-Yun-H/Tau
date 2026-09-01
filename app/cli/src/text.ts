@@ -63,4 +63,18 @@ export function registerTextCommands(program: Command): void {
     .action(async (path: string, opts) => {
       await runToolDirect("text.count", { path, glob: opts.glob }, `text count ${path}`);
     });
+
+  text
+    .command("hash")
+    .description("sha256/sha1 digest of a file or a literal string")
+    .option("-p, --path <path>", "file to hash")
+    .option("-t, --text <text>", "string to hash")
+    .option("-a, --algorithm <algo>", "sha256 (default) or sha1", "sha256")
+    .action(async (opts) => {
+      await runToolDirect(
+        "text.hash",
+        { path: opts.path, text: opts.text, algorithm: opts.algorithm },
+        `text hash ${opts.path ?? opts.text ?? ""}`,
+      );
+    });
 }

@@ -33,4 +33,27 @@ export function registerSysCommands(program: Command): void {
     .action(async (opts) => {
       await runToolDirect("sys.proc", { limit: Number(opts.limit) }, "sys proc");
     });
+
+  sys
+    .command("datetime")
+    .description("Current date/time: local, ISO, epoch ms, timezone")
+    .action(async () => {
+      await runToolDirect("sys.datetime", {}, "sys datetime");
+    });
+
+  sys
+    .command("which")
+    .description("Resolve a bare command name via PATH (read-only)")
+    .argument("<command>", "bare command name")
+    .action(async (command: string) => {
+      await runToolDirect("sys.which", { command }, `sys which ${command}`);
+    });
+
+  sys
+    .command("env")
+    .description("Read one environment variable by exact NAME (may hold secrets)")
+    .argument("<name>", "variable name")
+    .action(async (name: string) => {
+      await runToolDirect("sys.env", { name }, `sys env ${name}`);
+    });
 }
