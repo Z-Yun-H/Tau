@@ -205,6 +205,13 @@ powershell` — explicit pwsh runs `-NoLogo -NoProfile -NonInteractive
 
 ### Fixed
 
+- **TUI confirm prompt raced the REPL readline (found by the unit-8 e2e
+  captures, #69): a second readline interface over the same stdin
+  double-echoed every keystroke (`yy`) and leaked the confirm answer back
+  into the session as a phantom intent.** The TUI now runs a single-reader
+  session — confirm prompts ride the session readline through an answer
+  slot; prompt text and y/yes, a/all, s/skip normalization are unchanged
+  and nothing is auto-approved.
 - **Structure & redundancy audit (unit A of #45): zero deletable files —
   the redundancy was in manifests and prose, now cleaned.** Removed four
   unused dependency declarations (`@tau/ai`, `@tau/skills` from both
