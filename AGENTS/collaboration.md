@@ -13,7 +13,7 @@
 
 1. Understand the project systemically before touching code; keep docs in sync; if a required doc is missing, create it and justify it in the PR/report.
 2. Tech selection is frozen: no new framework, library or tool without an approved Issue; state rationale and impact in the PR.
-3. Flow by change type: features / refactors / architecture → Issue first, one PR = one Issue, PR body references it (`Closes #N`); simple, unambiguous fixes may be direct commits with clear messages — but Tau's `main` is protected, so even fixes land through a PR branch; never bypass PR for reviewable changes. Compound requests spanning multiple change types or subsystems must be auto-decomposed into independently reviewable one-Issue-one-PR units BEFORE implementation, with the decomposition published first (§3).
+3. Flow by change type: features / refactors / architecture → Issue first, one PR = one Issue, PR body references it (`Closes #N`); simple, unambiguous fixes may be direct commits with clear messages — but Tau's `main` is protected, so even fixes land through a PR branch; never bypass PR for reviewable changes. Compound requests spanning multiple change types or subsystems must be auto-decomposed into independently reviewable one-Issue-one-PR units BEFORE implementation, with the decomposition published first (§3). Large refactors (3+ subsystems, or a version release as the deliverable) additionally follow the **unified-merge release pattern**: unit PRs target an integration branch `release/vX.Y.Z-<slug>`, merge into it sequentially (CI-gated, rebased), a release unit bumps versions + archives the changelog last, and ONE unified PR (integration branch → main) carries the release notes and unit index — merged by a HUMAN maintainer (§3).
 4. Dependency updates are standalone PRs with add/upgrade/remove lists, `pnpm audit` results, and full test results; never change workspace/dependency strategy without maintainer approval.
 5. Docs must be synced in the same PR (both READMEs, AGENTS, docs/); state doc status in the PR body; respect root-vs-subpackage doc responsibilities.
 6. Refactors / architecture changes: `[REFACTOR]` / `[ARCHITECTURE]` tag in PR title, motivation + impact + risk + structure-impact statement, and NEVER self-merge.
@@ -73,6 +73,14 @@
 - 分解方案（单元清单、类型、顺序、相互依赖）**必须**在实施开始前向维护者公示（Issues 即公示载体）；维护者可增删单元或调整顺序。
 - 实施顺序按「**准则/文档先行 → 重构 → 功能**」排列，前序单元确立的规范约束作用于后续单元。
 - 单元之间确有依赖需要堆叠分支时，PR 必须声明依赖顺序与建议合并次序。
+
+### 大型重构的统一合并与版本化发布（unified merge & versioned release）
+
+- 当复合需求构成**大型重构**（跨越三个及以上子系统，或以版本发布为交付目标）时，在自动分解的基础上采用**集成分支统一合并**模式：自主分支拉出集成分支 `release/vX.Y.Z-<slug>`，全部单元 PR 的 base 指向该集成分支而非 main。
+- 单元 PR 必须按公示的合并次序**逐个**合并入集成分支；每个 PR 合并前本地门禁与 CI 全绿，且合并前 rebase 到集成分支最新提交以消化共享文件（lockfile、`CHANGELOG.md`、每日 `changelog/`）的潜在冲突。
+- 集成分支上必须包含一个**发布单元**（release unit）：全工作区版本号升级、`CHANGELOG.md` 版本节归档、每日 changelog 记录；该单元在全部功能单元之后最后合并。
+- 全部单元合并后，开启**一个总 PR**（集成分支 → main）：标题承载版本号，正文包含版本发布说明、全部单元 Issue/PR 索引与各单元门禁结果汇总。
+- 总 PR **必须由维护者人工合并**（§12 不因单元 PR 已合并而放宽）；总 PR 合并前，集成分支聚合态的 CI 必须全绿。
 
 ## 4. Monorepo 与依赖管理
 
@@ -169,6 +177,7 @@ Tau 将"AI 行为准则"与"AI 可执行技能"分别存放：
 - [ ] 是否检查了 `AGENTS.md`（与 `AGENTS/`）和 SKILL.md（`.claude/skills/` 与 `packages/<pkg>/SKILL.md`）并确认是否需要更新？
 - [ ] 是否根据变更类型选择了正确的流程（简单修复免 Issue 直接 commit（分支上），功能/重构走 Issue+PR）？
 - [ ] 复合需求是否已自动分解并在实施前公示分解方案（一单元一 Issue 一 PR，见 §3）？
+- [ ] 大型重构/版本发布是否采用集成分支统一合并模式（单元 PR base = `release/vX.Y.Z-*`，发布单元最后合并，总 PR 留人工合并，见 §3）？
 - [ ] 是否在 PR 描述或 commit 中包含 AI 标注、必要的结构影响说明？
 - [ ] 是否更新了相关文档并明确了目录职责？
 - [ ] 是否在 `changelog/` 文件夹中按日记录了当日变更？

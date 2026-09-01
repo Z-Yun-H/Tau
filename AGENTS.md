@@ -80,6 +80,16 @@ independent execution paths.)
    BEFORE implementation (see AGENTS/collaboration.md §3
    "compound-request decomposition"). Order: norms/docs → refactor →
    feature.
+10. **Large refactors ship as a versioned release via unified merge.** When a
+    compound request amounts to a large refactor (three or more subsystems,
+    or a version release as its deliverable), the decomposed unit PRs all
+    target an integration branch `release/vX.Y.Z-<slug>` (not main) and merge
+    into it sequentially (CI-gated, rebased), a release unit bumps the
+    workspace version + archives the changelog last, and ONE unified PR
+    (integration branch → main) carries the release notes and the full unit
+    index. The unified PR is merged by a HUMAN maintainer — an AI never
+    merges it (see AGENTS/collaboration.md §3 "unified merge & versioned
+    release").
 
 ## Command map
 
@@ -145,6 +155,10 @@ docs/                       human-facing deep dives (architecture, safety, skill
       in the PR body
 - [ ] Compound request? → decomposed into one-Issue-one-PR units and the
       decomposition plan published before implementation (golden rule 9)
+- [ ] Large refactor / release batch? → unit PRs target the
+      `release/vX.Y.Z-*` integration branch, a release unit bumps versions
+      last, and ONE unified human-merged PR carries the release
+      (golden rule 10)
 - [ ] New behavior has tests (see AGENTS/testing.md for patterns)
 - [ ] New user-facing flags/commands documented in both READMEs
 - [ ] Tool added? → registered in `packages/tools/src/<module>.ts`,
