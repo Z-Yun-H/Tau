@@ -17,6 +17,13 @@
  *   tau tui                    hand off to the interactive terminal session (@tau/tui)
  *   tau web                    serve the local web UI (@tau/webui)
  *
+ * Startup cost policy: this module (and every statically imported family)
+ * must stay LIGHT — `tau --version`, `--help` and each light command never
+ * pay for the AI/zod/engine chain. Anything that pulls `@tau/ai`, `@tau/agent`
+ * or `@tau/webui` loads lazily inside its action (ask, provider via its
+ * module-level `ai()` accessor, tui, web). The skills catalog scan moved to
+ * the paths that actually need it (ask; TUI/WebUI call ensureCatalog()).
+ *
  * (Line 1 is the #!/usr/bin/env node shebang; tsdown preserves it in the
  * bundle and marks the output executable.)
  */
@@ -24,11 +31,7 @@ import { Command } from "commander";
 import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
 import { realpathSync } from "node:fs";
-import { registerCoreTools, registerTools, resetRegistry } from "@tau/tools";
-import { scanSkills } from "@tau/skills";
-import { buildSkillTools } from "@tau/agent";
-import { registerTuiCommand } from "@tau/tui";
-import { registerAsk } from "./ask.js";
+import { registerCoreTools, resetRegistry } from "@tau/tools";
 import { registerFileCommands } from "./file.js";
 import { registerSysCommands } from "./sys.js";
 import { registerNetCommands } from "./net.js";
@@ -53,18 +56,15 @@ export function readVersion(): string {
 
 /**
  * Build the full CLI program.
- * Registered tool catalog = core tools + declarative commands from loaded skills,
- * so the AI planner automatically sees what skills contribute.
+ *
+ * Core tools register up front (cheap, in-memory). Skill-contributed tools
+ * register lazily where plans can execute them — `runAsk` registers them
+ * after its scan; TUI/WebUI get them via @tau/agent's ensureCatalog().
  */
 export function buildProgram(): Command {
   // Rebuildable: tests and repeated main() calls start from a clean registry.
   resetRegistry();
   registerCoreTools();
-
-  // Declarative commands from loaded skills join the registry, so the AI
-  // planner automatically sees what skills contribute.
-  const skillTools = buildSkillTools(scanSkills().skills);
-  if (skillTools.length > 0) registerTools(skillTools);
 
   const program = new Command();
   program
@@ -78,7 +78,19 @@ export function buildProgram(): Command {
     )
     .option("--json", "machine-readable output where supported");
 
-  registerAsk(program);
+  // Lazy: the ask action pulls the AI planning chain (providers, skills scan,
+  // engine) only when actually invoked.
+  program
+    .command("ask")
+    .description("Turn a natural-language intent into a reviewed, confirmed execution plan")
+    .argument("<intent...>", "what you want, in plain words (Chinese or English)")
+    .option("--explain", "print the planning context (tool catalog prompt) and exit")
+    .action(async (intentParts: string[], options: { explain?: boolean }, command) => {
+      const { runAsk } = await import("./ask.js");
+      await runAsk(intentParts, options, command);
+    });
+
+  // Light families: their module graph is cheap (commander + @tau/ui + core).
   registerFileCommands(program);
   registerSysCommands(program);
   registerNetCommands(program);
@@ -89,7 +101,17 @@ export function buildProgram(): Command {
   registerProviderCommands(program);
   registerConfigCommands(program);
   registerPluginCommands(program);
-  registerTuiCommand(program);
+
+  // Lazy: hands off to the interactive session (whole agent chain loads here).
+  program
+    .command("tui")
+    .description("Start an interactive terminal session (REPL)")
+    .action(async () => {
+      const { startTui } = await import("@tau/tui");
+      await startTui();
+    });
+
+  // Registration is light; @tau/webui itself loads inside the action.
   registerWebCommand(program);
 
   return program;

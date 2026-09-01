@@ -7,6 +7,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Added
 
+- **CLI lazy startup — every non-AI invocation stops paying for the AI
+  chain.** `tau --version` used to import every command family, `@tau/tui`,
+  `@tau/webui`, the `@tau/ai` zod graph and run the `scanSkills()` filesystem
+  scan before answering. Now: `ask` and `tui` register as cheap commander
+  stubs whose actions dynamic-import their implementations (`runAsk`,
+  `startTui`); `tau web` and the `provider` family load `@tau/webui` /
+  `@tau/ai` inside their actions via a module-level lazy accessor;
+  skill-contributed tool registration moved out of `buildProgram` into the
+  paths that execute plans (`runAsk`; TUI/WebUI keep `ensureCatalog()`); and
+  `@tau/tui` drops its commander devDependency entirely. Measured: `tau
+--version` median 170 ms -> 139 ms (~-18%, node floor ~24 ms); the zod/
+  provider chain (66–113 ms) now loads only for `ask`/`provider`. (#57)
+
 - **Shell adapter — PowerShell (pwsh) support + additive safety patterns.**
   Plan shell-steps are no longer hardwired to `spawn(shell:true)` (cmd.exe on
   Windows): a pure `buildShellInvocation()` resolves `auto | bash | pwsh |

@@ -110,7 +110,8 @@ independent execution paths.)
 
 ```
 app/                        UI layer (thin front doors, no engine logic)
-  cli/src/index.ts          bin `tau`: builds commander program, registers tools+skills
+  cli/src/index.ts          bin `tau`: builds commander program; heavy families (ask/tui/web)
+                            and @tau/ai load LAZILY in their actions; skills scan runs in ask/ensureCatalog
   cli/src/<family>.ts       thin commander wiring per command family (ask, file, sys, ...)
   tui/src/index.ts          bin `tau-tui`: interactive REPL (slash commands + intents)
   webui/src/server.ts       zero-dependency HTTP API over the engine; Vue 3 + UnoCSS client in webui/client/ (vite)

@@ -24,7 +24,6 @@
 import readline from "node:readline";
 import { pathToFileURL } from "node:url";
 import { realpathSync } from "node:fs";
-import type { Command } from "commander";
 import { loadConfig } from "@tau/core";
 import { renderPlan, renderReview, runPlan } from "@tau/engine";
 import { confirm, theme } from "@tau/ui";
@@ -196,15 +195,11 @@ export async function startTui(): Promise<void> {
   rl.close();
 }
 
-/** Register `tau tui` so the CLI can hand off to the interactive session. */
-export function registerTuiCommand(program: Command): void {
-  program
-    .command("tui")
-    .description("Start an interactive terminal session (REPL)")
-    .action(async () => {
-      await startTui();
-    });
-}
+/**
+ * CLI wiring note: `tau tui` is registered by @tau/cli with a LAZY dynamic
+ * import of startTui — this package stays commander-free and loads only when
+ * the interactive session actually starts.
+ */
 
 // Only auto-run when executed directly (not when imported by the CLI/tests).
 // Installed bins run through a symlink (npm/pnpm .bin, `pnpm link`), so

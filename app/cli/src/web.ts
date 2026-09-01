@@ -2,9 +2,11 @@
  * `tau web` command — moved from @tau/webui so the WebUI package stays
  * 100% commander-free: only the CLI knows commander; @tau/webui exports
  * the plain startWebUi/createRequestListener API this wiring consumes.
+ *
+ * LAZY: @tau/webui (the engine + HTTP server graph) loads only when the
+ * command actually runs — registration itself is a cheap commander stub.
  */
 import type { Command } from "commander";
-import { startWebUi } from "@tau/webui";
 
 /** Register `tau web` so the CLI can launch the local web interface. */
 export function registerWebCommand(program: Command): void {
@@ -19,6 +21,7 @@ export function registerWebCommand(program: Command): void {
         process.exitCode = 1;
         return;
       }
+      const { startWebUi } = await import("@tau/webui");
       const { url } = await startWebUi({ port });
       console.log(`Tau web UI -> ${url}  (Ctrl+C to stop)`);
     });

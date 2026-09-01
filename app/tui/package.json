@@ -1,7 +1,7 @@
 {
   "name": "@tau/tui",
   "version": "0.1.0",
-  "description": "Tau interactive terminal session (REPL) — bin: tau-tui",
+  "description": "Tau interactive terminal session (REPL) \u2014 bin: tau-tui",
   "license": "MIT",
   "author": "Z-Yun-H",
   "type": "module",
@@ -28,7 +28,6 @@
     "build": "vite build"
   },
   "devDependencies": {
-    "commander": "catalog:",
     "vite": "catalog:"
   },
   "dependencies": {

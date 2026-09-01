@@ -24,7 +24,7 @@ auto-approve mode — same semantics as `tau ask --yes`).
 ## Public API
 
 - `startTui()` — the REPL entry (bin `tau-tui`, also exposed as `tau tui`)
-- `registerTuiCommand()` — wires `tau tui` into the CLI program
+- `startTui()` — the interactive session (wired into the CLI lazily via dynamic import)
 
 ## Dependencies
 
