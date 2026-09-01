@@ -5,6 +5,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+(nothing yet)
+
+## 0.2.0 - 2026-09-01
+
+The UX-refactor release: terminal-grade TUI rendering, streaming WebUI,
+pwsh-aware shell adapter, lazy CLI startup, a shared markdown package, plan
+event streaming, end-to-end snapshots + committed run screenshots — all
+carried through the unified-merge flow (golden rule 10) with the safety
+model byte-for-byte unchanged.
+
 ### Added
 
 - **End-to-end snapshot tests + committed run screenshots for all three
