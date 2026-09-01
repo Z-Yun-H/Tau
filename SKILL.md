@@ -36,7 +36,7 @@ AGENTS.md          (rules + 60-second tour — always first)
 | Release / version bump               | [.claude/skills/tau-release](./.claude/skills/tau-release/SKILL.md)                                                              | [AGENTS/release.md](./AGENTS/release.md)               | maintainer checklist, never `pnpm publish` from an agent |
 | Create / validate a Tau skill        | [.claude/skills/tau-skill-new](./.claude/skills/tau-skill-new/SKILL.md) → [packages/skills/SKILL.md](./packages/skills/SKILL.md) | [AGENTS/skills.md](./AGENTS/skills.md)                 | `pnpm dev -- skill new <name> "<desc>"`                  |
 | WebUI client design                  | [app/webui/SKILL.md](./app/webui/SKILL.md)                                                                                       | [app/webui/README.md](./app/webui/README.md)           | `pnpm --filter @tau/webui dev`                           |
-| CLI tool modules (file/sys/net/text) | — (AGENTS rulebook governs)                                                                                                      | [AGENTS/architecture.md](./AGENTS/architecture.md)     | `pnpm dev -- file find "*.ts"`                           |
+| CLI tool modules (file/sys/net/text) | [.claude/skills/tau-tool-new](./.claude/skills/tau-tool-new/SKILL.md) → [packages/tools/SKILL.md](./packages/tools/SKILL.md)     | [AGENTS/architecture.md](./AGENTS/architecture.md)     | `pnpm dev -- file find "*.ts"`                           |
 | AI providers / plan pipeline         | — (AGENTS rulebook governs)                                                                                                      | [AGENTS/ai-integration.md](./AGENTS/ai-integration.md) | `pnpm dev -- ask "find ts files" --yes` (mock)           |
 | MCP plugins                          | — (AGENTS rulebook governs)                                                                                                      | [AGENTS/plugins.md](./AGENTS/plugins.md)               | `pnpm dev -- plugin list`                                |
 | TUI session                          | — (AGENTS rulebook governs)                                                                                                      | [AGENTS/architecture.md](./AGENTS/architecture.md)     | `pnpm --filter @tau/tui dev`                             |
@@ -70,10 +70,11 @@ rules to know before you even open it.
   mono, prose in sans; three breakpoints (≥1024 / 640–1023 / <640); the
   client stays engine-agnostic (zero runtime `@tau/*` imports).
 - **CLI tool modules** — dual-use: human CLI subcommands AND the catalog the
-  AI planner plans against. New tool ⇒ register in
+  AI planner plans against. New tool ⇒ define it in
   `packages/tools/src/<module>.ts`, review its risk level, wire the CLI
   family, update the docs table, add tests. Mutators are dry-run by
-  default; there are no delete primitives.
+  default; there are no delete primitives. The full authoring workflow is
+  the designated skill above (`tau-tool-new` → `packages/tools/SKILL.md`).
 - **AI providers** — every execution goes through `runPlan()`; the plan
   schema is zod-strict. Provider SDKs stay out of package.json except the
   sanctioned dynamic-import optionals; `MockProvider` is the offline
