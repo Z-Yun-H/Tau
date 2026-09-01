@@ -47,7 +47,19 @@ export interface RunPlanResult {
   output: string;
 }
 
-export function renderPlan(plan: Plan, overallRisk: RiskLevel): string {
+export interface RenderPlanOptions {
+  /**
+   * Optional formatter for the plan explanation — e.g. the TUI passes a
+   * markdown→ANSI renderer while the CLI keeps the default plain styling.
+   */
+  explanation?: (text: string) => string;
+}
+
+export function renderPlan(
+  plan: Plan,
+  overallRisk: RiskLevel,
+  options?: RenderPlanOptions,
+): string {
   const lines: string[] = [];
   lines.push(
     theme.title("Plan") +
@@ -55,7 +67,10 @@ export function renderPlan(plan: Plan, overallRisk: RiskLevel): string {
       theme.risk(overallRisk) +
       theme.muted(")"),
   );
-  lines.push(theme.info(plan.explanation));
+  const explanation = options?.explanation
+    ? options.explanation(plan.explanation)
+    : theme.info(plan.explanation);
+  lines.push(explanation);
   plan.steps.forEach((step, i) => {
     const what =
       step.kind === "tool"

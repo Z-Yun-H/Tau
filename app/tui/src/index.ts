@@ -14,6 +14,8 @@
  *   /skills    list loaded skills
  *   /history   show the last 10 history entries
  *   /status    show runtime locations and catalog sizes
+ *   /md <file>     preview a markdown file (ANSI-rendered headings, code, tables)
+ *   /view <file>   preview an image (Kitty/iTerm2 inline image; metadata card fallback)
  *   /clear     clear the screen
  *   /exit      leave the session (also /quit, Ctrl+D)
  *
@@ -23,10 +25,13 @@
 
 import readline from "node:readline";
 import { pathToFileURL } from "node:url";
+import { readFile } from "node:fs/promises";
 import { realpathSync } from "node:fs";
 import { loadConfig } from "@tau/core";
 import { renderPlan, renderReview, runPlan } from "@tau/engine";
 import { confirm, theme } from "@tau/ui";
+import { detectGraphicsProtocol, metadataCard, readImage, renderImage } from "@tau/ui";
+import { renderToAnsi, type AnsiTheme } from "@tau/markdown";
 import {
   ensureCatalog,
   getActiveProvider,
@@ -38,6 +43,63 @@ import {
 } from "@tau/agent";
 
 const TUI_TIMEOUT_SEC = 120;
+const MD_MAX_BYTES = 512 * 1024;
+
+/** Terminal markdown styling bound to the shared tau theme. */
+const markdownTheme: AnsiTheme = {
+  heading: (text, level) =>
+    level <= 1 ? theme.title(text) : level === 2 ? theme.brand(text) : theme.bold(text),
+  strong: theme.bold,
+  em: (text) => text,
+  codespan: theme.warn,
+  del: theme.muted,
+  link: (text, href) => `${theme.brand(text)} ${theme.muted(`(${href})`)}`,
+  codeBlock: theme.info,
+  codeRule: theme.muted,
+  quote: theme.muted,
+  bullet: theme.brand,
+  hr: theme.muted,
+  tableBorder: theme.muted,
+  muted: theme.muted,
+};
+
+const renderMd = (md: string): string => renderToAnsi(md, { theme: markdownTheme, width: 88 });
+
+/** Read a text file for /md; refuses binaries and oversized files. */
+async function readMarkdownFile(filePath: string): Promise<string> {
+  const buffer = await readFile(filePath);
+  if (buffer.byteLength > MD_MAX_BYTES) {
+    throw new Error(`markdown file larger than ${Math.round(MD_MAX_BYTES / 1024)} KB`);
+  }
+  const head = buffer.subarray(0, 8192);
+  if (head.includes(0)) {
+    throw new Error("refusing to render a binary file as markdown");
+  }
+  return buffer.toString("utf8");
+}
+
+/**
+ * Readline-aware spinner — frames replace the prompt line while an async
+ * step runs; cleared on completion. Silent when stdout is not a TTY.
+ */
+async function withSpinner<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+  let frame = 0;
+  const timer =
+    process.stdout.isTTY === true
+      ? setInterval(() => {
+          process.stdout.write(`\r${theme.muted(frames[frame++ % frames.length] + " " + label)}`);
+        }, 80)
+      : null;
+  try {
+    return await fn();
+  } finally {
+    if (timer) {
+      clearInterval(timer);
+      process.stdout.write("\r\x1b[K");
+    }
+  }
+}
 
 /** Handle one REPL line. Returns true when the session should end. */
 async function handleLine(raw: string): Promise<boolean> {
@@ -54,6 +116,8 @@ async function handleLine(raw: string): Promise<boolean> {
           theme.muted("  /skills     list loaded skills"),
           theme.muted("  /history    last 10 history entries"),
           theme.muted("  /status     runtime locations and catalog sizes"),
+          theme.muted("  /md <file>  preview a markdown file (ANSI-rendered)"),
+          theme.muted("  /view <file>  preview an image (inline image or metadata card)"),
           theme.muted("  /clear      clear the screen"),
           theme.muted("  /exit       leave the session (also /quit)"),
           theme.muted("  anything else is treated as a natural-language intent"),
@@ -111,13 +175,44 @@ async function handleLine(raw: string): Promise<boolean> {
       );
       return false;
     }
+    case "/md": {
+      const target = line.slice(3).trim();
+      if (!target) {
+        console.log(theme.muted("usage: /md <file>"));
+        return false;
+      }
+      try {
+        console.log(renderMd(await readMarkdownFile(target)));
+      } catch (error) {
+        console.log(theme.error(`cannot preview: ${(error as Error).message}`));
+      }
+      return false;
+    }
+    case "/view": {
+      const target = line.slice(5).trim();
+      if (!target) {
+        console.log(theme.muted("usage: /view <file>"));
+        return false;
+      }
+      try {
+        const buffer = await readFile(target);
+        const meta = await readImage(target);
+        console.log(await renderImage(meta, buffer, detectGraphicsProtocol()));
+      } catch (error) {
+        console.log(theme.error(`cannot view: ${(error as Error).message}`));
+        if (!(error instanceof Error && error.message.startsWith("image larger"))) {
+          console.log(theme.muted(metadataCard({ path: target, format: "?", bytes: 0 })));
+        }
+      }
+      return false;
+    }
     default:
       break;
   }
 
   // ---- intent pipeline (same sequence as `tau ask`) ----
   try {
-    const planned = await planAndReview(line);
+    const planned = await withSpinner("planning…", () => planAndReview(line));
     for (const warning of planned.warnings) {
       console.log(theme.warn(`plugin: ${warning}`));
     }
@@ -126,7 +221,7 @@ async function handleLine(raw: string): Promise<boolean> {
         `planning with ${planned.providerLabel} (${planned.providerSource}) — risk gate is independent of the AI`,
       ),
     );
-    console.log(renderPlan(planned.plan, planned.review.overallRisk));
+    console.log(renderPlan(planned.plan, planned.review.overallRisk, { explanation: renderMd }));
     const reviewText = renderReview(planned.plan);
     if (reviewText) console.log(reviewText);
     if (planned.review.verdict === "deny") {
