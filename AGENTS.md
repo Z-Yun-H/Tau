@@ -63,7 +63,12 @@ independent execution paths.)
    its `src/index.ts` barrel. Vitest aliases `@tau/*` to source; runtime uses
    each package's dist after `pnpm build`.
 7. **Run the gates before you claim done:**
-   `pnpm lint && pnpm typecheck && pnpm test`
+   `pnpm lint && pnpm typecheck && pnpm test` — and report the results in the
+   PR body (`AI-gate:` trailer + "How it was tested"). CI failures get
+   root-caused, never bypassed.
+8. **Log each working day to `changelog/`**: append a per-day file
+   `changelog/YYYY-MM-DD.md` (summary, type, Issue/PR refs, impact scope);
+   `CHANGELOG.md` stays the release-level summary distilled from it.
 
 ## Command map
 
@@ -112,7 +117,7 @@ docs/                       human-facing deep dives (architecture, safety, skill
 
 | File                                                   | Read it when...                                                 |
 | ------------------------------------------------------ | --------------------------------------------------------------- |
-| [AGENTS/collaboration.md](./AGENTS/collaboration.md)   | **always — AI collaboration norms (mandatory, normative)**      |
+| [AGENTS/collaboration.md](./AGENTS/collaboration.md)   | **always — AI collaboration norms v2 (mandatory, normative; updated 2026-09: daily `changelog/` files, change-type flow, dead-code & test gates)** |
 | [AGENTS/architecture.md](./AGENTS/architecture.md)     | you add/modify any module, command, or the plan pipeline        |
 | [AGENTS/conventions.md](./AGENTS/conventions.md)       | you write any TypeScript in this repo                           |
 | [AGENTS/testing.md](./AGENTS/testing.md)               | you write or run tests                                          |
@@ -123,7 +128,8 @@ docs/                       human-facing deep dives (architecture, safety, skill
 
 ## Change checklist (every PR)
 
-- [ ] `pnpm lint && pnpm typecheck && pnpm test` green
+- [ ] `pnpm lint && pnpm typecheck && pnpm test` green — results reported
+      in the PR body
 - [ ] New behavior has tests (see AGENTS/testing.md for patterns)
 - [ ] New user-facing flags/commands documented in both READMEs
 - [ ] Tool added? → registered in `packages/tools/src/<module>.ts`,
@@ -131,7 +137,18 @@ docs/                       human-facing deep dives (architecture, safety, skill
 - [ ] Skill-related change? → AGENTS/skills.md checklist
 - [ ] Plugin-related change? → AGENTS/plugins.md checklist
 - [ ] `docs/safety.md` still truthful after your change
-- [ ] CHANGELOG.md entry under **Unreleased**
+- [ ] CHANGELOG.md entry under **Unreleased** AND the working day's
+      `changelog/YYYY-MM-DD.md` written (summary / type / Issue-PR refs /
+      impact)
+- [ ] Dead code & needless hardcoding cleaned in every module you touch
+      (behavior unchanged; large cleanups go standalone)
+- [ ] Docs synced with root-vs-subpackage responsibilities respected
+      (root: README×2, CHANGELOG.md, AGENTS.md; subpackage: package README,
+      docs/, AGENTS/, .claude/skills/) — or state why no doc changed
+- [ ] AGENTS.md/AGENTS/ + SKILL.md checked and updated when behavior rules
+      or executable-skill workflows changed
+- [ ] Tech selection unchanged (new framework/lib/tool needs an approved
+      Issue first)
 - [ ] AI-authored? → PR body notes "此 PR 由 AI 生成"；every AI commit carries
       the `AI-Generated:` prefix line AND the `AI-declaration:` block,
       presented to the human BEFORE committing (AGENTS/collaboration.md,
@@ -143,6 +160,11 @@ docs/                       human-facing deep dives (architecture, safety, skill
 
 Conventional Commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`,
 `chore:`. Scope optional: `feat(ask): support streaming plans`.
+
+Flow by change type: features / refactors / architecture changes need an
+Issue first (`Closes #N` in the PR body); simple, unambiguous fixes may be
+committed directly on a branch — `main` is protected, so every change still
+lands through a PR. One PR = one Issue; unrelated changes never mix.
 
 ## When unsure
 
