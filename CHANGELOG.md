@@ -71,6 +71,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   style) and the dev-workflow skills (`.claude/skills/tau-release`,
   `.claude/skills/tau-test`) were synced accordingly. (#31)
 
+- **Dedicated tool-calling development skill (unit B of #46).** New L2
+  `packages/tools/SKILL.md` (`tau-tools-authoring`, owned by `@tau/tools`)
+  documents the full tool-authoring workflow: the dual-use `ToolDefinition`
+  contract, arg-coercion helpers, honest risk semantics (the three current
+  `medium` tools and why), dry-run rules, CLI wiring via `runToolDirect`,
+  registry pitfalls, and the docs/tests checklist. New thin L1 router
+  `.claude/skills/tau-tool-new/SKILL.md` makes it trigger-discoverable; the
+  root `SKILL.md` router's "CLI tool modules" row now points at it instead
+  of "— (AGENTS rulebook governs)"; `AGENTS/skills.md` and
+  `AGENTS/architecture.md` inventories synced. (#46)
+
 ### Fixed
 
 - **Structure & redundancy audit (unit A of #45): zero deletable files —
