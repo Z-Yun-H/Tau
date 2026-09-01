@@ -24,6 +24,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Fixed
 
+- **`file.find --type file` no longer lists directories.** The type filter
+  in `findTool` carried an unreachable branch (`type === "dir"` was checked
+  inside the isFile-only path) and matching directories were pushed
+  unconditionally, so `tau file find --type file` still returned
+  directories. The filter now applies to files and directories
+  independently; the dead branch is gone and `type=file` / `type=dir` have
+  regression tests. Also deduplicated the prune-set: the text family now
+  reuses `file.ts`'s exported `PRUNE_DIRS` instead of a drifted-in-waiting
+  duplicate `SKIP_DIRS` (same set, behavior unchanged). (#36)
+
 - **`pnpm build` now also builds `@tau/tui` and `@tau/webui`.** After the
   unified tsdown workspace build landed, the root build script was just
   `tsdown` with `workspace: ["packages/*", "app/cli"]` — the two vite-based
