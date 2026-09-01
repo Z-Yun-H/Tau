@@ -1,11 +1,13 @@
 /**
  * System tools — sys.disk / sys.info / sys.proc plus runCapture, the shared
  * spawn-with-capture primitive used by shell-ish tools (fixed argv, no shell
- * interpretation).
+ * interpretation). Also sys.datetime / sys.which / sys.env: the time,
+ * command-resolution and environment senses a local harness needs.
  */
 
 import os from "node:os";
 import fs from "node:fs/promises";
+import path from "node:path";
 import { spawn } from "node:child_process";
 import type { ToolDefinition, ToolResult } from "@tau/core";
 import { numArg, strArg, textResult } from "./registry.js";
@@ -110,6 +112,67 @@ async function procTool(args: Record<string, unknown>): Promise<ToolResult> {
   return textResult([header, ...rows].join("\n"), { count: rows.length });
 }
 
+/** Current date/time in every useful shape (local, ISO, epoch, timezone). */
+async function datetimeTool(): Promise<ToolResult> {
+  const d = new Date();
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const offsetMin = -d.getTimezoneOffset();
+  const sign = offsetMin >= 0 ? "+" : "-";
+  const abs = Math.abs(offsetMin);
+  const utcOffset = `UTC${sign}${String(Math.floor(abs / 60)).padStart(2, "0")}:${String(abs % 60).padStart(2, "0")}`;
+  const lines = [
+    `local: ${d.toString()}`,
+    `iso: ${d.toISOString()}`,
+    `epoch_ms: ${d.getTime()}`,
+    `timezone: ${timeZone} (${utcOffset})`,
+  ];
+  return textResult(lines.join("\n"), {
+    iso: d.toISOString(),
+    epochMs: d.getTime(),
+    timezone: timeZone,
+    utcOffset,
+  });
+}
+
+/** Resolve a bare command name through PATH — read-only, no execution. */
+async function whichTool(args: Record<string, unknown>): Promise<ToolResult> {
+  const name = strArg(args, "command") ?? "";
+  if (!name) throw new Error("which requires command");
+  if (/[\\/]/.test(name)) {
+    throw new Error("which expects a bare command name (no path separators)");
+  }
+  const dirs = (process.env["PATH"] ?? "").split(path.delimiter).filter((d) => d.length > 0);
+  const extensions = process.platform === "win32" ? [".exe", ".cmd", ".bat", "", ".com"] : [""];
+  for (const dir of dirs) {
+    for (const ext of extensions) {
+      const candidate = path.join(dir, name + ext);
+      try {
+        const st = await fs.stat(candidate);
+        if (st.isFile()) {
+          return textResult(`${name} -> ${candidate}`, { path: candidate });
+        }
+      } catch {
+        // not here — keep scanning PATH
+      }
+    }
+  }
+  return textResult(`not found in PATH: ${name}`, { path: undefined });
+}
+
+/** Read ONE environment variable by exact NAME (medium: env may hold secrets). */
+async function envTool(args: Record<string, unknown>): Promise<ToolResult> {
+  const name = strArg(args, "name") ?? "";
+  if (!name || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
+    throw new Error("env requires a variable NAME (letters, digits, underscore)");
+  }
+  const value = process.env[name];
+  if (value === undefined) {
+    return textResult(`${name} is not set`, { set: false });
+  }
+  const display = value.length > 512 ? `${value.slice(0, 512)}… (${value.length} chars)` : value;
+  return textResult(`${name}=${display}`, { set: true, length: value.length });
+}
+
 export const sysTools: ToolDefinition[] = [
   {
     name: "sys.info",
@@ -138,5 +201,44 @@ export const sysTools: ToolDefinition[] = [
       { name: "limit", type: "number", description: "How many rows (default 15)", required: false },
     ],
     run: procTool,
+  },
+  {
+    name: "sys.datetime",
+    description: "Current date/time: local, ISO, epoch ms, timezone with UTC offset",
+    risk: "low",
+    owner: "core",
+    params: [],
+    run: datetimeTool,
+  },
+  {
+    name: "sys.which",
+    description:
+      "Resolve a bare command name to its absolute PATH location (read-only, no execution)",
+    risk: "low",
+    owner: "core",
+    params: [
+      {
+        name: "command",
+        type: "string",
+        description: "Bare command name (no path separators)",
+        required: true,
+      },
+    ],
+    run: whichTool,
+  },
+  {
+    name: "sys.env",
+    description: "Read one environment variable by exact NAME (medium risk: env may hold secrets)",
+    risk: "medium",
+    owner: "core",
+    params: [
+      {
+        name: "name",
+        type: "string",
+        description: "Variable name (letters, digits, underscore)",
+        required: true,
+      },
+    ],
+    run: envTool,
   },
 ];

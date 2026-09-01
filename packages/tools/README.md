@@ -14,9 +14,10 @@ Everything is exported from the package barrel (`src/index.ts`):
   built-in tool family exactly once at import-call time (idempotent)
 - **Registry** (`src/registry.ts`) — `registerTools()`, `getTool()`,
   `allTools()`, `resetRegistry()`, `renderToolCatalog()`
-- **Tool families** — `fileTools` (find/stat/tree/rename/replace/...),
-  `sysTools` (info/disk/proc), `netTools` (fetch with SSRF guard/ip/ping/
-  port), `textTools` (count/search/replace)
+- **Tool families** — `fileTools` (read/list/find/stat/tree/rename),
+  `sysTools` (info/disk/proc/datetime/which/env — `env` is medium risk
+  because environment values may hold secrets), `netTools` (fetch with SSRF
+  guard/ip/ping/port), `textTools` (count/search/replace/hash)
 
 Tool behavior contract: pure functions over `ToolDefinition` with typed
 `ToolParamSpec` parameters; `net.fetch` refuses private/loopback/link-local

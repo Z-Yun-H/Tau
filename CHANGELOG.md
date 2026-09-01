@@ -31,6 +31,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   textarea. Server: `GET /api/history` accepts `?limit=` (default 20,
   cap 500). No new runtime dependencies; the safety pipeline is untouched —
   the WebUI remains a front door over the same `runPlan()` channel. (#37)
+- **Six new read-only tools push Tau toward a local harness.** The AI
+  planner could never read a file's content — the biggest harness gap —
+  so `file.read` lands first: line-numbered output, `offset`/`limit`
+  windowing, binary refusal, 2MB cap. Alongside it: `file.list` (single-
+  directory listing, non-recursive), `sys.datetime` (local/ISO/epoch/
+  timezone), `sys.which` (bare command name → absolute PATH location, no
+  execution), `sys.env` (one variable by exact NAME — medium risk, env may
+  hold secrets) and `text.hash` (sha256/sha1 of a file or literal, exactly
+  one input). All registry-driven with the same risk semantics and no
+  delete/write primitives; each has CLI wiring (`tau file read|list`,
+  `tau sys datetime|which|env`, `tau text hash`) and success/validation
+  tests. The binary sniff moved to `file.ts` and is now shared with the
+  text family. (#38)
 
 - **AI collaboration norms v2 (updated 2026-09) + daily changelog folder.**
   `AGENTS/collaboration.md` now transcribes the maintainer's updated

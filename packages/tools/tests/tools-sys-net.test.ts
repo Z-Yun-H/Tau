@@ -77,3 +77,54 @@ describe("net.ping", () => {
     );
   });
 });
+
+describe("sys.datetime", () => {
+  it("reports ISO, epoch and timezone", async () => {
+    const result = await getTool("sys.datetime")!.run({});
+    expect(result.text).toContain("iso: ");
+    expect(result.text).toContain("epoch_ms: ");
+    expect(result.text).toContain("timezone: ");
+    const data = result.data as { iso: string; epochMs: number };
+    expect(Number.isFinite(data.epochMs)).toBe(true);
+    expect(Number.isNaN(Date.parse(data.iso))).toBe(false);
+  });
+});
+
+describe("sys.which", () => {
+  it("resolves a command injected into PATH and reports honest misses", async () => {
+    const os = await import("node:os");
+    const fsMod = await import("node:fs");
+    const nodePath = await import("node:path");
+    const dir = fsMod.mkdtempSync(nodePath.join(os.tmpdir(), "tau-which-"));
+    fsMod.writeFileSync(nodePath.join(dir, "tau-which-target"), "#!/bin/sh\n");
+    const saved = process.env["PATH"];
+    process.env["PATH"] = `${dir}${nodePath.delimiter}${saved ?? ""}`;
+    try {
+      const hit = await getTool("sys.which")!.run({ command: "tau-which-target" });
+      expect(hit.text).toContain(nodePath.join(dir, "tau-which-target"));
+      const miss = await getTool("sys.which")!.run({ command: "tau-which-nope-xyz" });
+      expect(miss.text).toContain("not found in PATH");
+    } finally {
+      process.env["PATH"] = saved;
+      fsMod.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects path separators", async () => {
+    await expect(getTool("sys.which")!.run({ command: "a/b" })).rejects.toThrow(
+      /bare command name/i,
+    );
+  });
+});
+
+describe("sys.env", () => {
+  it("reads one variable, reports unset honestly, rejects bad names", async () => {
+    process.env["TAU_TEST_ENV_VAR"] = "hello-world";
+    const hit = await getTool("sys.env")!.run({ name: "TAU_TEST_ENV_VAR" });
+    expect(hit.text).toContain("TAU_TEST_ENV_VAR=hello-world");
+    delete process.env["TAU_TEST_ENV_VAR"];
+    const miss = await getTool("sys.env")!.run({ name: "TAU_TEST_ENV_VAR" });
+    expect(miss.text).toContain("is not set");
+    await expect(getTool("sys.env")!.run({ name: "not a name" })).rejects.toThrow(/NAME/i);
+  });
+});

@@ -60,6 +60,50 @@ describe("file.find", () => {
   });
 });
 
+describe("file.read", () => {
+  it("reads a text file with line numbers and honors offset/limit", async () => {
+    fs.writeFileSync("poem.txt", "alpha\nbeta\ngamma\ndelta\n");
+    const all = await getTool("file.read")!.run({ path: "poem.txt" });
+    expect(all.text).toContain("1  alpha");
+    expect(all.text).toContain("4  delta");
+    const windowed = await getTool("file.read")!.run({ path: "poem.txt", offset: 2, limit: 2 });
+    expect(windowed.text).toContain("2  beta");
+    expect(windowed.text).toContain("3  gamma");
+    expect(windowed.text).not.toContain("4  delta");
+    expect(windowed.text).toContain("(truncated");
+  });
+
+  it("refuses directories, missing paths and binary files", async () => {
+    fs.mkdirSync("adir");
+    await expect(getTool("file.read")!.run({ path: "adir" })).rejects.toThrow(/directory/i);
+    await expect(getTool("file.read")!.run({ path: "nope.txt" })).rejects.toThrow(
+      /does not exist/i,
+    );
+    fs.writeFileSync("blob.bin", Buffer.from([0x7f, 0x00, 0x01]));
+    await expect(getTool("file.read")!.run({ path: "blob.bin" })).rejects.toThrow(/binary/i);
+  });
+});
+
+describe("file.list", () => {
+  it("lists one directory non-recursively, hiding dotfiles by default", async () => {
+    fs.mkdirSync("pkg");
+    fs.writeFileSync("pkg/a.ts", "export {};");
+    fs.writeFileSync(".hidden", "x");
+    const result = await getTool("file.list")!.run({ path: "." });
+    expect(result.text).toContain("pkg/");
+    expect(result.text).not.toContain(".hidden");
+    const withHidden = await getTool("file.list")!.run({ path: ".", includeHidden: true });
+    expect(withHidden.text).toContain(".hidden");
+  });
+
+  it("throws on non-directories", async () => {
+    fs.writeFileSync("plain.txt", "x");
+    await expect(getTool("file.list")!.run({ path: "plain.txt" })).rejects.toThrow(
+      /not a directory/i,
+    );
+  });
+});
+
 describe("file.tree", () => {
   it("renders a pruned tree", async () => {
     fs.mkdirSync("pkg/lib", { recursive: true });

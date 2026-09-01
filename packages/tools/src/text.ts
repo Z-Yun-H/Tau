@@ -8,7 +8,8 @@ import fs from "node:fs";
 import path from "node:path";
 import type { ToolDefinition, ToolResult } from "@tau/core";
 import { boolArg, numArg, strArg, textResult } from "./registry.js";
-import { globToRegex, PRUNE_DIRS } from "./file.js";
+import { globToRegex, isProbablyBinary, PRUNE_DIRS } from "./file.js";
+import crypto from "node:crypto";
 
 /**
  * text.* — searching and controlled text mutation inside files.
@@ -39,12 +40,6 @@ function collectFiles(root: string, glob: string, limit: number): string[] {
   if (fs.statSync(root).isFile()) return [root];
   walk(root, 0);
   return out;
-}
-
-function isProbablyBinary(buffer: Buffer): boolean {
-  const slice = buffer.subarray(0, Math.min(buffer.length, 1024));
-  for (const byte of slice) if (byte === 0) return true;
-  return false;
 }
 
 async function searchTool(args: Record<string, unknown>): Promise<ToolResult> {
@@ -178,6 +173,39 @@ async function countTool(args: Record<string, unknown>): Promise<ToolResult> {
   );
 }
 
+/** Hash a file or a literal string — sha256/sha1 only, size-capped. */
+async function hashTool(args: Record<string, unknown>): Promise<ToolResult> {
+  const algo = strArg(args, "algorithm", "sha256") ?? "sha256";
+  if (algo !== "sha256" && algo !== "sha1") {
+    throw new Error("algorithm must be sha256 or sha1");
+  }
+  const pathArg = strArg(args, "path");
+  const textArg = strArg(args, "text");
+  if (Boolean(pathArg) === Boolean(textArg)) {
+    throw new Error("hash requires exactly one of path or text");
+  }
+
+  if (pathArg !== undefined) {
+    const target = path.resolve(process.cwd(), pathArg);
+    let st: fs.Stats;
+    try {
+      st = fs.statSync(target);
+    } catch {
+      throw new Error(`Path does not exist: ${target}`);
+    }
+    if (st.isDirectory()) throw new Error(`path is a directory: ${target}`);
+    if (st.size > 50_000_000) throw new Error(`file too large to hash (>50MB): ${target}`);
+    const digest = crypto.createHash(algo).update(fs.readFileSync(target)).digest("hex");
+    return textResult(`${algo}  ${digest}  ${pathArg}`, { algorithm: algo, digest });
+  }
+
+  const digest = crypto
+    .createHash(algo)
+    .update(textArg ?? "", "utf8")
+    .digest("hex");
+  return textResult(`${algo}  ${digest}`, { algorithm: algo, digest });
+}
+
 export const textTools: ToolDefinition[] = [
   {
     name: "text.search",
@@ -207,6 +235,33 @@ export const textTools: ToolDefinition[] = [
       { name: "execute", type: "boolean", description: "false = dry run", required: false },
     ],
     run: replaceTool,
+  },
+  {
+    name: "text.hash",
+    description: "sha256/sha1 digest of a file or a literal string (exactly one of path/text)",
+    risk: "low",
+    owner: "core",
+    params: [
+      {
+        name: "path",
+        type: "string",
+        description: "File to hash (mutually exclusive with text)",
+        required: false,
+      },
+      {
+        name: "text",
+        type: "string",
+        description: "String to hash (mutually exclusive with path)",
+        required: false,
+      },
+      {
+        name: "algorithm",
+        type: "string",
+        description: "sha256 (default) or sha1",
+        required: false,
+      },
+    ],
+    run: hashTool,
   },
   {
     name: "text.count",

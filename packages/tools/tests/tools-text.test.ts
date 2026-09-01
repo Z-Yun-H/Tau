@@ -98,3 +98,32 @@ describe("text.count", () => {
     expect(result.text).toContain("unique words: 3");
   });
 });
+
+describe("text.hash", () => {
+  it("hashes a literal string (sha256 and sha1)", async () => {
+    const sha256 = await getTool("text.hash")!.run({ text: "abc" });
+    expect(sha256.text).toContain(
+      "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+    );
+    const sha1 = await getTool("text.hash")!.run({ text: "abc", algorithm: "sha1" });
+    expect(sha1.text).toContain("a9993e364706816aba3e25717850c26c9cd0d89d");
+  });
+
+  it("hashes a file by path", async () => {
+    writeFile("h.txt", "abc");
+    const result = await getTool("text.hash")!.run({ path: "h.txt" });
+    expect(result.text).toContain(
+      "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+    );
+  });
+
+  it("requires exactly one input and a known algorithm", async () => {
+    await expect(getTool("text.hash")!.run({})).rejects.toThrow(/exactly one/i);
+    await expect(getTool("text.hash")!.run({ text: "a", path: "b.txt" })).rejects.toThrow(
+      /exactly one/i,
+    );
+    await expect(getTool("text.hash")!.run({ text: "a", algorithm: "md5" })).rejects.toThrow(
+      /sha256 or sha1/i,
+    );
+  });
+});
