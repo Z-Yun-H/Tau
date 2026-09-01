@@ -64,17 +64,15 @@ async function findTool(args: Record<string, unknown>): Promise<ToolResult> {
       if (!includeHidden && entry.name.startsWith(".")) continue;
       if (!includeJunk && entry.isDirectory() && PRUNE_DIRS.has(entry.name)) continue;
       const full = path.join(dir, entry.name);
+      const typeMatches =
+        type === "any" ||
+        (type === "dir" && entry.isDirectory()) ||
+        (type === "file" && entry.isFile());
       if (entry.isDirectory()) {
-        if (regex.test(entry.name + "/")) results.push(rel(root, full) + "/");
+        if (typeMatches && regex.test(entry.name + "/")) results.push(rel(root, full) + "/");
         walk(full, depth + 1);
-      } else if (entry.isFile()) {
-        const matchesType =
-          type === "any" ||
-          (type === "file" && entry.isFile()) ||
-          (type === "dir" && entry.isDirectory());
-        if (matchesType && regex.test(entry.name)) {
-          results.push(rel(root, full));
-        }
+      } else if (entry.isFile() && typeMatches && regex.test(entry.name)) {
+        results.push(rel(root, full));
       }
     }
   };

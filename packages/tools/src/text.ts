@@ -8,16 +8,14 @@ import fs from "node:fs";
 import path from "node:path";
 import type { ToolDefinition, ToolResult } from "@tau/core";
 import { boolArg, numArg, strArg, textResult } from "./registry.js";
-import { globToRegex } from "./file.js";
-import { isProbablyBinary } from "./file.js";
+import { globToRegex, isProbablyBinary, PRUNE_DIRS } from "./file.js";
 import crypto from "node:crypto";
 
 /**
  * text.* — searching and controlled text mutation inside files.
  * replace is dry-run by default and never touches .git/, node_modules/, binaries.
+ * Directory pruning shares the file family's PRUNE_DIRS (single source of truth).
  */
-
-const SKIP_DIRS = new Set([".git", "node_modules", "dist", ".tau", "coverage"]);
 
 function collectFiles(root: string, glob: string, limit: number): string[] {
   const regex = globToRegex(glob);
@@ -33,7 +31,7 @@ function collectFiles(root: string, glob: string, limit: number): string[] {
     for (const entry of entries) {
       if (out.length >= limit) return;
       if (entry.isDirectory()) {
-        if (!SKIP_DIRS.has(entry.name)) walk(path.join(dir, entry.name), depth + 1);
+        if (!PRUNE_DIRS.has(entry.name)) walk(path.join(dir, entry.name), depth + 1);
         continue;
       }
       if (entry.isFile() && regex.test(entry.name)) out.push(path.join(dir, entry.name));

@@ -7,6 +7,7 @@
  */
 import { computed } from "vue";
 import type { PlanCardState } from "../composables/plan-flow.js";
+import { renderMarkdown } from "../lib/markdown.js";
 import RiskBadge from "./RiskBadge.vue";
 import StepRow from "./StepRow.vue";
 
@@ -20,20 +21,22 @@ const emit = defineEmits<{ run: [card: PlanCardState]; discard: [card: PlanCardS
 const runnable = computed(() => props.card.review.verdict !== "deny" && !props.card.running);
 const issues = computed(() => props.card.review.issues ?? []);
 const enterDelay = computed(() => `${Math.min((props.enterIndex ?? 0) * 40, 200)}ms`);
+const explanation = computed(() =>
+  renderMarkdown(props.card.plan.explanation || `“${props.card.intent}”`),
+);
 </script>
 
 <template>
   <article class="tau-card plan-enter">
     <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
       <span class="font-mono text-[11px] uppercase tracking-1px text-tau-faint">plan</span>
-      <span class="text-tau-text text-[13px] font-medium min-w-0">
-        {{ card.plan.explanation || `“${card.intent}”` }}
-      </span>
       <RiskBadge :level="card.review.overallRisk" />
       <span class="font-mono text-[11px] text-tau-faint">
         via {{ card.providerLabel || card.provider }}
       </span>
     </div>
+    <!-- markdown preview (escaped-first renderer, see lib/markdown.ts) -->
+    <div class="md-body md-lead" v-html="explanation" />
 
     <ol
       v-if="card.plan.steps?.length"

@@ -7,6 +7,30 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Added
 
+- **Compound-request decomposition codified in the AI collaboration norms.**
+  A maintainer request spanning multiple change types or subsystems must be
+  auto-decomposed into independently reviewable one-Issue-one-PR units
+  BEFORE implementation, with the decomposition plan published first (the
+  Issues are the publication); ordering follows norms/docs → refactor →
+  feature, and stacked units must declare their merge order.
+  `AGENTS/collaboration.md` §3 gains the normative subsection (+ English
+  TL;DR and pre-task self-check entries); `AGENTS.md` gains golden rule 9
+  plus a change-checklist item. (#35)
+- **WebUI agent mode — conversations, threads, keyboard, markdown preview.**
+  The chat stream becomes a real conversation: user bubbles + assistant
+  turns with the plan card and result card in the same turn; multiple
+  conversations persist locally (`localStorage` threads — server history
+  stays the durable record) with a new/switch/delete sidebar (two-step
+  inline delete) that becomes an overlay drawer on narrow screens. Full
+  keyboard contract: Enter send, Shift+Enter newline, Ctrl/⌘+K focus,
+  `?` shortcuts panel, Alt+N new thread, Alt+S reference-rail toggle, Esc
+  close — documented in-app via ShortcutsModal and the composer hint row.
+  Results and plan explanations preview as markdown via a dependency-free,
+  escape-first renderer (`client/lib/markdown.ts`) with rendered/raw
+  toggle, one-click copy and expand; the composer is an auto-growing
+  textarea. Server: `GET /api/history` accepts `?limit=` (default 20,
+  cap 500). No new runtime dependencies; the safety pipeline is untouched —
+  the WebUI remains a front door over the same `runPlan()` channel. (#37)
 - **Six new read-only tools push Tau toward a local harness.** The AI
   planner could never read a file's content — the biggest harness gap —
   so `file.read` lands first: line-numbered output, `offset`/`limit`
@@ -37,6 +61,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   `.claude/skills/tau-test`) were synced accordingly. (#31)
 
 ### Fixed
+
+- **`file.find --type file` no longer lists directories.** The type filter
+  in `findTool` carried an unreachable branch (`type === "dir"` was checked
+  inside the isFile-only path) and matching directories were pushed
+  unconditionally, so `tau file find --type file` still returned
+  directories. The filter now applies to files and directories
+  independently; the dead branch is gone and `type=file` / `type=dir` have
+  regression tests. Also deduplicated the prune-set: the text family now
+  reuses `file.ts`'s exported `PRUNE_DIRS` instead of a drifted-in-waiting
+  duplicate `SKIP_DIRS` (same set, behavior unchanged). (#36)
 
 - **`pnpm build` now also builds `@tau/tui` and `@tau/webui`.** After the
   unified tsdown workspace build landed, the root build script was just

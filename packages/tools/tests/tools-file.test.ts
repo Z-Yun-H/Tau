@@ -42,6 +42,22 @@ describe("file.find", () => {
       /does not exist/i,
     );
   });
+
+  it("filters by type=file (directories excluded even when the glob matches them)", async () => {
+    fs.mkdirSync("sub");
+    fs.writeFileSync("keep.ts", "x");
+    const result = await getTool("file.find")!.run({ pattern: "**", type: "file" });
+    expect(result.text).toContain("keep.ts");
+    expect(result.text).not.toContain("sub/");
+  });
+
+  it("filters by type=dir (files excluded)", async () => {
+    fs.mkdirSync("sub");
+    fs.writeFileSync("keep.ts", "x");
+    const result = await getTool("file.find")!.run({ pattern: "**", type: "dir" });
+    expect(result.text).toContain("sub/");
+    expect(result.text).not.toContain("keep.ts");
+  });
 });
 
 describe("file.read", () => {
