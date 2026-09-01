@@ -1,0 +1,33 @@
+{
+  "name": "@tau/markdown",
+  "version": "0.1.0",
+  "description": "Shared markdown rendering for Tau front doors — ANSI output for the TUI, escape-first HTML for the WebUI (parser: marked)",
+  "license": "MIT",
+  "author": "Z-Yun-H",
+  "type": "module",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "development": "./src/index.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown"
+  },
+  "devDependencies": {
+    "tsdown": "catalog:"
+  },
+  "dependencies": {
+    "chalk": "catalog:",
+    "marked": "catalog:"
+  }
+}
