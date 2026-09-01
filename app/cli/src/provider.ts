@@ -10,15 +10,17 @@ import { theme } from "@tau/ui";
 import { selectFromList, promptHidden } from "@tau/ui";
 import { loadConfig, maskSecret, setConfigValue } from "@tau/core";
 import { configPath } from "@tau/core";
-import { getProvider, providerNames } from "@tau/ai";
-import {
-  apiKeySource,
-  cachedModels,
-  providerEnvKey,
-  refreshProviderModels,
-  type ModelCatalog,
-} from "@tau/ai";
+import type { ModelCatalog } from "@tau/ai";
+import type * as aiModule from "@tau/ai";
 import { globalOptions } from "./util.js";
+
+/**
+ * LAZY: @tau/ai (the zod + provider-registry graph) loads only when a
+ * provider subcommand actually runs — every other `tau` invocation skips it.
+ * Type imports stay static (erased at runtime, zero cost).
+ */
+let aiPromise: Promise<typeof aiModule> | null = null;
+const ai = (): Promise<typeof aiModule> => (aiPromise ??= import("@tau/ai"));
 
 /**
  * tau provider — the model-selection mode.
@@ -35,9 +37,9 @@ export function registerProviderCommands(program: Command): void {
   provider
     .command("list")
     .description("Show every registered provider (key source, active model, cached catalog)")
-    .action((_opts, command) => {
+    .action(async (_opts, command) => {
       const { json } = globalOptions(command);
-      printProviderList(json);
+      await printProviderList(json);
     });
 
   provider
@@ -102,7 +104,11 @@ export function registerProviderCommands(program: Command): void {
  * Shared helpers
  * ------------------------------------------------------------------ */
 
-function requireProvider(name: string): NonNullable<ReturnType<typeof getProvider>> {
+type AiModule = Awaited<ReturnType<typeof ai>>;
+type Provider = NonNullable<ReturnType<AiModule["getProvider"]>>;
+
+async function requireProvider(name: string): Promise<Provider> {
+  const { getProvider, providerNames } = await ai();
   const provider = getProvider(name);
   if (!provider) {
     throw new Error(
@@ -182,6 +188,7 @@ async function refreshAndReport(
   quiet = false,
 ): Promise<ModelCatalog | null> {
   try {
+    const { refreshProviderModels } = await ai();
     const catalog = await refreshProviderModels(name, { force });
     if (quiet) return catalog; // JSON mode: warnings ride in the payload
     if (catalog.source === "unsupported") {
@@ -210,7 +217,8 @@ async function refreshAndReport(
  * Subcommands
  * ------------------------------------------------------------------ */
 
-function printProviderList(json: boolean): void {
+async function printProviderList(json: boolean): Promise<void> {
+  const { getProvider, providerNames, apiKeySource, cachedModels, providerEnvKey } = await ai();
   const config = loadConfig();
   const rows = providerNames().map((name) => {
     const label = getProvider(name)?.label ?? name;
@@ -262,7 +270,7 @@ async function setKey(
   key: string | undefined,
   options: { stdin?: boolean; refresh?: boolean },
 ): Promise<void> {
-  requireProvider(name);
+  await requireProvider(name);
   if (KEYLESS[name]) {
     throw new Error(KEYLESS[name] ?? "This provider needs no API key.");
   }
@@ -305,9 +313,10 @@ async function printModels(
   json: boolean,
 ): Promise<void> {
   const target = name ?? loadConfig().provider;
-  requireProvider(target);
+  await requireProvider(target);
 
   if (options.offline) {
+    const { cachedModels } = await ai();
     const cache = cachedModels(target);
     if (cache.models.length === 0) {
       console.log(
@@ -340,7 +349,7 @@ async function printModels(
 }
 
 async function use(name: string, model: string | undefined): Promise<void> {
-  requireProvider(name);
+  await requireProvider(name);
   setConfigValue("provider", name);
   console.log(theme.ok(`Default provider set to "${name}".`));
 

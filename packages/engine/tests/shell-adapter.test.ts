@@ -120,10 +120,11 @@ describe("runShell — spawn paths", () => {
     expect(out.output).toContain("auto-still-works");
   });
 
-  it("degrades gracefully when the forced shell is absent", async () => {
+  it("executes through real pwsh when present, degrades gracefully when absent", async () => {
+    // Probe with a hard limit so a broken pwsh can never hang the suite.
     let pwshAvailable = false;
     try {
-      execFileSync("pwsh", ["-v"], { stdio: "ignore" });
+      execFileSync("pwsh", ["-v"], { stdio: "ignore", timeout: 15_000 });
       pwshAvailable = true;
     } catch {
       pwshAvailable = false;
@@ -136,7 +137,7 @@ describe("runShell — spawn paths", () => {
       expect(outcome.ok).toBe(false);
       expect(outcome.output).toContain("spawn error");
     }
-  });
+  }, 30_000); // real pwsh cold-start on CI runners can exceed the 5s default
 });
 
 describe("runPlan config wiring", () => {
