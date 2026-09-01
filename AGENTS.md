@@ -11,6 +11,10 @@ codebase.
 > fragments, merge policy). It is binding; violating it is a process
 > failure even when the code itself is correct.
 
+> **Per-tool skill routing:** for the designated SKILL.md of each dev tool
+> (build / test / release / skills / WebUI / tools / AI / plugins / TUI),
+> start from the root [`SKILL.md`](./SKILL.md) router.
+
 > Detailed rulebooks live in [`AGENTS/`](./AGENTS/). The split:
 > this file = what you must know in 60 seconds; AGENTS = what you need when
 > you actually touch a subsystem.

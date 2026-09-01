@@ -44,6 +44,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   `tau sys datetime|which|env`, `tau text hash`) and success/validation
   tests. The binary sniff moved to `file.ts` and is now shared with the
   text family. (#38)
+- **Unified root `SKILL.md` — one designated entry per dev tool.** The
+  repo-root `SKILL.md` (`tau-dev-router`) becomes the top of the SKILL.md
+  read chain: a routing table that maps every dev tool (build, test,
+  release, skill authoring, WebUI design, CLI tool modules, AI providers,
+  plugins, TUI) to its one designated L1/L2 skill file, its normative
+  `AGENTS/` spec, and a verified fast-path command, plus 15-second
+  essentials per tool, the placement model (root router above the three
+  knowledge layers), and a same-PR maintenance rule for skill
+  adds/removes. `AGENTS.md` gained the read-chain pointer;
+  `AGENTS/skills.md` codifies the root-router position and syncs the
+  inventory. (#43)
 
 - **AI collaboration norms v2 (updated 2026-09) + daily changelog folder.**
   `AGENTS/collaboration.md` now transcribes the maintainer's updated
