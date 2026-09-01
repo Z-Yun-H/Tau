@@ -31,7 +31,7 @@ export default defineConfig({
     target: "node20",
     minify: false,
     sourcemap: true,
-    rollupOptions: {
+    rolldownOptions: {
       output: { entryFileNames: "index.js" },
       external: [/^node:/, /^@tau\//],
     },
