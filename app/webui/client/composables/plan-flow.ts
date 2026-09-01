@@ -10,7 +10,7 @@
  * Nothing here bypasses the pipeline: plan comes from /api/plan, execution
  * from /api/execute — the same runPlan() channel the CLI uses.
  */
-import { computed, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { postJson, type PlanResponse } from "../lib/api.js";
 import { postNdjson, type StreamEvent } from "../lib/stream.js";
 import { useSession } from "./session.js";
@@ -185,18 +185,23 @@ export function usePlanFlow() {
     void (async () => {
       try {
         const data = await postJson<PlanResponse>("/api/plan", { intent });
-        thread.cards.push({
-          type: "plan",
-          id: nextId++,
-          intent: data.intent,
-          plan: data.plan,
-          review: data.review ?? { verdict: "allow", overallRisk: "low", issues: [] },
-          provider: data.provider,
-          providerLabel: data.providerLabel,
-          warnings: data.warnings ?? [],
-          running: false,
-          confirmHighRisk: false,
-        });
+        // reactive() so post-push mutations (card.running during execute)
+        // go through the proxy — raw-object writes bypass reactivity and
+        // leave dependent computeds cached at their stale value.
+        thread.cards.push(
+          reactive({
+            type: "plan",
+            id: nextId++,
+            intent: data.intent,
+            plan: data.plan,
+            review: data.review ?? { verdict: "allow", overallRisk: "low", issues: [] },
+            provider: data.provider,
+            providerLabel: data.providerLabel,
+            warnings: data.warnings ?? [],
+            running: false,
+            confirmHighRisk: false,
+          }) as PlanCardState,
+        );
       } catch (error) {
         thread.cards.push({
           type: "error",
@@ -223,7 +228,11 @@ export function usePlanFlow() {
   async function runPlan(card: PlanCardState): Promise<void> {
     const thread = ownerOf(card);
     card.running = true;
-    const resultCard: ResultCardState = {
+    // reactive() so the streaming mutations below (step chunks, the
+    // authoritative result event, the streaming flag) trigger the render
+    // pipeline — raw writes bypass the proxy and the rendered markdown
+    // preview stays cached at its initial empty value.
+    const resultCard = reactive({
       type: "result",
       id: nextId++,
       status: "running",
@@ -231,7 +240,7 @@ export function usePlanFlow() {
       outcomes: [],
       intent: card.intent,
       streaming: true,
-    };
+    }) as ResultCardState;
     thread?.cards.push(resultCard);
     try {
       await postNdjson(

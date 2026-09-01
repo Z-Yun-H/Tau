@@ -212,6 +212,14 @@ powershell` — explicit pwsh runs `-NoLogo -NoProfile -NonInteractive
   session — confirm prompts ride the session readline through an answer
   slot; prompt text and y/yes, a/all, s/skip normalization are unchanged
   and nothing is auto-approved.
+- **WebUI streaming result card rendered an empty output body in the
+  default rendered view (found by the unit-8 screenshots, #71): plan-flow
+  kept mutating raw card objects after pushing them into the reactive
+  threads array, bypassing Vue's proxy — the rendered-markdown computed
+  stayed cached at its initial empty value forever.** Pushed plan and
+  result cards are now `reactive(...)` at creation, so stream chunks, the
+  authoritative result event, and the running/streaming flags all trigger
+  the render pipeline; the raw view, endpoints, and parser are untouched.
 - **Structure & redundancy audit (unit A of #45): zero deletable files —
   the redundancy was in manifests and prose, now cleaned.** Removed four
   unused dependency declarations (`@tau/ai`, `@tau/skills` from both
