@@ -10,7 +10,7 @@ import { getTool } from "@tau/tools";
 import { reviewPlan, scanShellCommand } from "./safety.js";
 import { executeStep, type StepOutcome } from "./executor.js";
 import { appendHistory } from "@tau/core";
-import type { Plan, RiskLevel } from "@tau/core";
+import type { Plan, PlanEvent, RiskLevel } from "@tau/core";
 
 /**
  * Session pipeline: plan -> safety review -> user confirmation -> execution -> history.
@@ -31,6 +31,11 @@ export interface RunPlanOptions {
   skipHistory?: boolean;
   /** Bypass interactive confirm (tests only — already-reviewed plans). */
   autoApproveAll?: boolean;
+  /**
+   * Optional lifecycle observer (streaming front doors). Absent = zero
+   * behavior change; present = exactly one terminal plan_end event, always.
+   */
+  onEvent?: (event: PlanEvent) => void;
 }
 
 export interface RunPlanResult {
@@ -78,12 +83,14 @@ export async function runPlan(
   plan: Plan,
   options: RunPlanOptions,
 ): Promise<RunPlanResult> {
+  const emit = options.onEvent ?? (() => {});
   const review = reviewPlan(plan);
 
   if (review.verdict === "deny") {
     if (!options.skipHistory) {
       appendHistory(intent, "plan", plan.steps, "denied", { provider: options.provider });
     }
+    emit({ type: "plan_end", status: "denied" });
     return { status: "denied", review, outcomes: [], output: renderReview(plan) };
   }
 
@@ -92,6 +99,7 @@ export async function runPlan(
   let approveAll = options.autoApproveAll === true;
   if (!approveAll && !options.assumeYes) {
     if (!interactive) {
+      emit({ type: "plan_end", status: "cancelled" });
       return {
         status: "cancelled",
         review,
@@ -108,6 +116,7 @@ export async function runPlan(
       if (!options.skipHistory) {
         appendHistory(intent, "plan", plan.steps, "cancelled", { provider: options.provider });
       }
+      emit({ type: "plan_end", status: "cancelled" });
       return { status: "cancelled", review, outcomes: [], output: "(cancelled by user)" };
     }
     if (answer === "all") approveAll = true;
@@ -130,6 +139,7 @@ export async function runPlan(
           skipped: true,
         });
         ok = false;
+        emit({ type: "step_end", index: i, ok: false, skipped: true });
         continue;
       }
       if (options.assumeYes && risk === "medium" && !options.allowMediumAutoApprove) {
@@ -139,11 +149,20 @@ export async function runPlan(
       }
     }
 
+    emit({ type: "step_start", index: i, step });
     const outcome = await executeStep(step, i, {
       timeoutSec: options.timeoutSec,
       gate: () => allowed,
+      onOutput: (chunk) => emit({ type: "step_output", index: i, chunk }),
     });
     outcomes.push(outcome);
+    emit({
+      type: "step_end",
+      index: i,
+      ok: outcome.ok,
+      exitCode: outcome.exitCode,
+      skipped: outcome.skipped,
+    });
     if (outcome.output && !outcome.skipped) {
       console.log(outcome.output);
     }
@@ -161,6 +180,7 @@ export async function runPlan(
       provider: options.provider,
     });
   }
+  emit({ type: "plan_end", status });
   return { status, review, outcomes, output: outcomes.map((o) => o.output).join("\n") };
 }
 
