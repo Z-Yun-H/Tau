@@ -29,7 +29,7 @@ import { readFile } from "node:fs/promises";
 import { realpathSync } from "node:fs";
 import { loadConfig } from "@tau/core";
 import { renderPlan, renderReview, runPlan } from "@tau/engine";
-import { confirm, theme } from "@tau/ui";
+import { theme, type ConfirmAnswer } from "@tau/ui";
 import { detectGraphicsProtocol, metadataCard, readImage, renderImage } from "@tau/ui";
 import { renderToAnsi, type AnsiTheme } from "@tau/markdown";
 import {
@@ -101,8 +101,18 @@ async function withSpinner<T>(label: string, fn: () => Promise<T>): Promise<T> {
   }
 }
 
-/** Handle one REPL line. Returns true when the session should end. */
-async function handleLine(raw: string): Promise<boolean> {
+/**
+ * Handle one REPL line. Returns true when the session should end.
+ *
+ * `confirmFn` injects the session's own confirm reader (same prompt and
+ * normalization as @tau/ui's confirm(), but riding THIS readline) — a second
+ * readline interface over the same stdin would double-echo every keystroke
+ * and leak the confirm answer back into the REPL as a phantom intent.
+ */
+async function handleLine(
+  raw: string,
+  confirmFn: (question: string) => Promise<ConfirmAnswer>,
+): Promise<boolean> {
   const line = raw.trim();
   if (!line) return false;
   const command = line.split(/\s+/)[0] ?? "";
@@ -228,7 +238,7 @@ async function handleLine(raw: string): Promise<boolean> {
       console.log(theme.error("Plan denied by safety review — nothing ran."));
       return false;
     }
-    const answer = await confirm("Run this plan? [y]es / [a]ll steps / [n]o");
+    const answer = await confirmFn("Run this plan? [y]es / [a]ll steps / [n]o");
     if (answer === "no") {
       console.log(theme.muted("(cancelled)"));
       return false;
@@ -281,13 +291,76 @@ export async function startTui(): Promise<void> {
     output: process.stdout,
     prompt: theme.brand("tau ❯ "),
   });
+
+  // Single-reader session: every completed line goes to exactly ONE reader —
+  // the open confirm prompt (answerSlot) when one is pending, the REPL queue
+  // otherwise. readline interfaces do not pause stdin between each other, so
+  // a second interface here would double-echo every keystroke and queue the
+  // confirm answer into the REPL as a phantom intent (seen in real pty
+  // captures: "yy" echoes, then the mock provider plans an intent "y").
+  let answerSlot: ((line: string) => void) | null = null;
+  const queue: string[] = [];
+  let draining = false;
+
+  /** Confirm on the session readline — same prompt and answer normalization
+   * as @tau/ui's confirm(), minus the competing interface. */
+  const confirmInSession = (question: string): Promise<ConfirmAnswer> =>
+    new Promise((resolve) => {
+      answerSlot = (line) => {
+        const normalized = line.trim().toLowerCase();
+        if (["y", "yes"].includes(normalized)) resolve("yes");
+        else if (["a", "all"].includes(normalized)) resolve("all");
+        else if (["s", "skip"].includes(normalized)) resolve("skip");
+        else resolve("no");
+      };
+      process.stdout.write(`${theme.warn("?")} ${question} `);
+    });
+
+  const drain = async (): Promise<void> => {
+    if (draining) return;
+    draining = true;
+    try {
+      while (queue.length > 0) {
+        const line = queue.shift() ?? "";
+        const stop = await handleLine(line, confirmInSession);
+        if (stop) {
+          rl.close();
+          return;
+        }
+        rl.prompt();
+      }
+    } finally {
+      draining = false;
+    }
+  };
+
+  rl.on("line", (line) => {
+    if (answerSlot) {
+      const settle = answerSlot;
+      answerSlot = null;
+      settle(line);
+      return;
+    }
+    queue.push(line);
+    void drain().catch((error) => {
+      rl.close();
+      console.error((error as Error).message);
+      process.exitCode = 1;
+    });
+  });
+
   rl.prompt();
-  for await (const line of rl) {
-    const stop = await handleLine(line);
-    if (stop) break;
-    rl.prompt();
-  }
-  rl.close();
+  return new Promise((resolve) => {
+    rl.on("close", () => {
+      // EOF / Ctrl+D while a confirm is open — settle as "no", never approve.
+      if (answerSlot) {
+        const settle = answerSlot;
+        answerSlot = null;
+        settle("");
+      }
+      resolve();
+    });
+  });
 }
 
 /**
