@@ -37,7 +37,7 @@
   },
   "scripts": {
     "dev": "tsx --conditions=development app/cli/src/index.ts",
-    "build": "tsdown",
+    "build": "tsdown && pnpm --filter @tau/tui build && pnpm --filter @tau/webui build",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint packages app",
     "lint:fix": "oxlint --fix packages app",
