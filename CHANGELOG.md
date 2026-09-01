@@ -7,6 +7,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Added
 
+- **Unified-merge & versioned-release norm for large refactors (collaboration
+  norms).** When a compound request amounts to a large refactor (3+ subsystems
+  or a version release as the deliverable), the decomposed unit PRs all target
+  an integration branch `release/vX.Y.Z-<slug>` and merge into it sequentially
+  (CI-gated, rebased), a release unit bumps workspace versions and archives
+  the changelog last, and ONE unified PR (integration branch → main) carries
+  the release notes and the full unit index — merged by a human maintainer.
+  Codified as `AGENTS.md` golden rule 10 (+ change-checklist item) and a new
+  normative subsection of `AGENTS/collaboration.md` §3 (+ English TL;DR and
+  pre-task self-check entries). (#53)
+
 - **Compound-request decomposition codified in the AI collaboration norms.**
   A maintainer request spanning multiple change types or subsystems must be
   auto-decomposed into independently reviewable one-Issue-one-PR units
