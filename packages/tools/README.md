@@ -23,6 +23,16 @@ Everything is exported from the package barrel (`src/index.ts`):
   hold secrets), `netTools` (fetch with SSRF guard/ip/ping/port),
   `textTools` (count/search/replace/hash — `replace` is
   `mutates + dryRunDefault`)
+- **Function-calling export** (`src/schema.ts`) — `functionTools()` renders
+  the registry as OpenAI-compatible `tools` entries (chat-completions
+  function-calling wire format), `toolParametersJsonSchema()` maps
+  `ToolParamSpec` → JSON Schema (`string[]` → array items, defaults ride in
+  the description), `functionNameFor()` / `toolNameFor()` map dotted names
+  to the wire-safe grammar (`file.find` → `file__find`; dots are invalid in
+  the OpenAI/DeepSeek function-name grammar) and fail fast on >64-char
+  names or collisions. Risk/mutates/dry-run tags ride in the function
+  description — the deterministic safety reviewer still grades every plan;
+  exporting a schema never bypasses it.
 
 Tool behavior contract: pure functions over `ToolDefinition` with typed
 `ToolParamSpec` parameters; the optional `mutates` / `dryRunDefault` flags

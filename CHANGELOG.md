@@ -5,6 +5,28 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+### Added
+
+- **Function-calling schema export for the tool layer.** `@tau/tools` now
+  renders the whole registry as OpenAI-compatible `tools` entries
+  (`functionTools()`), so any OpenAI-compatible backend can bind Tau's tools
+  natively via the function-calling wire format instead of parsing the text
+  catalog. Parameter specs map to strict JSON Schema (`string[]` → typed
+  arrays, defaults surfaced in descriptions, `additionalProperties: false`),
+  dotted tool names map to the wire-safe function-name grammar
+  (`file.find` → `file__find`, reversible), and risk / mutates / dry-run
+  tags ride in each function description. Exporting a schema never bypasses
+  the deterministic safety reviewer. The text catalog and its plan contract
+  are byte-identical to 0.2.x.
+- **Production-grade provider HTTP hardening.** The shared `chatJSON` helper
+  now returns typed `ProviderHttpError`s (status, truncated body, retryable
+  verdict) and retries transient failures — 429/500/502/503/504 and
+  connection errors — with bounded exponential backoff + jitter, honoring a
+  numeric `Retry-After` header (capped at 10 s). Non-transient 4xx and
+  timeout aborts never retry. Worst-case wall time stays bounded:
+  `(retries + 1) × timeoutMs` plus capped backoff. 17 new tests pin the
+  retry semantics, the JSON Schema mapping, and the name grammar.
+
 ### Changed
 
 - **AI provider + agent tool catalog + UI display refactor.** Three coupled
