@@ -18,6 +18,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   (default 3, `--rounds`, hard ceiling 5) guard against runaway loops.
   Shell steps are now cancellable end-to-end (abort kills the whole
   process group), plumbing shared with the upcoming WebUI agent mode.
+- **Controlled file writes (`file.write` / `tau file write`).** The first
+  write primitive completes the agent's toolkit: overwrite or append text
+  files, DRY RUN by default (target, sizes, line-level diff stat, result
+  preview), 2 MB cap, binary and directory targets refused, and paths
+  hard-contained to the workspace — writes into OS-managed locations are
+  blocked outright and workspace escapes require interactive confirmation
+  (the safety reviewer re-checks every planned write path independently).
 
 ## 0.3.0 — 2026-09-02
 
