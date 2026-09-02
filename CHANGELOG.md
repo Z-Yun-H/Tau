@@ -5,6 +5,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+## 0.4.0 — 2026-09-02
+
+The agent release: Tau stops being a single-round diagnostician and
+becomes a **task agent**. One intent can now span up to five reviewed
+rounds — plan → run → reflect → repeat — with the provider deciding
+after each round whether the goal is done. The toolkit gains its first
+**write primitive** (`file.write`, workspace-contained, dry-run by
+default), the WebUI gains an **agent mode** with a live round timeline
+and per-round approval gates, and the server finally **speaks**: one log
+line per request with the AI's token cost attached. The safety model is
+untouched — every round still passes the same deterministic review, the
+same confirmation gates, and `runPlan()` remains the only execution
+channel.
+
 ### Added
 
 - **Multi-round agent loop (`tau goal`).** One intent, up to five reviewed
@@ -42,6 +56,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   additive `usage` field and goal streams annotate every `round_end`
   with that round's AI token cost: usage the wire always reported but
   Tau used to drop.
+- **Release pipeline** (`scripts/release.workflow.yml`). Pushing an
+  annotated `vX.Y.Z` tag runs the full gate on the tagged tree, verifies
+  every workspace package.json agrees with the tag, extracts the
+  version's section from this file as the release notes, and publishes
+  the GitHub Release — the publishing half of the release loop, fully
+  automated and human-triggered. Activation is one step: move the file to
+  `.github/workflows/release.yml` (the AI token cannot write workflow
+  paths, so the human maintainer ships it into place).
 
 ## 0.3.0 — 2026-09-02
 

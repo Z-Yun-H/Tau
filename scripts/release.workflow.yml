@@ -1,0 +1,102 @@
+name: Release
+
+# The publishing half of the release loop (issue #99, gap-report P0-A4):
+# a maintainer pushes an annotated tag `vX.Y.Z` and this workflow verifies
+# the exact tagged tree through the same gate CI uses, then creates the
+# GitHub Release with the version's notes extracted from CHANGELOG.md.
+#
+# Trust boundaries:
+# - The tag is pushed by a HUMAN maintainer (AGENTS/collaboration.md §3:
+#   AI never merges the unified release PR, and it never tags either).
+# - The notes come verbatim from CHANGELOG.md — the release-layer doc is
+#   the single source; nothing here paraphrases it.
+# - `contents: write` is scoped to this workflow only.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  verify-and-release:
+    name: verify tag → GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      # Full pre-PR gate on the tagged tree — a release never ships from a
+      # commit that would not pass CI (root AGENTS.md golden rule 7).
+      - name: Lint (oxlint)
+        run: pnpm lint
+
+      - name: Format check (oxfmt)
+        run: pnpm format:check
+
+      - name: Typecheck (tsc --noEmit)
+        run: pnpm typecheck
+
+      - name: Build (unified tsdown workspace build)
+        run: pnpm build
+
+      - name: Tests + coverage (vitest)
+        run: pnpm test:cov
+
+      # Version consistency: every workspace package moves in lockstep, so
+      # the tag must equal the version declared in every package.json.
+      - name: Verify tag matches the workspace version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          DECLARED=$(node -p "require('./package.json').version")
+          if [ "$TAG" != "$DECLARED" ]; then
+            echo "::error::tag v$TAG != package.json version $DECLARED"
+            exit 1
+          fi
+          MISMATCHED=$(node -e "
+            const fs = require('fs');
+            const walk = (dir) => fs.readdirSync(dir, {withFileTypes: true}).flatMap(e => {
+              if (e.name === 'node_modules' || e.name.startsWith('.')) return [];
+              const p = dir + '/' + e.name;
+              return e.isDirectory() ? walk(p) : (e.name === 'package.json' ? [p] : []);
+            });
+            const bad = walk('.').filter(f => require('./' + f).version !== '$TAG');
+            if (bad.length) { console.error('version mismatch in: ' + bad.join(', ')); process.exit(1); }
+          ")
+          echo "all package.json versions = $TAG"
+
+      # Extract the tagged version's section from CHANGELOG.md as the
+      # release body (§8.3: the changelog IS the release-layer record).
+      - name: Extract release notes from CHANGELOG.md
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v ver="$VERSION" '
+            $0 ~ "^## " ver " " { found=1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md > RELEASE_NOTES.md
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "::error::no CHANGELOG.md section for version $VERSION"
+            exit 1
+          fi
+          head -5 RELEASE_NOTES.md
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file RELEASE_NOTES.md \
+            --verify-tag
