@@ -119,9 +119,34 @@ mock provider + tests + this file + README example.
    explains exactly what to install/export.
 4. Tests: request shaping + response parsing with a mocked `chatJSON`/fetch.
    Never hit real endpoints in CI. `BaseHttpProvider` behavior is covered
-   through its concrete subclasses (see `tests/base-provider.test.ts`).
+   through its concrete subclasses (see `tests/base-provider.test.ts`);
+   `chatJSON` retry/backoff semantics are pinned in
+   `tests/http-retry.test.ts` (stubbed fetch, injected sleep — no real
+   waiting, no network).
 5. Update README (both languages) provider table + `tau config list` output
    if it changes.
+
+## Provider HTTP hardening (chatJSON contract)
+
+`chatJSON` (`providers/http.ts`) is the production seam for non-streaming
+HTTP providers:
+
+- **Typed errors**: every non-2xx / network failure is a
+  `ProviderHttpError` (`status`, `bodySlice` ≤300 chars, `retryable`).
+- **Bounded retries**: 429/500/502/503/504 and connection errors retry
+  (default 2 retries → 3 attempts) with exponential backoff + ±20% jitter,
+  honoring a numeric `Retry-After` header capped at 10 s. Other 4xx and
+  timeout aborts never retry (retrying a timeout multiplies the wall-clock
+  wait — raise `providers.<name>.timeoutMs` instead). The timeout budget
+  applies per attempt; worst case is `(retries + 1) × timeoutMs` + capped
+  backoff.
+- **Message prefix**: error messages keep the test-pinned `HTTP <status>`
+  prefix (packages/ai/tests anchors `/HTTP 401/`).
+- **Function-calling bridge**: `functionTools()` in `@tau/tools` renders the
+  registry as OpenAI-compatible `tools` entries (dotted names mapped to the
+  wire-safe grammar via `functionNameFor`, `file.find` → `file__find`); a
+  provider may bind tools natively without touching `renderToolCatalog` —
+  the text catalog and its plan contract stay byte-identical.
 
 ## Provider notes — deepseek (harness adapter + built-in fallback)
 
