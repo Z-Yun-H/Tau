@@ -42,6 +42,11 @@ describe("renderToolCatalog", () => {
     expect(replaceLine).toBeDefined();
     expect(replaceLine).toContain("mutates");
     expect(replaceLine).toContain("dry-run-default");
+    // v0.4.0: file.write joins the mutating family with the same tags.
+    const writeLine = catalog.split("\n").find((l) => l.startsWith("- file.write "));
+    expect(writeLine).toBeDefined();
+    expect(writeLine).toContain("mutates");
+    expect(writeLine).toContain("dry-run-default");
   });
 
   it("does NOT tag read-only tools with mutates", () => {
@@ -68,8 +73,9 @@ describe("renderToolCatalog", () => {
 describe("catalogSummary", () => {
   it("reports tool/family counts and the read/mut split", () => {
     const summary = catalogSummary();
-    // 4 core families (file/sys/net/text); 2 mutates (file.rename, text.replace).
-    expect(summary).toMatch(/\d+ tools across 4 families \(\d+ read \/ 2 mutates\)/);
+    // 4 core families (file/sys/net/text); 3 mutates (file.rename,
+    // text.replace, and v0.4.0's file.write).
+    expect(summary).toMatch(/\d+ tools across 4 families \(\d+ read \/ 3 mutates\)/);
   });
 
   it("degrades to a zero-count line when the registry is empty", () => {

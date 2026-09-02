@@ -42,20 +42,20 @@ around: **the AI proposes, deterministic code disposes.**
 
 ## Features
 
-| Area           | What you get                                                                                                                   |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `tau ask`      | NL intent → provider plan → safety review → confirm UI → execution → history                                                   |
-| `tau goal`     | multi-round agent loop: plan → run → reflect → repeat (round cap, per-round safety review, same confirmation gates)            |
-| `tau file`     | glob find (prunes node_modules), tree, stat, line-numbered read (offset/limit), dir list, regex batch rename (dry-run default) |
-| `tau sys`      | OS/CPU/memory info, disk usage, top processes, datetime (local/ISO/epoch/tz), which, env lookup (one name, medium risk)        |
-| `tau net`      | TCP port check, ping, SSRF-guarded fetch, local IPs                                                                            |
-| `tau text`     | regex search, project-wide replace (dry-run default), line/word stats, sha256/sha1 hash                                        |
-| `tau skill`    | SKILL.md command packs: list/show/new/validate                                                                                 |
-| `tau plugin`   | MCP servers as tool sources: dsh, VS Code, filesystem, ... (list/add/remove/tools)                                             |
-| `tau history`  | everything runs are recorded; inspect, replay, clear                                                                           |
-| `tau alias`    | persistent command aliases (`tau ll` → anything)                                                                               |
-| `tau provider` | API keys + live model discovery: set a key, models auto-refresh, pick interactively                                            |
-| `tau config`   | provider, timeout, risk policy — stored under `$TAU_HOME`                                                                      |
+| Area           | What you get                                                                                                                                                                      |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tau ask`      | NL intent → provider plan → safety review → confirm UI → execution → history                                                                                                      |
+| `tau goal`     | multi-round agent loop: plan → run → reflect → repeat (round cap, per-round safety review, same confirmation gates)                                                               |
+| `tau file`     | glob find (prunes node_modules), tree, stat, line-numbered read (offset/limit), dir list, regex batch rename (dry-run default), text write (workspace-contained, dry-run default) |
+| `tau sys`      | OS/CPU/memory info, disk usage, top processes, datetime (local/ISO/epoch/tz), which, env lookup (one name, medium risk)                                                           |
+| `tau net`      | TCP port check, ping, SSRF-guarded fetch, local IPs                                                                                                                               |
+| `tau text`     | regex search, project-wide replace (dry-run default), line/word stats, sha256/sha1 hash                                                                                           |
+| `tau skill`    | SKILL.md command packs: list/show/new/validate                                                                                                                                    |
+| `tau plugin`   | MCP servers as tool sources: dsh, VS Code, filesystem, ... (list/add/remove/tools)                                                                                                |
+| `tau history`  | everything runs are recorded; inspect, replay, clear                                                                                                                              |
+| `tau alias`    | persistent command aliases (`tau ll` → anything)                                                                                                                                  |
+| `tau provider` | API keys + live model discovery: set a key, models auto-refresh, pick interactively                                                                                               |
+| `tau config`   | provider, timeout, risk policy — stored under `$TAU_HOME`                                                                                                                         |
 
 ## Install
 

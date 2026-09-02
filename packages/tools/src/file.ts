@@ -280,7 +280,195 @@ async function renameTool(args: Record<string, unknown>): Promise<ToolResult> {
   });
 }
 
+/**
+ * file.write — the first-party WRITE primitive (v0.4.0, issue #96).
+ *
+ * Deliberately the ONLY file-mutating addition to the no-delete family:
+ * overwrite/append of a TEXT file inside the workspace, dry-run by default
+ * (golden rule 3). Refuses: paths escaping the workspace (see
+ * {@link escapesWorkspace}), system locations (see {@link isSystemWritePath}),
+ * directory targets, binary overwrites, content over 2MB, and missing parent
+ * directories unless createDirs=true. The safety reviewer layers its own
+ * path checks on top (defense in depth — reviewer only ever strengthened).
+ */
+const MAX_WRITE_BYTES = 2_000_000;
+const PREVIEW_LINES = 12;
+
+/**
+ * True when `target` resolves OUTSIDE `base` (absolute escape or `..` climb).
+ * Exported for the engine's safety reviewer — one containment definition,
+ * two enforcement points (tool refuses; reviewer escalates).
+ */
+export function escapesWorkspace(target: string, base: string = process.cwd()): boolean {
+  const rel = path.relative(path.resolve(base), path.resolve(base, target));
+  return rel.startsWith("..") || path.isAbsolute(rel);
+}
+
+/**
+ * True when `target` points into an OS-managed location a terminal assistant
+ * has no business writing (system config, executables, kernel mounts).
+ * Exported for the safety reviewer (blocked-level escalation).
+ */
+export function isSystemWritePath(
+  target: string,
+  platform: NodeJS.Platform = process.platform,
+): boolean {
+  const normalized = target.replaceAll("\\", "/").toLowerCase();
+  const systemPrefixes =
+    platform === "win32"
+      ? ["c:/windows", "c:/program files"]
+      : [
+          "/etc/",
+          "/usr/",
+          "/bin/",
+          "/sbin/",
+          "/lib/",
+          "/lib64/",
+          "/boot/",
+          "/dev/",
+          "/proc/",
+          "/sys/",
+          "/opt/",
+          "/var/",
+        ];
+  const exact = platform === "win32" ? [] : ["/etc", "/usr", "/bin", "/sbin", "/lib", "/lib64"];
+  return (
+    exact.includes(normalized) || systemPrefixes.some((prefix) => normalized.startsWith(prefix))
+  );
+}
+
+function diffStat(oldText: string, newText: string): { added: number; removed: number } {
+  const oldLines = new Set(oldText.split("\n"));
+  const newLines = new Set(newText.split("\n"));
+  let added = 0;
+  let removed = 0;
+  for (const line of newLines) if (!oldLines.has(line)) added += 1;
+  for (const line of oldLines) if (!newLines.has(line)) removed += 1;
+  return { added, removed };
+}
+
+async function writeTool(args: Record<string, unknown>): Promise<ToolResult> {
+  const targetArg = strArg(args, "path", "") ?? "";
+  if (!targetArg.trim()) throw new Error("file.write: path is required");
+  if (escapesWorkspace(targetArg)) {
+    throw new Error(`file.write refuses paths outside the workspace: ${targetArg}`);
+  }
+  const target = resolveInside(process.cwd(), targetArg);
+  if (isSystemWritePath(target)) {
+    throw new Error(`file.write refuses system locations: ${target}`);
+  }
+
+  const content = strArg(args, "content", "") ?? "";
+  if (Buffer.byteLength(content, "utf8") > MAX_WRITE_BYTES) {
+    throw new Error(`file.write content exceeds the ${MAX_WRITE_BYTES}-byte cap`);
+  }
+  const mode = (strArg(args, "mode", "overwrite") ?? "overwrite").toLowerCase();
+  if (mode !== "overwrite" && mode !== "append") {
+    throw new Error(`file.write: mode must be "overwrite" or "append" (got "${mode}")`);
+  }
+  const createDirs = boolArg(args, "createDirs", false);
+  const execute = boolArg(args, "execute", false);
+
+  if (fs.existsSync(target) && fs.statSync(target).isDirectory()) {
+    throw new Error(`file.write: target is a directory: ${target}`);
+  }
+
+  const exists = fs.existsSync(target);
+  let previous = "";
+  if (exists) {
+    const buffer = fs.readFileSync(target);
+    if (isProbablyBinary(buffer)) {
+      throw new Error(`file.write refuses to overwrite a binary file: ${target}`);
+    }
+    previous = buffer.toString("utf8");
+  }
+
+  const bytes = Buffer.byteLength(content, "utf8");
+  const lines = content.length === 0 ? 0 : content.split("\n").length;
+
+  if (!execute) {
+    const preview: string[] = [];
+    preview.push(`DRY RUN — file.write (${mode}) ${targetArg}`);
+    preview.push(
+      exists
+        ? `target exists: ${bytes} new byte(s), ${lines} line(s)`
+        : `new file: ${bytes} byte(s), ${lines} line(s)`,
+    );
+    if (mode === "overwrite" && exists) {
+      const { added, removed } = diffStat(previous, content);
+      preview.push(`changes: +${added} / -${removed} line(s)`);
+    }
+    if (mode === "append" && exists) {
+      const tail = previous.split("\n").slice(-3);
+      preview.push(`current tail: ${tail.join(" ⏎ ").slice(0, 200)}`);
+    }
+    preview.push(
+      "preview (first lines of the result):",
+      ...content
+        .split("\n")
+        .slice(0, PREVIEW_LINES)
+        .map((line, index) => `  ${index + 1}: ${line.slice(0, 200)}`),
+    );
+    if (lines > PREVIEW_LINES) preview.push(`  ... (${lines - PREVIEW_LINES} more line(s))`);
+    preview.push("set execute=true to apply.");
+    return textResult(preview.join("\n"), { dryRun: true, target: targetArg, mode, bytes });
+  }
+
+  const dir = path.dirname(target);
+  if (!fs.existsSync(dir)) {
+    if (!createDirs) {
+      throw new Error(`file.write: parent directory does not exist: ${dir} (set createDirs=true)`);
+    }
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  if (mode === "append" && exists) fs.appendFileSync(target, content);
+  else fs.writeFileSync(target, content, mode === "append" ? { flag: "a" } : {});
+  return textResult(`Wrote ${bytes} byte(s) (${mode}) -> ${targetArg}`, {
+    executed: true,
+    target: targetArg,
+    mode,
+    bytes,
+  });
+}
+
 export const fileTools: ToolDefinition[] = [
+  {
+    name: "file.write",
+    description:
+      "Write (overwrite/append) a text file inside the workspace. DRY RUN by default: shows the target, sizes and a preview; set execute=true to apply",
+    risk: "medium",
+    owner: "core",
+    mutates: true,
+    dryRunDefault: true,
+    params: [
+      {
+        name: "path",
+        type: "string",
+        description: "Target file path (workspace-relative)",
+        required: true,
+      },
+      {
+        name: "content",
+        type: "string",
+        description: "Full file content (overwrite) or the appended tail",
+        required: true,
+      },
+      {
+        name: "mode",
+        type: "string",
+        description: "overwrite (default) | append",
+        required: false,
+      },
+      {
+        name: "createDirs",
+        type: "boolean",
+        description: "Create missing parent directories (default false)",
+        required: false,
+      },
+      { name: "execute", type: "boolean", description: "false = dry run preview", required: false },
+    ],
+    run: writeTool,
+  },
   {
     name: "file.read",
     description:
