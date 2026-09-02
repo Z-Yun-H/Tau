@@ -11,7 +11,7 @@ const enterDelay = computed(() => `${Math.min((props.enterIndex ?? 0) * 40, 200)
 </script>
 
 <template>
-  <article class="tau-card error-enter">
+  <article class="tau-card tau-surface error-enter">
     <div class="card-eyebrow">
       <span class="eyebrow-label">error</span>
       <span class="intent-text" :title="card.intent">{{ card.intent }}</span>

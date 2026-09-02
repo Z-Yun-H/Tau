@@ -16,13 +16,14 @@ const ROWS: { keys: string; action: string }[] = [
   { keys: "Alt + N", action: "new conversation" },
   { keys: "Alt + S", action: "toggle the reference rail" },
   { keys: "Alt + T", action: "cycle theme system → light → dark" },
+  { keys: "Ctrl/⌘ + ,", action: "open settings (read-only)" },
   { keys: "Esc", action: "close this panel" },
 ];
 </script>
 
 <template>
   <div class="modal-overlay" @click.self="emit('close')">
-    <div class="modal-panel tau-panel" role="dialog" aria-label="shortcuts">
+    <div class="modal-panel tau-surface rounded-12px" role="dialog" aria-label="shortcuts">
       <div class="modal-head">
         <span class="eyebrow-label">shortcuts</span>
         <RiskBadge level="low" label="client-only" />

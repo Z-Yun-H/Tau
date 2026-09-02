@@ -94,6 +94,13 @@ try {
   await page.waitForTimeout(400); // let the lazy tool list load + render
   await page.screenshot({ path: path.join(OUT_DIR, "tools.png") });
 
+  // Settings panel (Ctrl+,) — the read-only config view (Issue #86).
+  await page.keyboard.press("Control+,");
+  await page.waitForSelector('[role="dialog"][aria-label="settings"]', { timeout: 10_000 });
+  await page.waitForTimeout(500); // let the /api/config fetch settle
+  await page.screenshot({ path: path.join(OUT_DIR, "settings.png") });
+  await page.keyboard.press("Escape");
+
   // Light ramp pass — a fresh page with colorScheme: "light" exercises the
   // SAME 'system' resolution path the boot script uses (system → light),
   // so the shot doubles as a visual check of the no-flash boot behavior.

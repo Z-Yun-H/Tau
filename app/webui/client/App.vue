@@ -28,6 +28,7 @@ import PlanCard from "./components/PlanCard.vue";
 import ResultCard from "./components/ResultCard.vue";
 import SessionSidebar from "./components/SessionSidebar.vue";
 import ShortcutsModal from "./components/ShortcutsModal.vue";
+import SettingsPanel from "./components/SettingsPanel.vue";
 import SidePanel from "./components/SidePanel.vue";
 import StatusHeader from "./components/StatusHeader.vue";
 import { usePlanFlow } from "./composables/plan-flow.js";
@@ -40,6 +41,7 @@ const { cyclePreference: cycleTheme } = useTheme();
 const streamEl = ref<HTMLElement | null>(null);
 const composer = ref<InstanceType<typeof Composer> | null>(null);
 const shortcutsOpen = ref(false);
+const settingsOpen = ref(false);
 const railOpen = ref(true);
 const sidebarOpen = ref(false);
 
@@ -50,8 +52,14 @@ function onKeydown(event: KeyboardEvent): void {
     composer.value?.focus();
     return;
   }
+  if ((event.ctrlKey || event.metaKey) && !event.altKey && key === ",") {
+    event.preventDefault();
+    settingsOpen.value = true;
+    return;
+  }
   if (event.key === "Escape") {
     if (shortcutsOpen.value) shortcutsOpen.value = false;
+    if (settingsOpen.value) settingsOpen.value = false;
     if (sidebarOpen.value) sidebarOpen.value = false;
     return;
   }
@@ -114,7 +122,7 @@ watchDebounced(
 </script>
 
 <template>
-  <StatusHeader />
+  <StatusHeader @open-settings="settingsOpen = true" />
   <main
     class="app-shell flex-1 min-h-0 w-full mx-auto flex flex-col lg:grid lg:overflow-hidden"
     :class="
@@ -185,6 +193,7 @@ watchDebounced(
   </main>
 
   <ShortcutsModal v-if="shortcutsOpen" @close="shortcutsOpen = false" />
+  <SettingsPanel v-if="settingsOpen" @close="settingsOpen = false" />
 </template>
 
 <style scoped>

@@ -45,7 +45,7 @@ function select(next: Tab): void {
 </script>
 
 <template>
-  <aside class="side-panel tau-panel flex flex-col min-h-0 overflow-hidden">
+  <aside class="side-panel tau-surface rounded-12px flex flex-col min-h-0 overflow-hidden">
     <nav class="tab-nav relative flex flex-none" role="tablist" aria-label="reference panels">
       <button
         v-for="(t, i) in TABS"

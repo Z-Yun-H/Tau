@@ -7,6 +7,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Added
 
+- **Read-only settings panel for the WebUI.** `Ctrl/⌘+,` (or the new
+  header `⚙ settings` button) opens a modal showing the effective
+  configuration: the active provider and model, per-provider availability
+  chips, the model-catalog cache state, the risk policy (with a
+  `tau config set` hint), the theme picker (same state as the header
+  cycle button), and local session stats. Served by a new additive
+  `GET /api/config` that returns the exact `redactConfig` output
+  `tau config list` prints — provider keys are masked `sk-***last4` and
+  server tests pin that no plaintext key can ever leave the server. The
+  panel is deliberately view-only: config changes stay in the CLI, so
+  the browser never becomes a second write path into the safety
+  configuration.
 - **Light & dark themes for the WebUI.** The interface now ships two full
   color ramps — dark (the rendering baseline) and a light theme tuned for
   AA contrast — switched from a new header button or `Alt+T`, with a

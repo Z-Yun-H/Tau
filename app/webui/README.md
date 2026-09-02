@@ -44,7 +44,7 @@ plan`, ResultCard, ErrorCard, SidePanel with Skills/History/Tools,
   threads persist to `localStorage` (server history stays the durable
   record); keyboard-first (Enter send / Shift+Enter newline / Ctrl+K
   focus / `?` shortcuts panel / Alt+N new thread / Alt+S rail toggle /
-  Alt+T theme cycle / Esc closes modal + drawer); markdown preview with
+  Alt+T theme cycle / Ctrl+⌘+, settings / Esc closes modal + drawer); markdown preview with
   rendered/raw toggle, copy and expand — rendered by the zero-dependency,
   escape-first `@tau/markdown`, never a sanitizer gap
 - **Light & dark themes** — three-state preference (`light`/`dark`/
@@ -52,6 +52,13 @@ plan`, ResultCard, ErrorCard, SidePanel with Skills/History/Tools,
   `Alt+T`, persisted in `tau-webui-theme-v1`, resolved before first
   paint (no wrong-theme flash); both ramps ship as `--tau-*` CSS vars
   with per-theme risk-color tuning (AA) and per-theme elevation shadows
+- **Settings panel** — `Ctrl/⌘+,` (or the header `⚙ settings` button)
+  opens a read-only view of the effective config: active provider +
+  per-provider availability chips + model-catalog cache state, risk
+  policy (with a `tau config set` hint — the browser never writes
+  config), the theme picker, and local session stats. Served by the
+  additive `GET /api/config` (keys masked `sk-***last4`, same redaction
+  as `tau config list`); server tests pin the no-plaintext guarantee
 - **UnoCSS** (`uno.config.ts`, `presetWind3`) — maps every `tau.*` color
   to the `--tau-*` CSS variables in `client/theme.css` (the single
   source, shipping BOTH the dark default and light ramps) plus the risk

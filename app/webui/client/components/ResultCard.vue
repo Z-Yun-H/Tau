@@ -72,7 +72,7 @@ const statusLevel = computed(() =>
 </script>
 
 <template>
-  <article ref="rootEl" class="tau-card result-enter">
+  <article ref="rootEl" class="tau-card tau-surface result-enter">
     <div class="card-eyebrow">
       <span class="eyebrow-label">result</span>
       <span class="intent-text" :title="card.intent">{{ card.intent }}</span>

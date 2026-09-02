@@ -148,6 +148,11 @@ chords like Ctrl+T/W/N).
   drawer on narrow screens; footer kbd hint.
 - `ShortcutsModal` — the keyboard contract overlay (Esc/backdrop
   closes).
+- `SettingsPanel` — read-only settings modal (`Ctrl/⌘+,` or the header
+  `⚙ settings` button): provider/availability/model-catalog, risk policy
+  (+ `tau config` hint), theme picker (same `useTheme()` state as the
+  header button), local session stats. Data from `GET /api/config` —
+  the redacted effective config; NO write path by design.
 - `EmptyState` — serif headline ("What can Tau do for you?") + contract
   prose + pipeline mono + kbd hints.
 - `RiskBadge` — the only place a risk level becomes color.
@@ -216,6 +221,10 @@ NDJSON event field names: `type`, `index`, `step`, `chunk`, `ok`,
 `exitCode`, `skipped`, `status`, `output`, `outcomes`, `error`. The
 `result` event is authoritative — it overwrites the incremental view.
 403 as plain JSON (not NDJSON) for deny / high-risk-without-confirm.
+`GET /api/config` is read-only: the `config` field is exactly
+`redactConfig(loadConfig())` (keys masked `sk-***last4`, never plaintext;
+same output as `tau config list`), and no method other than GET exists on
+the path — config changes stay in the CLI.
 `/api/tools` body must never contain the literal `"run"`.
 
 localStorage: keys `tau-webui-threads-v1` (threads, pinned) and

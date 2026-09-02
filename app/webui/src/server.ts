@@ -12,7 +12,8 @@ import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { reviewPlan, runPlan } from "@tau/engine";
-import type { Plan, SafetyReview } from "@tau/core";
+import { loadConfig, redactConfig, type Plan, type SafetyReview } from "@tau/core";
+import { cachedModels } from "@tau/ai";
 import {
   ensureCatalog,
   getSessionInfo,
@@ -115,6 +116,36 @@ async function statusPayload(): Promise<Record<string, unknown>> {
 }
 
 /**
+ * Read-only settings surface for the WebUI settings panel. The `config`
+ * field is the EFFECTIVE config exactly as `tau config list` prints it —
+ * through the same `redactConfig` (every `providers.<name>.apiKey` masked,
+ * never plaintext) — plus live provider availability and the active
+ * provider's model-catalog cache state. Deliberately GET-only: config
+ * modification stays in the CLI (`tau config set …`), so the browser never
+ * becomes a second write path into the safety-relevant configuration.
+ */
+async function configPayload(): Promise<Record<string, unknown>> {
+  const info = await getSessionInfo();
+  const catalog = cachedModels(info.provider.name);
+  return {
+    version: info.version,
+    tauHome: info.tauHome,
+    config: redactConfig(loadConfig()),
+    provider: {
+      name: info.provider.name,
+      label: info.provider.label,
+      source: info.provider.source,
+      model: info.provider.model,
+    },
+    providers: info.providers,
+    modelCatalog: {
+      count: catalog.models.length,
+      ...(catalog.refreshedAt ? { refreshedAt: catalog.refreshedAt } : {}),
+    },
+  };
+}
+
+/**
  * Shared body parsing for /api/execute and /api/execute/stream.
  * Returns an error message string, or the validated execute request.
  */
@@ -163,6 +194,10 @@ export function createRequestListener(): http.RequestListener {
           const parsed = raw === null ? Number.NaN : Number(raw);
           const limit = Number.isInteger(parsed) && parsed > 0 ? Math.min(parsed, 500) : 20;
           sendJson(res, 200, readRecentHistory(limit));
+          return;
+        }
+        if (req.method === "GET" && url.pathname === "/api/config") {
+          sendJson(res, 200, await configPayload());
           return;
         }
         if (req.method === "POST" && url.pathname === "/api/plan") {
