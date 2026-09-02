@@ -17,6 +17,19 @@ pnpm test:cov        # with coverage (pre-PR gate)
 npx vitest run packages/engine   # one package's tests
 ```
 
+> **Fresh clone: `pnpm build` before `pnpm test`.** The CLI e2e snapshot tests
+> (`app/cli/tests/e2e.snapshot.test.ts`) spawn the real CLI entry through tsx as
+> a child process; workspace `@tau/*` imports inside that child resolve to
+> `dist/` — the `--conditions=development` export condition does not propagate
+> through the spawned tsx resolver. On an unbuilt tree exactly the 5 CLI e2e
+> cases fail with `ERR_MODULE_NOT_FOUND` on `@tau/tools/dist/index.js` while
+> everything else is green. CI builds before testing, so a bare-`pnpm test`
+> failure on a fresh clone is an environment artifact, not a regression — build
+> first, then re-run before diagnosing anything. (Observed in practice on
+> 2026-09-02: two PRs reported contradictory gate results — "5 pre-existing
+> e2e spawn failures" vs "all green" — for the same tree; the difference was
+> only whether `pnpm build` had run.)
+
 ## Isolation rules
 
 1. **TAU_HOME**: every test that touches config/history/skills must set

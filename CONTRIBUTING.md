@@ -16,6 +16,15 @@ pnpm lint && pnpm typecheck && pnpm test:cov
 All green, coverage ≥ thresholds (see `vitest.config.ts`), no skipped tests.
 CI runs the same gate.
 
+> **Fresh clone? Run `pnpm build` first.** The CLI e2e snapshot tests
+> (`app/cli/tests/e2e.snapshot.test.ts`) spawn the real CLI as a child
+> process, and workspace `@tau/*` imports inside that child resolve to
+> `dist/` — the `--conditions=development` export condition does not
+> propagate through the spawned tsx resolver. On an unbuilt tree exactly
+> the 5 CLI e2e cases fail with `ERR_MODULE_NOT_FOUND` on
+> `@tau/tools/dist/index.js`. CI always builds before testing, so a
+> locally unbuilt run contradicts CI for no code reason.
+
 ## PR workflow (mandatory)
 
 **Never push directly to `main`.** All changes — features, fixes, docs,
