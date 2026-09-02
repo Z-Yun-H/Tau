@@ -5,6 +5,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+## 0.3.0 — 2026-09-02
+
+The UX-and-harness release: the WebUI gains **light & dark themes**, a
+**read-only settings panel**, and fully **layered surfaces** (no bare
+hairlines), while the tool layer ships **OpenAI-compatible
+function-calling schema export** and **production-grade HTTP retry** for
+providers. The changelog discipline itself was restructured into a
+two-layer spec (daily task log + this release layer). All contracts are
+unchanged: the plan schema, the deterministic safety gate, the NDJSON
+stream, and every test-pinned API surface behave exactly as 0.2.x —
+upgrade is a version bump with no migration.
+
 ### Added
 
 - **Read-only settings panel for the WebUI.** `Ctrl/⌘+,` (or the new
