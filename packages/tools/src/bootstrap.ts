@@ -11,7 +11,14 @@ import { textTools } from "./text.js";
 import type { ToolDefinition } from "@tau/core";
 
 // Re-export the registry accessors for convenience.
-export { registerTools, getTool, allTools, resetRegistry, renderToolCatalog } from "./registry.js";
+export {
+  registerTools,
+  getTool,
+  allTools,
+  resetRegistry,
+  renderToolCatalog,
+  catalogSummary,
+} from "./registry.js";
 
 /** Register all built-in core tools. Idempotent: safe to call repeatedly. */
 export function registerCoreTools(): void {

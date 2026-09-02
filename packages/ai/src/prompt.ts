@@ -6,7 +6,7 @@
  */
 
 import { z } from "zod";
-import { renderToolCatalog, allTools } from "@tau/tools";
+import { renderToolCatalog, catalogSummary, allTools } from "@tau/tools";
 import type { PlanningContext, Plan } from "@tau/core";
 
 /**
@@ -83,13 +83,16 @@ RULES:
 1. PREFER registered tools over raw shell commands. Tools are validated, cross-platform and safe.
 2. Only use tools from the catalog below. Never invent tool names.
 3. Use kind:"shell" ONLY when no tool fits. Never use shell for destructive operations (delete, format, sudo, piping installers).
-4. Prefer DRY-RUN modes: file.rename and text.replace accept execute:false (default). Plan the dry run first; the user can rerun with execute.
-5. Answer with STRICT JSON only, no markdown, matching exactly:
+4. Prefer DRY-RUN modes: tools tagged [dry-run-default] (file.rename, text.replace) accept execute:false. Plan the dry run first; the user can rerun with execute.
+5. Prefer READ-ONLY tools (no [mutates] tag) for inspection. Reach for mutating tools only when the intent clearly asks for a change.
+6. Answer with STRICT JSON only, no markdown, matching exactly:
 {"explanation": string, "steps": [{"kind":"tool"|"shell", "tool"?: string, "args"?: object, "command"?: string, "reason": string}], "selfAssessedRisk": "low"|"medium"|"high"}
-6. Max 10 steps. Each step needs a short "reason".
-7. If the intent is unclear or impossible, still return JSON with a single shell step: echo an explanation.
+7. Max 10 steps. Each step needs a short "reason".
+8. If the intent is unclear or impossible, still return JSON with a single shell step: echo an explanation.
 
-AVAILABLE TOOLS (name [risk] description / params):
+CATALOG SUMMARY: ${catalogSummary()}
+
+AVAILABLE TOOLS (grouped by family; tags: risk, mutates, dry-run-default):
 ${ctx.toolCatalog}
 
 SKILLS (declarative commands, prefer them when relevant):

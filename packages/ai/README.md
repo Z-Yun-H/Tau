@@ -16,9 +16,15 @@ Everything is exported from the package barrel (`src/index.ts`):
   `resolveProvider()`, `getProvider()`, `providerNames()`, `resetProviders()`
 - **Provider classes** (`src/providers/`) — `MockProvider`, `OllamaProvider`,
   `OpenAIProvider`, `DeepSeekProvider`, `ZaiProvider`. Mock is self-contained
-  (zero-network, no shared utility); real HTTP providers (openai, ollama)
-  share the `chatJSON` helper in `src/providers/http.ts`; deepseek keeps its
-  own SSE-streaming wire client.
+  (zero-network, no shared utility). `OpenAIProvider` and `DeepSeekProvider`
+  extend `BaseHttpProvider` (`src/providers/base.ts`) which owns the shared
+  key-auth scaffolding (apiKey resolution, baseUrl/timeout defaults,
+  isAvailable, unavailableReason, listModels). `OllamaProvider` implements
+  `AIProvider` directly (local-server probe, no key). `DeepSeekProvider`
+  overrides `listModels()` to keep its test-pinned error format and keeps its
+  own SSE-streaming wire client in `plan()`. `ZaiProvider` routes through the
+  optional `z-ai-web-dev-sdk` peer. The shared `chatJSON` helper lives in
+  `src/providers/http.ts`.
 - **Model catalog** (`src/models.ts`) — `refreshProviderModels()`,
   `cachedModels()`, `resolveModel()`, `isCatalogStale()`, `MODELS_TTL_MS`
   (24 h cache; providers implement optional `listModels()`)

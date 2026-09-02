@@ -371,6 +371,8 @@ export const fileTools: ToolDefinition[] = [
       "Batch rename files in a directory by regex. Dry-run by default; set execute=true to apply",
     risk: "medium",
     owner: "core",
+    mutates: true,
+    dryRunDefault: true,
     params: [
       { name: "find", type: "string", description: "Regex to match in filenames", required: true },
       { name: "replace", type: "string", description: "Replacement string", required: true },

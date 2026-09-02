@@ -57,6 +57,8 @@ export interface ToolGroup {
     risk: string;
     owner: string;
     params: { name: string; type: string; required: boolean }[];
+    mutates: boolean;
+    dryRunDefault: boolean;
   }[];
 }
 
@@ -68,6 +70,8 @@ export function groupTools(
     risk: string;
     owner: string;
     params: { name: string; type: string; required: boolean }[];
+    mutates?: boolean;
+    dryRunDefault?: boolean;
   }[],
 ): ToolGroup[] {
   const groups = new Map<string, ToolGroup>();
@@ -78,7 +82,15 @@ export function groupTools(
       group = { family, tools: [] };
       groups.set(family, group);
     }
-    group.tools.push(tool);
+    group.tools.push({
+      name: tool.name,
+      description: tool.description,
+      risk: tool.risk,
+      owner: tool.owner,
+      params: tool.params,
+      mutates: tool.mutates === true,
+      dryRunDefault: tool.dryRunDefault === true,
+    });
   }
   return [...groups.values()];
 }

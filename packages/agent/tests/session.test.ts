@@ -125,10 +125,19 @@ describe("session services", () => {
     expect(find?.params.some((p) => p.name === "pattern" && p.required)).toBe(true);
     // Medium-risk mutation tools keep their intrinsic risk.
     expect(tools.find((t) => t.name === "file.rename")?.risk).toBe("medium");
+    // Mutation/dry-run flags are surfaced so the UI + planner can prefer
+    // read-only + dry-run-first tools (AGENTS/ai-integration.md rule 4-5).
+    const rename = tools.find((t) => t.name === "file.rename");
+    expect(rename?.mutates).toBe(true);
+    expect(rename?.dryRunDefault).toBe(true);
+    expect(find?.mutates).toBe(false);
+    expect(find?.dryRunDefault).toBe(false);
     // The serialized shape is pure data — the executable never leaks.
     expect(JSON.stringify(tools)).not.toContain('"run"');
     expect(find && Object.keys(find).sort()).toEqual([
       "description",
+      "dryRunDefault",
+      "mutates",
       "name",
       "owner",
       "params",

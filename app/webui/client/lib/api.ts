@@ -62,6 +62,10 @@ export interface ToolSummary {
   risk: RiskLevel;
   owner: string;
   params: ToolParamInfo[];
+  /** True when the tool mutates state. Defaults false (read-only) when absent. */
+  mutates?: boolean;
+  /** True when the tool defaults to a dry-run preview. Defaults false when absent. */
+  dryRunDefault?: boolean;
 }
 
 export interface HistoryEntry {

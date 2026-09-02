@@ -5,10 +5,11 @@ PNGs from a **real end-to-end session**: the actual HTTP server
 through the actual client in headless Chromium (playwright-core). No
 network, no AI keys.
 
-| file         | what it shows                                                                                      |
-| ------------ | -------------------------------------------------------------------------------------------------- |
-| `plan.png`   | the reviewed plan card — risk badge, explanation, the `file.find` step, Run plan / Discard actions |
-| `result.png` | the streaming result card (`ok · 1 ok`) with the rendered output — the NDJSON stream rendered live |
+| file         | what it shows                                                                                                                             |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `plan.png`   | the reviewed plan card — risk badge, explanation, the `file.find` step, Run plan / Discard actions                                        |
+| `result.png` | the streaming result card (`ok · 1 ok`) with the rendered output — the NDJSON stream rendered live                                        |
+| `tools.png`  | the Tools reference rail — catalog overview (N tools · N read · N mutates · N dry-run), family groups with counts, MUT/READ/DRY kind tags |
 
 ## Regenerate
 

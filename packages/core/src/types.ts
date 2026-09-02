@@ -108,6 +108,20 @@ export interface ToolDefinition {
   /** Module that owns this tool ("core" for built-ins, skill name otherwise). */
   owner: string;
   run: (args: Record<string, unknown>) => Promise<ToolResult>;
+  /**
+   * True when the tool mutates the filesystem, file contents, or system state.
+   * Defaults to `false` (read-only) when absent — the planner prompt and the
+   * UI both surface this so read-only tools can be preferred first.
+   * AGENTS/ai-integration.md "prefer DRY-RUN modes" rule.
+   */
+  mutates?: boolean;
+  /**
+   * True when the tool defaults to a dry-run (preview) mode unless explicitly
+   * told to execute (e.g. `file.rename`, `text.replace` with `execute:false`).
+   * Surfaced in the prompt so the planner knows it can safely propose the
+   * dry-run first. Defaults to `false` when absent.
+   */
+  dryRunDefault?: boolean;
 }
 
 export interface ToolResult {
