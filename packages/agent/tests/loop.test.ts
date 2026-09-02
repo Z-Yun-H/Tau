@@ -329,3 +329,56 @@ describe("runGoal — end-to-end with the real mock provider", () => {
     expect(result.rounds).toHaveLength(3);
   });
 });
+
+describe("runGoal — first-round approval pause (webui agent mode)", () => {
+  it("round 1 with a medium plan pauses for approval and honours refusal", async () => {
+    const mediumPlan: Plan = {
+      explanation: "needs a human",
+      steps: [
+        { kind: "tool", tool: "file.rename", args: { find: "a", replace: "b" }, reason: "r" },
+      ],
+    };
+    registerScripted([{ plan: mediumPlan, reflect: () => ({ done: true, answer: "x" }) }]);
+    const events: GoalEvent[] = [];
+    const result = await runGoal(
+      "medium first",
+      baseOptions({ onGoalEvent: (e) => events.push(e), awaitApproval: async () => false }),
+    );
+    expect(result.status).toBe("cancelled");
+    expect(result.rounds).toHaveLength(0); // nothing executed
+    const types = events.map((event) => event.type);
+    expect(types).toContain("approval_required");
+    expect(types.indexOf("round_end")).toBe(-1); // never executed
+  });
+
+  it("round 1 approval accepted executes the plan", async () => {
+    const mediumPlan: Plan = {
+      explanation: "rename with consent",
+      steps: [
+        { kind: "tool", tool: "file.rename", args: { find: "a", replace: "b" }, reason: "r" },
+      ],
+    };
+    registerScripted([{ plan: mediumPlan, reflect: () => ({ done: true, answer: "done" }) }]);
+    const result = await runGoal("medium first", baseOptions({ awaitApproval: async () => true }));
+    // rename dry-runs (medium tool) and succeeds; reflect concludes.
+    expect(result.status).toBe("ok");
+    expect(result.answer).toBe("done");
+    expect(result.rounds.map((round) => round.status)).toEqual(["ok"]);
+  });
+
+  it("round 1 allow verdict never pauses (auto-run stays low-risk-only)", async () => {
+    registerScripted([
+      {
+        plan: shellPlan("echo GOAL_COMPLETE: instant"),
+        reflect: () => ({ done: true, answer: "y" }),
+      },
+    ]);
+    let pauses = 0;
+    const result = await runGoal(
+      "low first",
+      baseOptions({ awaitApproval: async () => ((pauses += 1), true) }),
+    );
+    expect(result.status).toBe("ok");
+    expect(pauses).toBe(0);
+  });
+});

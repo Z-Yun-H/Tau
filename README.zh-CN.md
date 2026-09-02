@@ -75,7 +75,7 @@ cd app/cli && pnpm link --global   # 提供 `tau` 命令（若 pnpm 全局 bin �
 <p align="center">
   <img alt="webui plan（暗色）" src="app/webui/docs/screenshots/plan.png" width="32%">
   <img alt="webui result（暗色）" src="app/webui/docs/screenshots/result.png" width="32%">
-  <img alt="webui plan（亮色）" src="app/webui/docs/screenshots/plan-light.png" width="32%">
+  <img alt="webui agent 模式（暗色）" src="app/webui/docs/screenshots/agent.png" width="32%">
 </p>
 
 ## 快速上手

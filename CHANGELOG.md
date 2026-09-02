@@ -25,6 +25,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   hard-contained to the workspace — writes into OS-managed locations are
   blocked outright and workspace escapes require interactive confirmation
   (the safety reviewer re-checks every planned write path independently).
+- **Agent mode for the WebUI.** The composer gains a `plan | agent`
+  switch: agent submits the intent to a new `POST /api/goal/stream` and
+  renders a multi-round goal card — round timeline with live-streamed
+  step output, per-round risk badges, and the final answer. Agent mode is
+  never a blanket pre-approval: any medium+ round (the first one
+  included) pauses the stream inline for an explicit Approve/Refuse
+  decision (10-minute TTL), the Stop button cancels the whole goal
+  mid-shell included, and every round still passes the same
+  deterministic safety review as the plan flow.
 
 ## 0.3.0 — 2026-09-02
 

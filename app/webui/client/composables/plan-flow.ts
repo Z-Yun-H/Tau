@@ -54,7 +54,51 @@ export interface ErrorCardState {
   message: string;
 }
 
-export type CardState = UserCardState | PlanCardState | ResultCardState | ErrorCardState;
+/** One live step inside a goal round (streamed output grows into `output`). */
+export interface GoalStepState {
+  index: number;
+  label: string;
+  output: string;
+  running: boolean;
+  ok?: boolean;
+  skipped?: boolean;
+}
+
+/** One round of a goal: plan + review + live steps + terminal status. */
+export interface GoalRoundState {
+  round: number;
+  origin: "plan" | "reflect";
+  plan?: PlanResponse["plan"];
+  review?: PlanResponse["review"];
+  steps: GoalStepState[];
+  status?: string;
+  /** True while the stream is paused on /api/goal/approve for this round. */
+  approvalPending: boolean;
+  approvalTimedOut?: boolean;
+}
+
+/** Agent-mode card: a multi-round goal over /api/goal/stream (issue #97). */
+export interface GoalCardState {
+  type: "goal";
+  id: number;
+  goalId: string;
+  intent: string;
+  provider: string;
+  maxRounds: number;
+  rounds: GoalRoundState[];
+  status: "running" | "ok" | "failed" | "cancelled" | "denied" | "max_rounds";
+  answer?: string;
+  error?: string;
+  /** True while the NDJSON stream is still delivering events. */
+  streaming: boolean;
+}
+
+export type CardState =
+  | UserCardState
+  | PlanCardState
+  | ResultCardState
+  | ErrorCardState
+  | GoalCardState;
 
 export interface Thread {
   id: number;
@@ -68,6 +112,13 @@ const STORAGE_KEY = "tau-webui-threads-v1";
 /** Pinned contract (DESIGN.md §9): the local thread cap. */
 export const MAX_THREADS = 50;
 const TITLE_CAP = 42;
+
+/**
+ * Live abort controllers for running goals — deliberately OUT of the card
+ * state: cards persist to localStorage, controllers must not. Keyed by
+ * card id; cancelled on Stop and cleared once the stream settles.
+ */
+const goalControllers = new Map<number, AbortController>();
 
 function loadThreads(): Thread[] {
   try {
@@ -101,6 +152,27 @@ function threadTitle(cards: CardState[]): string {
   return text.length > TITLE_CAP ? `${text.slice(0, TITLE_CAP)}…` : text;
 }
 
+/**
+ * Post-load migration: a goal that was `running` when the tab closed can
+ * never resume — its stream is gone. Mark those honestly instead of
+ * rendering a zombie spinner forever (threads persist across reloads).
+ */
+function settleOrphanGoals(threads: Thread[]): void {
+  for (const thread of threads) {
+    for (const card of thread.cards) {
+      if (card.type === "goal" && card.status === "running") {
+        card.status = "cancelled";
+        card.streaming = false;
+        card.error = "session ended before the goal finished";
+        for (const round of card.rounds ?? []) {
+          round.approvalPending = false;
+          for (const step of round.steps ?? []) step.running = false;
+        }
+      }
+    }
+  }
+}
+
 const threads = ref<Thread[]>([]);
 const currentId = ref<number>(0);
 const planning = ref(false);
@@ -121,6 +193,7 @@ export function usePlanFlow() {
   if (!initialized) {
     initialized = true;
     threads.value = loadThreads();
+    settleOrphanGoals(threads.value);
     nextId = threads.value.reduce((max, t) => Math.max(max, t.id), 0) + 1;
     if (threads.value.length === 0) {
       const thread: Thread = {
@@ -307,6 +380,151 @@ export function usePlanFlow() {
     touch(owner);
   }
 
+  /** Human-readable one-line step label for live goal rows. */
+  function stepLabel(step: {
+    kind?: string;
+    tool?: string;
+    command?: string;
+    args?: Record<string, unknown>;
+  }): string {
+    if (step.kind === "tool") {
+      return `tool ${step.tool ?? "?"} ${JSON.stringify(step.args ?? {})}`;
+    }
+    return `shell $ ${step.command ?? ""}`;
+  }
+
+  /**
+   * Agent mode (issue #97): run a multi-round goal over /api/goal/stream.
+   * The goal card grows live: rounds appear as round_plan arrives, step
+   * output streams into the active row, approval pauses surface inline
+   * (medium+ rounds NEVER auto-run — the card shows Approve/Stop). Every
+   * round is engine-reviewed exactly like the plan flow; nothing here
+   * bypasses runPlan.
+   */
+  function submitGoal(intent: string, provider?: string): void {
+    const thread = currentThread.value;
+    if (!thread) return;
+    thread.cards.push({ type: "user", id: nextId++, text: intent, ts: now() });
+    thread.title = threadTitle(thread.cards);
+    touch(thread);
+
+    const card = reactive({
+      type: "goal",
+      id: nextId++,
+      goalId: "",
+      intent,
+      provider: provider ?? "",
+      maxRounds: 0,
+      rounds: [],
+      status: "running",
+      streaming: true,
+    }) as GoalCardState;
+    thread.cards.push(card);
+
+    const controller = new AbortController();
+    goalControllers.set(card.id, controller);
+    let currentRound: GoalRoundState | undefined;
+
+    const lastStep = (): GoalStepState | undefined => currentRound?.steps.at(-1);
+
+    void (async () => {
+      try {
+        await postNdjson(
+          "/api/goal/stream",
+          { intent, ...(provider ? { provider } : {}) },
+          (event: StreamEvent) => {
+            const type = event["type"];
+            if (type === "goal_registered" && typeof event["goalId"] === "string") {
+              card.goalId = event["goalId"];
+            } else if (type === "goal_start") {
+              if (typeof event["maxRounds"] === "number") card.maxRounds = event["maxRounds"];
+              if (typeof event["provider"] === "string" && !card.provider) {
+                card.provider = event["provider"];
+              }
+            } else if (type === "round_plan") {
+              const round: GoalRoundState = {
+                round: typeof event["round"] === "number" ? event["round"] : card.rounds.length + 1,
+                origin: event["origin"] === "reflect" ? "reflect" : "plan",
+                plan: event["plan"] as PlanResponse["plan"] | undefined,
+                review: event["review"] as PlanResponse["review"] | undefined,
+                steps: [],
+                approvalPending: false,
+              };
+              card.rounds.push(round);
+              currentRound = round;
+            } else if (type === "step_start" && currentRound) {
+              currentRound.steps.push({
+                index:
+                  typeof event["index"] === "number" ? event["index"] : currentRound.steps.length,
+                label: stepLabel((event["step"] ?? {}) as Record<string, string>),
+                output: "",
+                running: true,
+              });
+            } else if (type === "step_output" && typeof event["chunk"] === "string") {
+              const step = lastStep();
+              if (step) step.output += event["chunk"];
+            } else if (type === "step_end") {
+              const step = lastStep();
+              if (step) {
+                step.running = false;
+                step.ok = event["ok"] === true;
+                step.skipped = event["skipped"] === true;
+              }
+            } else if (type === "round_end" && currentRound) {
+              if (typeof event["status"] === "string") currentRound.status = event["status"];
+            } else if (type === "approval_required" && currentRound) {
+              currentRound.approvalPending = true;
+            } else if (type === "approval_timeout" && currentRound) {
+              currentRound.approvalPending = false;
+              currentRound.approvalTimedOut = true;
+            } else if (type === "goal_end") {
+              if (typeof event["status"] === "string") {
+                card.status = event["status"] as GoalCardState["status"];
+              }
+              if (typeof event["answer"] === "string") card.answer = event["answer"];
+              if (typeof event["error"] === "string") card.error = event["error"];
+            } else if (type === "error") {
+              card.status = "failed";
+              card.error = `stream error: ${String(event["error"] ?? "unknown")}`;
+            }
+          },
+          controller.signal,
+        );
+      } catch (error) {
+        if (card.status === "running") {
+          const aborted = controller.signal.aborted;
+          card.status = aborted ? "cancelled" : "failed";
+          card.error = aborted ? "stopped by user" : (error as Error).message;
+        }
+      } finally {
+        card.streaming = false;
+        goalControllers.delete(card.id);
+        for (const round of card.rounds) {
+          round.approvalPending = false;
+          for (const step of round.steps) step.running = false;
+        }
+        if (thread) touch(thread);
+        void refreshHistory();
+      }
+    })();
+  }
+
+  /** Decide a paused round (approve=true resumes; false ends cancelled). */
+  async function approveGoal(card: GoalCardState, approved: boolean): Promise<void> {
+    const round = card.rounds.find((r) => r.approvalPending);
+    if (round) round.approvalPending = false; // optimistic; stream confirms
+    try {
+      await postJson("/api/goal/approve", { goalId: card.goalId, approve: approved });
+    } catch {
+      // 404/expired: the stream itself ends the goal — nothing to do here.
+    }
+  }
+
+  /** Stop a running goal: abort the fetch; the server cancels runGoal-side. */
+  function cancelGoal(card: GoalCardState): void {
+    goalControllers.get(card.id)?.abort();
+  }
+
   return {
     threads,
     currentId,
@@ -315,6 +533,9 @@ export function usePlanFlow() {
     planning,
     submitIntent,
     runPlan,
+    submitGoal,
+    approveGoal,
+    cancelGoal,
     discard: dropCard,
     createThread,
     switchThread,

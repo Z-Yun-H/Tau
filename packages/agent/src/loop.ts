@@ -80,10 +80,11 @@ export interface RunGoalOptions {
   /** Per-round PlanEvent mirror (caller brackets rounds via goal events). */
   onPlanEvent?: (event: PlanEvent, round: number) => void;
   /**
-   * Interactive pause for non-"allow" continuation rounds. Resolve true =
-   * execute the round; false = goal ends "cancelled". Absent: the round
-   * goes straight into runPlan (whose interactive confirm gates it on a
-   * TTY and refuses headless without --yes — the historical behavior).
+   * Interactive pause for non-"allow" rounds — INCLUDING the first round
+   * when provided (agent mode is never a blanket pre-approval). Resolve
+   * true = execute the round; false = goal ends "cancelled". Absent: every
+   * round goes straight into runPlan (whose interactive confirm gates it
+   * on a TTY and refuses headless without --yes — the historical behavior).
    */
   awaitApproval?: (round: number, plan: Plan, review: SafetyReview) => Promise<boolean>;
 }
@@ -157,13 +158,20 @@ export async function runGoal(intent: string, options: RunGoalOptions): Promise<
   try {
     // ---- Round 1: the historical front half (planIntent), unchanged. ----
     const planned = await planIntent(intent, { provider: options.provider });
-    emit({
-      type: "round_plan",
-      round: 1,
-      plan: planned.plan,
-      review: reviewPlan(planned.plan),
-      origin: "plan",
-    });
+    const firstReview = reviewPlan(planned.plan);
+    emit({ type: "round_plan", round: 1, plan: planned.plan, review: firstReview, origin: "plan" });
+    // Interactive front doors pause on a non-"allow" FIRST round too — agent
+    // mode is never a blanket pre-approval: the user sees the plan before
+    // anything medium+ runs (headless runPlan still refuses without --yes;
+    // CLI keeps its in-runPlan interactive confirm).
+    if (firstReview.verdict === "review" && options.awaitApproval) {
+      emit({ type: "approval_required", round: 1, plan: planned.plan, review: firstReview });
+      const approved = await options.awaitApproval(1, planned.plan, firstReview);
+      if (!approved || options.signal?.aborted) {
+        emit({ type: "goal_end", status: "cancelled" });
+        return { status: "cancelled", rounds };
+      }
+    }
     let round = 1;
     let lastStatus = await executeRound(1, planned.plan);
 

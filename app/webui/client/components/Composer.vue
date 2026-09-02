@@ -8,11 +8,16 @@
  *
  * The Send button is NOT labeled "Plan" — the composer *sends an intent*;
  * the plan card *runs the plan*. Two actions, two controls.
+ *
+ * Mode segmented control (issue #97): `plan` = the historical single-round
+ * flow (plan → review → Run plan gate); `agent` = multi-round goal loop
+ * (rounds stream live, medium+ rounds pause for per-round approval). The
+ * toggle is a default-on-plan UI switch — the plan path is untouched.
  */
 import { computed, ref, watch } from "vue";
 
-const props = defineProps<{ planning: boolean }>();
-const emit = defineEmits<{ submit: [intent: string] }>();
+const props = defineProps<{ planning: boolean; agentMode?: boolean }>();
+const emit = defineEmits<{ submit: [intent: string]; mode: [agent: boolean] }>();
 
 const intent = ref("");
 const input = ref<HTMLTextAreaElement | null>(null);
@@ -74,6 +79,29 @@ defineExpose({ focus });
 
         <div class="composer-toolbar">
           <div class="toolbar-left">
+            <div class="mode-switch" role="tablist" aria-label="composer mode">
+              <button
+                type="button"
+                class="mode-btn"
+                :class="{ active: !props.agentMode }"
+                :aria-pressed="!props.agentMode"
+                title="single round: plan → review → Run plan"
+                @click="emit('mode', false)"
+              >
+                plan
+              </button>
+              <button
+                type="button"
+                class="mode-btn"
+                :class="{ active: props.agentMode === true }"
+                :aria-pressed="props.agentMode === true"
+                title="multi-round goal loop with per-round approval"
+                @click="emit('mode', true)"
+              >
+                agent
+              </button>
+            </div>
+            <span class="hint-sep">·</span>
             <span class="hint">
               <kbd class="tau-kbd">⌘K</kbd>
               <span class="hint-text">focus</span>
@@ -192,6 +220,41 @@ defineExpose({ focus });
   align-items: center;
   gap: 6px;
   min-width: 0;
+}
+
+.mode-switch {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--tau-line-strong); /* tau.line-strong */
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.mode-btn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.3px;
+  color: var(--tau-faint); /* tau.faint */
+  background: transparent;
+  border: 0;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition:
+    color var(--t-fast) var(--ease),
+    background var(--t-fast) var(--ease);
+}
+
+.mode-btn + .mode-btn {
+  border-left: 1px solid var(--tau-line); /* tau.line */
+}
+
+.mode-btn:hover {
+  color: var(--tau-muted); /* tau.muted */
+}
+
+.mode-btn.active {
+  color: var(--tau-bg); /* tau.bg — on chrome */
+  background: var(--tau-chrome-3);
 }
 
 .hint,

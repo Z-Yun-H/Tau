@@ -671,6 +671,21 @@ suite. This redesign touches **client only**. Specifically unchanged:
 - `Run plan` button text (screenshot selector)
 - `file.find in` output prefix (screenshot selector)
 
+Additive in v0.4.0 (issue #97) — new surface, zero edits to the frozen
+shapes above:
+
+- `POST /api/goal/stream` — agent mode over `runGoal()`. Emits
+  `goal_registered` (goalId), then runGoal's lifecycle verbatim
+  (`goal_start`, `round_plan`, `round_end`, `approval_required`,
+  `goal_end`) interleaved with the EXISTING step_* event shapes, and a
+  terminal `goal_result`. Non-"allow" rounds (ANY round, first included)
+  pause the stream until `POST /api/goal/approve {goalId, approve}` or
+  the 10-minute TTL (`TAU_WEBUI_APPROVAL_TTL_MS` overrides; timeout →
+  `approval_timeout` + goal cancelled). Client disconnect aborts the
+  goal runGoal-side (process-group kill mid-shell included).
+- Agent mode is NEVER a blanket pre-approval: every medium+ round — the
+  first one too — shows the plan and waits for a per-round decision.
+
 ## 10. Avoid-AI-cliché rules (preserved + refined)
 
 1. **No decorative gradients** — the chrome sweep (brand mark, chrome
@@ -705,6 +720,7 @@ suite. This redesign touches **client only**. Specifically unchanged:
 | `client/components/SessionSidebar.vue` | history rail (`.tau-surface` dock)                                                               |
 | `client/components/Composer.vue`       | the beam + toolbar + send                                                                        |
 | `client/components/PlanCard.vue`       | review surface + chrome Run plan (`--tau-on-chrome` label)                                       |
+| `client/components/GoalCard.vue`       | agent-mode round timeline (live steps, per-round approval bar, Stop)                             |
 | `client/components/StepRow.vue`        | numbered step rail                                                                               |
 | `client/components/ResultCard.vue`     | streaming outcome                                                                                |
 | `client/components/ErrorCard.vue`      | failed plan                                                                                      |
@@ -714,13 +730,15 @@ suite. This redesign touches **client only**. Specifically unchanged:
 | `client/components/SettingsPanel.vue`  | read-only settings surface (`GET /api/config` view + theme picker)                               |
 | `client/components/RiskBadge.vue`      | the ONE semantic atom                                                                            |
 | `client/composables/session.ts`        | status/skills/tools/history (module singleton)                                                   |
-| `client/composables/plan-flow.ts`      | threads + cards state machine (localStorage-persisted)                                           |
+| `client/composables/plan-flow.ts`      | threads + cards state machine (localStorage-persisted; goal cards + abort-controller registry)   |
 | `client/lib/api.ts`                    | typed HTTP client (no `@tau/*` runtime import)                                                   |
 | `client/lib/stream.ts`                 | DOM-free NDJSON splitter (unit-tested)                                                           |
 | `client/lib/format.ts`                 | args/time/tool-family formatters                                                                 |
 | `client/lib/highlight.ts`              | shiki progressive upgrade (silent no-op)                                                         |
 | `client/lib/theme.ts`                  | three-state theme preference, `tau-webui-theme-v1` persistence, `useTheme()` singleton           |
-| `scripts/screenshot.mjs`               | real-server screenshot rig (dark pinned + light pass, 4 PNGs)                                    |
+| `scripts/screenshot.mjs`               | real-server screenshot rig (dark pinned + light pass + agent pass, 5 PNGs)                       |
+| `src/server.ts`                        | HTTP API incl. `/api/goal/stream` + `/api/goal/approve` (additive, v0.4.0)                       |
+| `src/goal.ts`                          | goal approval registry (TTL, one pending decision per goal)                                      |
 | `DESIGN.md` (this file)                | the spec                                                                                         |
 | `SKILL.md`                             | the checklist (contract layer)                                                                   |
 
