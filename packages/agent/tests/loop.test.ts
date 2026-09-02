@@ -320,6 +320,21 @@ describe("runGoal — end-to-end with the real mock provider", () => {
     expect(result.answer).toBe("wrapped up");
   });
 
+  it("round_end carries the provider's usage when reported (issue #98)", async () => {
+    registerProviderBuiltins();
+    const events: GoalEvent[] = [];
+    const result = await runGoal(
+      "echo GOAL_COMPLETE: tallied",
+      baseOptions({ provider: "mock", onGoalEvent: (e) => events.push(e) }),
+    );
+    expect(result.status).toBe("ok");
+    const roundEnd = events.find(
+      (event): event is Extract<GoalEvent, { type: "round_end" }> => event.type === "round_end",
+    );
+    expect(roundEnd?.usage).toBeDefined();
+    expect(roundEnd?.usage?.totalTokens).toBeGreaterThan(0);
+  });
+
   it("mock loop: unmarked intent keeps continuing until the cap", async () => {
     const result = await runGoal(
       "just look around",

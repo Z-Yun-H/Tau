@@ -12,6 +12,7 @@
 
 import { buildSystemPrompt, validatePlanResponse } from "../prompt.js";
 import { buildReflectPrompt, validateReflectResponse } from "../reflect.js";
+import { normalizeUsage } from "../usage.js";
 import { chatJSON } from "./http.js";
 import { BaseHttpProvider } from "./base.js";
 import type { AgentDecision, Plan, PlanningContext, ReflectContext } from "@tau/core";
@@ -56,6 +57,13 @@ export class OpenAIProvider extends BaseHttpProvider {
         ],
       },
       this.timeoutMs(),
+      {
+        // Observability (issue #98): capture the wire usage of THIS call —
+        // read back via lastUsage right after the awaited plan/reflect call.
+        onUsage: (usage) => {
+          this.lastUsage = normalizeUsage(usage);
+        },
+      },
     );
     const parsed = JSON.parse(raw) as { choices?: Array<{ message?: { content?: string } }> };
     return parsed.choices?.[0]?.message?.content ?? "";

@@ -33,6 +33,17 @@ approval gates, final answer**
 
 ![webui agent](./docs/screenshots/agent.png)
 
+## Observability (v0.4.0)
+
+The server logs **one line per request** to stderr — `ts · method · path →
+status · ms` with a `tokens=TOTAL(P/C)` note on AI-calling routes
+(`/api/plan`, goal rounds) when the provider reports usage. `TAU_WEBUI_QUIET=1`
+silences the default sink; programmatic starts can inject their own via
+`startWebUi({ log })` / `createRequestListener({ log })` (injection always
+wins over the env switch). `POST /api/plan` responses carry an additive
+`usage` field, and goal streams annotate each `round_end` with that round's
+AI cost — usage the wire always reported but Tau used to drop silently.
+
 ## Client stack
 
 - **Vue 3** — a slim shell (`client/App.vue`) over the component

@@ -34,6 +34,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   decision (10-minute TTL), the Stop button cancels the whole goal
   mid-shell included, and every round still passes the same
   deterministic safety review as the plan flow.
+- **Observability baseline.** The WebUI server now logs one line per
+  request to stderr (method, path, status, duration, plus a
+  `tokens=TOTAL(P/C)` note on AI-calling routes when the provider
+  reports usage) — `TAU_WEBUI_QUIET=1` silences it and programmatic
+  starts can inject their own sink. `POST /api/plan` responses carry an
+  additive `usage` field and goal streams annotate every `round_end`
+  with that round's AI token cost: usage the wire always reported but
+  Tau used to drop.
 
 ## 0.3.0 — 2026-09-02
 
