@@ -81,7 +81,7 @@ offline, mock provider). Regeneration: `app/*/docs/screenshots/README.md`.
 <p align="center">
   <img alt="webui plan (dark)" src="app/webui/docs/screenshots/plan.png" width="32%">
   <img alt="webui result (dark)" src="app/webui/docs/screenshots/result.png" width="32%">
-  <img alt="webui plan (light)" src="app/webui/docs/screenshots/plan-light.png" width="32%">
+  <img alt="webui agent mode (dark)" src="app/webui/docs/screenshots/agent.png" width="32%">
 </p>
 
 ## Quick start
@@ -254,7 +254,7 @@ workspace resolves them at runtime. Every package and app ships its own
 app/
   cli/            @tau/cli    — bin `tau`: commander app + `tau tui` / `tau web` bridges
   tui/            @tau/tui    — bin `tau-tui`: interactive REPL (markdown & image previews: /md, /view)
-  webui/          @tau/webui  — bin `tau-web`: local web interface (Vue 3 + UnoCSS client, light/dark themes + read-only settings panel, zero-dependency node API)
+  webui/          @tau/webui  — bin `tau-web`: local web interface (Vue 3 + UnoCSS client, light/dark themes, plan mode + multi-round agent mode, zero-dependency node API)
 packages/
   core/           @tau/core    — types, config store, history, TAU_HOME paths
   tools/          @tau/tools   — registry + file/sys/net/text tools

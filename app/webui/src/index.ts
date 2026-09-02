@@ -15,6 +15,7 @@ import { startWebUi } from "./server.js";
 
 export { createRequestListener, startWebUi } from "./server.js";
 export type { RunningWebUi, StartWebUiOptions } from "./server.js";
+export { GoalRegistry, approvalTtlMs, DEFAULT_APPROVAL_TTL_MS } from "./goal.js";
 
 const DEFAULT_PORT = 8787;
 

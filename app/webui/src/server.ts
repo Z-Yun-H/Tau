@@ -22,7 +22,9 @@ import {
   planAndReview,
   ProviderUnavailableError,
   readRecentHistory,
+  runGoal,
 } from "@tau/agent";
+import { GoalRegistry } from "./goal.js";
 
 const WEBUI_TIMEOUT_SEC = 120;
 const BODY_CAP_BYTES = 1024 * 1024;
@@ -168,6 +170,7 @@ async function readExecuteRequest(
 
 export function createRequestListener(): http.RequestListener {
   const staticDir = resolveStaticDir();
+  const goalRegistry = new GoalRegistry();
   return async (req, res) => {
     const url = new URL(req.url ?? "/", "http://localhost");
     try {
@@ -317,6 +320,86 @@ export function createRequestListener(): http.RequestListener {
           } finally {
             res.end();
           }
+          return;
+        }
+        if (req.method === "POST" && url.pathname === "/api/goal/stream") {
+          // Agent mode (issue #97): runGoal over the SAME engine. Every round
+          // is re-reviewed; non-"allow" rounds pause the stream until
+          // /api/goal/approve decides (or the TTL ends the goal cancelled).
+          const body = await readJsonBody(req);
+          const intent = typeof body["intent"] === "string" ? body["intent"].trim() : "";
+          if (!intent) {
+            sendJson(res, 400, { error: "intent (string) is required" });
+            return;
+          }
+          const rawRounds = body["maxRounds"];
+          const maxRounds =
+            typeof rawRounds === "number" && Number.isFinite(rawRounds) && rawRounds >= 1
+              ? rawRounds
+              : undefined;
+          const provider = typeof body["provider"] === "string" ? body["provider"] : undefined;
+          ensureCatalog();
+          const goalId = goalRegistry.createGoalId();
+          const controller = new AbortController();
+          // Client disconnect (Stop button, tab close) cancels the goal —
+          // mid-shell included, via the engine's process-group kill.
+          res.on("close", () => controller.abort());
+          res.writeHead(200, {
+            "content-type": "application/x-ndjson; charset=utf-8",
+            "cache-control": "no-store",
+          });
+          const write = (event: unknown): void => {
+            if (!res.writableEnded) res.write(JSON.stringify(event) + "\n");
+          };
+          write({ type: "goal_registered", goalId });
+          try {
+            const result = await runGoal(intent, {
+              provider,
+              maxRounds,
+              assumeYes: true,
+              allowMediumAutoApprove: true,
+              timeoutSec: WEBUI_TIMEOUT_SEC,
+              autoApproveAll: true,
+              signal: controller.signal,
+              // runGoal's lifecycle + the per-round step_* events mirror
+              // verbatim — additive event types only, shapes never bent.
+              onGoalEvent: (event) => write(event),
+              onPlanEvent: (event) => write(event),
+              awaitApproval: (round) =>
+                goalRegistry.awaitApproval(goalId, round, () => {
+                  write({ type: "approval_timeout", round });
+                }),
+            });
+            write({
+              type: "goal_result",
+              status: result.status,
+              rounds: result.rounds.length,
+              ...(result.answer !== undefined ? { answer: result.answer } : {}),
+              ...(result.error !== undefined ? { error: result.error } : {}),
+            });
+          } catch (error) {
+            write({
+              type: "error",
+              error: error instanceof Error ? error.message : String(error),
+            });
+          } finally {
+            res.end();
+          }
+          return;
+        }
+        if (req.method === "POST" && url.pathname === "/api/goal/approve") {
+          const body = await readJsonBody(req);
+          const goalId = typeof body["goalId"] === "string" ? body["goalId"] : "";
+          if (!goalId) {
+            sendJson(res, 400, { error: "goalId (string) is required" });
+            return;
+          }
+          const decided = goalRegistry.approve(goalId, body["approve"] === true);
+          if (!decided) {
+            sendJson(res, 404, { error: `unknown or expired goal: ${goalId}` });
+            return;
+          }
+          sendJson(res, 200, { ok: true });
           return;
         }
         sendJson(res, 404, { error: `unknown API route: ${req.method} ${url.pathname}` });

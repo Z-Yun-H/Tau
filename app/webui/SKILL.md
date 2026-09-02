@@ -166,6 +166,13 @@ chords like Ctrl+T/W/N).
   first), one-click copy, expand/collapse. `review` sentinel for
   streaming.
 - `ErrorCard` — intent + message + the two concrete ways out.
+- `GoalCard` (v0.4.0) — agent-mode round timeline: eyebrow with
+  `round N/M · via provider` + live dot; one block per round (index
+  chip, `AI continuation` chip for reflect-origin, risk badge, status
+  chip); live steps (state dot + mono label + streamed output box);
+  inline approval bar on `approval_required` (`Approve round` chrome /
+  `Refuse` danger — the per-round gate, medium+ NEVER auto-runs);
+  markdown answer; honest error row; footer status + `Stop goal`.
 - `SidePanel` — Skills / History / Tools tabs; sliding `tau.ok`
   indicator; keyboard arrows; `role=tablist`. The Tools tab leads with a
   catalog overview row (`N tools · N read · N mutates · N dry-run`), family
@@ -179,7 +186,9 @@ chords like Ctrl+T/W/N).
   semantics; hint row with live shortcuts; chrome Send button (disabled
   = raised gray, ready = chrome sweep); exposes `focus()` for Ctrl/⌘+K.
   The Send button is NOT labeled "Plan" — the composer _sends an
-  intent_; the plan card _runs the plan_.
+  intent_; the plan card _runs the plan_. v0.4.0: a `plan | agent`
+  segmented control leads the toolbar (default plan — the historical
+  flow untouched); agent submits to `/api/goal/stream`.
 
 State: `composables/session.ts` (module-singleton refs — no state
 library) and `composables/plan-flow.ts` (thread + cards state machine,
@@ -216,6 +225,15 @@ The server (`src/server.ts`) exposes:
   stream mirrors `runPlan`'s `onEvent` lifecycle events line by line
   (`step_start` → `step_output`* → `step_end` → `plan_end` → `result`)
   and ends with an authoritative `result` event
+- `POST /api/goal/stream` (v0.4.0) — agent mode over `runGoal()`:
+  NDJSON `goal_registered` → runGoal lifecycle (`goal_start`,
+  `round_plan`, `round_end`, `approval_required`, `goal_end`) with the
+  EXISTING step_* shapes mirrored verbatim → terminal `goal_result`.
+  Non-"allow" rounds pause until `POST /api/goal/approve {goalId,
+approve}` (unknown/expired → 404) or the 10-min TTL
+  (`TAU_WEBUI_APPROVAL_TTL_MS` overrides; expiry emits
+  `approval_timeout`, goal ends cancelled). Client disconnect aborts
+  runGoal (engine process-group kill mid-shell included).
 
 NDJSON event field names: `type`, `index`, `step`, `chunk`, `ok`,
 `exitCode`, `skipped`, `status`, `output`, `outcomes`, `error`. The
