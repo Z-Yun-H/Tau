@@ -87,8 +87,13 @@ mock provider + tests + this file + README example.
 
 ## Adding a provider — checklist
 
-1. `packages/ai/src/providers/<name>.ts` implementing AIProvider (look at openai.ts
-   for the HTTP pattern; ollama.ts for local-server availability probing).
+1. `packages/ai/src/providers/<name>.ts` implementing AIProvider (look at
+   openai.ts for the HTTP pattern — it uses the shared `chatJSON` helper in
+   `providers/http.ts`; ollama.ts for local-server availability probing;
+   deepseek.ts for an SSE-streaming provider that keeps its own wire client).
+   The mock provider lives in `providers/mock.ts` and hosts NO shared utility
+   — keep it self-contained so the offline demo never depends on (or
+   accidentally exports) code used by real backends.
 2. Register in `registry.ts`; add config defaults in `store.ts`.
 3. `isAvailable()` must be CHEAP and never prompt; `unavailableReason()`
    explains exactly what to install/export.

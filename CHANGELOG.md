@@ -5,7 +5,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
-(nothing yet)
+### Changed
+
+- **Provider module boundary: mock vs real backends.** `packages/ai/src/providers/http.ts`
+  now houses the shared `chatJSON` helper that `openai.ts` and `ollama.ts` consume;
+  `mock.ts` returns to being a self-contained zero-network demo / test fixture and
+  no longer exports utilities used by real providers. `index.ts` barrel still
+  re-exports `chatJSON` for external consumers. The `validatePlanResponse`
+  re-export that `mock.ts` used to forward is removed — callers already import it
+  from `prompt.js` directly. Behavior is byte-for-byte unchanged: `chatJSON` was
+  moved verbatim, `MockProvider.plan()` builds the same plans, and the `@tau/ai`
+  public API surface is identical. Dev docs (`AGENTS/ai-integration.md` "Adding a
+  provider" checklist, `packages/ai/README.md`) were synced to name `http.ts` as
+  the canonical HTTP helper home and to call out mock's "no shared utility" rule.
 
 ## 0.2.0 - 2026-09-01
 

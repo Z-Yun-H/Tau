@@ -15,7 +15,10 @@ Everything is exported from the package barrel (`src/index.ts`):
 - **Provider registry** (`src/registry.ts`) — `registerProvider()`,
   `resolveProvider()`, `getProvider()`, `providerNames()`, `resetProviders()`
 - **Provider classes** (`src/providers/`) — `MockProvider`, `OllamaProvider`,
-  `OpenAIProvider`, `DeepSeekProvider`, `ZaiProvider`
+  `OpenAIProvider`, `DeepSeekProvider`, `ZaiProvider`. Mock is self-contained
+  (zero-network, no shared utility); real HTTP providers (openai, ollama)
+  share the `chatJSON` helper in `src/providers/http.ts`; deepseek keeps its
+  own SSE-streaming wire client.
 - **Model catalog** (`src/models.ts`) — `refreshProviderModels()`,
   `cachedModels()`, `resolveModel()`, `isCatalogStale()`, `MODELS_TTL_MS`
   (24 h cache; providers implement optional `listModels()`)
