@@ -273,6 +273,9 @@ importers:
       '@tau/agent':
         specifier: workspace:*
         version: link:../../packages/agent
+      '@tau/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@tau/core':
         specifier: workspace:*
         version: link:../../packages/core

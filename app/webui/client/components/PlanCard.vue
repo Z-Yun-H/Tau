@@ -38,7 +38,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <article ref="rootEl" class="tau-card plan-enter">
+  <article ref="rootEl" class="tau-card tau-surface plan-enter">
     <!-- eyebrow: PLAN label + risk badge + provider -->
     <div class="card-eyebrow">
       <span class="eyebrow-label">plan</span>

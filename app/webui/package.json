@@ -39,6 +39,7 @@
   },
   "dependencies": {
     "@tau/agent": "workspace:*",
+    "@tau/ai": "workspace:*",
     "@tau/core": "workspace:*",
     "@tau/engine": "workspace:*",
     "@tau/markdown": "workspace:*",

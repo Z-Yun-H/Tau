@@ -63,6 +63,10 @@ describe("WebUI e2e — real HTTP snapshots", () => {
     expect(await get("/api/status")).toMatchSnapshot();
   });
 
+  it("GET /api/config snapshots the redacted settings surface", async () => {
+    expect(await get("/api/config")).toMatchSnapshot();
+  });
+
   it("POST /api/plan returns a reviewed mock plan", async () => {
     const body = await post("/api/plan", { intent: "find all *.md files" });
     const parsed = JSON.parse(body) as { plan: unknown };

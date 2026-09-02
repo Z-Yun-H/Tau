@@ -14,6 +14,8 @@
 import { useSession } from "../composables/session.js";
 import { useTheme } from "../lib/theme.js";
 
+const emit = defineEmits<{ "open-settings": [] }>();
+
 const { status, statusError } = useSession();
 const { preference, resolved } = useTheme();
 
@@ -55,6 +57,16 @@ const themePrefLabel = (): string => (preference.value === "system" ? "auto" : p
     <span v-if="status" class="tau-chip hidden sm:inline-flex max-w-40" :title="status.tauHome">
       <span class="truncate">{{ status.tauHome }}</span>
     </span>
+    <button
+      type="button"
+      class="theme-btn"
+      title="settings (Ctrl/⌘+,) — read-only config view"
+      aria-label="open settings"
+      @click="emit('open-settings')"
+    >
+      <span class="theme-glyph">⚙</span>
+      <span class="theme-pref">settings</span>
+    </button>
     <button
       type="button"
       class="theme-btn"

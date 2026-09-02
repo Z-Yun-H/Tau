@@ -579,6 +579,43 @@ per-theme tuning of tint vs border belongs to the token layer. The
 `review` mapping (info blue) keeps the streaming `streaming…` state in
 ResultCard reading as "in flight" rather than "dead".
 
+### 6.12 SettingsPanel — the read-only settings surface
+
+One floating modal (`Ctrl/⌘+,`, or the `⚙ settings` button at the
+header's right end; `Esc`/backdrop closes), reusing the ShortcutsModal
+skeleton: `.tau-surface rounded-12px` panel at `max-w-520px`, scrim
+`var(--tau-backdrop)`, `tau-enter` fade + rise. Four sections, separated
+by gradient dividers:
+
+```
+SETTINGS  [read-only]                                    [esc]
+────────────────────────────────────────────────────────────
+PROVIDER      active    Mock (offline demo) via config
+              model     (auto)          · availability chips
+              catalog   N cached · refreshed <relTime>
+RISK POLICY   allowMediumAutoApprove / timeout / shell / aliases
+              "read-only — change with tau config set <key> <value>"
+APPEARANCE    [ system | light | dark ]  ← one state, three views
+SESSIONS      threads N/50 · history N loaded · tau home
+────────────────────────────────────────────────────────────
+provider keys stay masked (sk-***last4) — nothing here can change the config
+```
+
+- **Data source**: a single `GET /api/config` fetched on mount — the
+  redacted effective config (the same `redactConfig` `tau config list`
+  prints), live provider availability, and the active provider's
+  model-catalog cache state. Loading and error states are honest
+  (`loading config…` pulse / `config unavailable — <reason>`).
+- **Read-only by design**: there is NO write path — config changes stay
+  in the CLI (`tau config set …`). The browser never becomes a second
+  way into the safety-relevant configuration; the footer says so.
+- **Appearance picker**: a three-option segmented control (`role=radiogroup`)
+  bound to the SAME `useTheme()` singleton as the header button —
+  `system` active state carries the `tau.ok` accent; both views stay in
+  sync by construction.
+- **Availability chips**: `name ✓` in ok-soft when the provider answers,
+  `name ✕` in faint when not — per-machine truth, not aspiration.
+
 ## 7. Motion spec
 
 | Interaction                      | Duration           | Easing        | Notes                                  |
@@ -611,6 +648,7 @@ ResultCard reading as "in flight" rather than "dead".
 | Alt + N       | new conversation                  | global   |
 | Alt + S       | toggle reference rail             | global   |
 | Alt + T       | cycle theme system → light → dark | global   |
+| Ctrl/⌘ + ,    | open settings (read-only)         | global   |
 | Esc           | close modal / drawer              | global   |
 
 Adding a shortcut requires updating **three places**: `App.vue`
@@ -673,6 +711,7 @@ suite. This redesign touches **client only**. Specifically unchanged:
 | `client/components/EmptyState.vue`     | serif hero + contract                                                                            |
 | `client/components/SidePanel.vue`      | skills/history/tools rail                                                                        |
 | `client/components/ShortcutsModal.vue` | keyboard contract overlay                                                                        |
+| `client/components/SettingsPanel.vue`  | read-only settings surface (`GET /api/config` view + theme picker)                               |
 | `client/components/RiskBadge.vue`      | the ONE semantic atom                                                                            |
 | `client/composables/session.ts`        | status/skills/tools/history (module singleton)                                                   |
 | `client/composables/plan-flow.ts`      | threads + cards state machine (localStorage-persisted)                                           |

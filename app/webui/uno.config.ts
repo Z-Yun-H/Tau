@@ -76,10 +76,11 @@ export default defineConfig({
     },
   },
   shortcuts: {
-    /* surfaces — layered: the .tau-surface* classes (theme.css) add the
-       gradient edge + elevation; spacing/radius stay utilities here. */
-    "tau-card": "tau-surface rounded-12px my-2 px-4 py-3.5",
-    "tau-panel": "tau-surface rounded-12px",
+    /* spacing bundle for cards — the LAYERED look comes from the explicit
+       `tau-surface` class in the template (theme.css). A shortcut cannot
+       carry a plain CSS class: uno drops unknown tokens silently, which
+       silently strips the surface background (the bug this fixed). */
+    "tau-card": "rounded-12px my-2 px-4 py-3.5",
 
     /* risk badge — the shared semantic atom (text color + tint + edge) */
     "tau-badge": "rounded-4px px-1.5 py-px text-[11px] leading-4.5 font-mono inline-block border",
@@ -89,8 +90,6 @@ export default defineConfig({
       "inline-flex items-center justify-center gap-1.5 bg-transparent text-tau-text border border-tau-line-strong rounded-8px px-3 py-1.5 cursor-pointer font-sans text-[13px] transition-colors duration-120 ease-out hover:bg-tau-raised hover:border-tau-faint disabled:opacity-45 disabled:cursor-not-allowed disabled:pointer-events-none",
     "tau-btn-primary":
       "inline-flex items-center justify-center gap-1.5 bg-tau-ok-soft text-tau-ok border border-tau-ok-edge rounded-8px px-3.5 py-1.5 cursor-pointer font-sans text-[13px] font-medium transition-colors duration-120 ease-out hover:bg-tau-ok-soft hover:border-tau-ok disabled:opacity-45 disabled:cursor-not-allowed",
-    "tau-btn-chrome":
-      "tau-chrome-text inline-flex items-center justify-center gap-1.5 border border-tau-chrome-3 rounded-8px px-4 py-2 cursor-pointer font-sans text-[13px] font-medium transition-[background-position] duration-300 ease-out hover:tau-chrome-text-hover disabled:opacity-45 disabled:cursor-not-allowed disabled:pointer-events-none",
     "tau-btn-danger-hover":
       "transition-colors duration-120 ease-out hover:border-tau-danger hover:text-tau-danger",
     "tau-input":

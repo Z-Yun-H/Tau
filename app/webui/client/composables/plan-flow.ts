@@ -65,7 +65,8 @@ export interface Thread {
 }
 
 const STORAGE_KEY = "tau-webui-threads-v1";
-const MAX_THREADS = 50;
+/** Pinned contract (DESIGN.md §9): the local thread cap. */
+export const MAX_THREADS = 50;
 const TITLE_CAP = 42;
 
 function loadThreads(): Thread[] {
