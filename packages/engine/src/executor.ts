@@ -16,6 +16,8 @@ export interface StepOutcome {
   output: string;
   exitCode?: number;
   skipped?: boolean;
+  /** True when this step was cut short by an abort signal (agent-loop cancel). */
+  cancelled?: boolean;
 }
 
 export interface ExecutorOptions {
@@ -25,6 +27,12 @@ export interface ExecutorOptions {
   onOutput?: (chunk: string) => void;
   /** Shell for shell-steps (default: config `shell`, itself defaulting to "auto"). */
   shell?: ShellPref;
+  /**
+   * Optional cancellation signal (agent-loop Stop). Checked before each
+   * step; while a shell step runs, an abort kills the child immediately.
+   * Absent/never-aborted = zero behavior change.
+   */
+  signal?: AbortSignal;
 }
 
 /**
@@ -121,6 +129,9 @@ export async function executeStep(
   index: number,
   options: ExecutorOptions,
 ): Promise<StepOutcome> {
+  if (options.signal?.aborted) {
+    return { ok: false, output: "(cancelled by user)", skipped: true, cancelled: true };
+  }
   const allowed = options.gate ? await options.gate(step, index) : true;
   if (!allowed) {
     return { ok: true, output: "(skipped by user)", skipped: true };
@@ -152,6 +163,12 @@ export async function executeStep(
 export function runShell(command: string, options: ExecutorOptions): Promise<StepOutcome> {
   const pref = options.shell ?? loadConfig().shell ?? "auto";
   const invocation = buildShellInvocation(command, pref);
+  // POSIX: spawn in its own process group so a kill takes the WHOLE tree
+  // (shell + grandchildren like `sleep` that inherit the stdio pipes) — a
+  // bare child.kill() orphans the pipes and the close event hangs until the
+  // grandchildren exit naturally. Windows lacks process groups; the shell is
+  // killed directly (COMSPEC/PowerShell propagate to children in practice).
+  const posix = process.platform !== "win32";
   const child =
     invocation.mode === "native"
       ? spawn(command, {
@@ -159,28 +176,46 @@ export function runShell(command: string, options: ExecutorOptions): Promise<Ste
           cwd: process.cwd(),
           env: process.env,
           stdio: ["ignore", "pipe", "pipe"],
+          detached: posix,
         })
       : spawn(invocation.file, invocation.args, {
           shell: false,
           cwd: process.cwd(),
           env: process.env,
           stdio: ["ignore", "pipe", "pipe"],
+          detached: posix,
         });
+  /** Kill the shell AND its process tree (group kill on POSIX). */
+  const killTree = (): void => {
+    try {
+      if (posix && child.pid !== undefined) process.kill(-child.pid, "SIGKILL");
+      else child.kill("SIGKILL");
+    } catch {
+      // Already gone — racy kills are expected (timeout vs close).
+    }
+  };
   return new Promise((resolve) => {
     let output = "";
     let finished = false;
     const timer = setTimeout(() => {
       if (!finished) {
-        child.kill("SIGKILL");
+        killTree();
       }
     }, options.timeoutSec * 1000);
+
+    // Agent-loop cancellation: an abort mid-run kills the tree at once;
+    // the close handler below resolves with the cancelled outcome.
+    const onAbort = (): void => {
+      if (!finished) killTree();
+    };
+    options.signal?.addEventListener("abort", onAbort, { once: true });
 
     const collect = (chunk: Buffer): void => {
       const text = chunk.toString();
       output += text;
       if (output.length > 200_000) {
         output = output.slice(0, 200_000) + "\n... (output truncated)";
-        child.kill("SIGKILL");
+        killTree();
       }
       options.onOutput?.(text);
     };
@@ -191,19 +226,25 @@ export function runShell(command: string, options: ExecutorOptions): Promise<Ste
       if (finished) return;
       finished = true;
       clearTimeout(timer);
+      options.signal?.removeEventListener("abort", onAbort);
       resolve({ ok: false, output: `${output}\nspawn error: ${err.message}`, exitCode: -1 });
     });
     child.on("close", (code, signal) => {
       if (finished) return;
       finished = true;
       clearTimeout(timer);
+      options.signal?.removeEventListener("abort", onAbort);
       const killed = signal === "SIGKILL";
+      const aborted = options.signal?.aborted === true;
       resolve({
         ok: code === 0,
-        output: killed
-          ? `${output}\n(command timed out after ${options.timeoutSec}s)`
-          : output.trimEnd(),
+        output: aborted
+          ? `${output}\n(cancelled by user)`
+          : killed
+            ? `${output}\n(command timed out after ${options.timeoutSec}s)`
+            : output.trimEnd(),
         exitCode: code ?? -1,
+        ...(aborted ? { cancelled: true } : {}),
       });
     });
   });

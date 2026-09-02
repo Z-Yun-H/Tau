@@ -6,38 +6,40 @@ exports[`CLI e2e — real process snapshots > tau --help renders the full comman
 AI-powered unified terminal assistant — natural language in, safe commands out.
 
 Options:
-  -V, --version              output the version number
-  --provider <name>          AI provider for this run
-                             (mock|ollama|openai|deepseek|zai)
-  --yes                      auto-approve low-risk steps (medium needs config
-                             allowMediumAutoApprove; never high/blocked)
-  --json                     machine-readable output where supported
-  -h, --help                 display help for command
+  -V, --version               output the version number
+  --provider <name>           AI provider for this run
+                              (mock|ollama|openai|deepseek|zai)
+  --yes                       auto-approve low-risk steps (medium needs config
+                              allowMediumAutoApprove; never high/blocked)
+  --json                      machine-readable output where supported
+  -h, --help                  display help for command
 
 Commands:
-  ask [options] <intent...>  Turn a natural-language intent into a reviewed,
-                             confirmed execution plan
-  file                       Filesystem tools: find, stat, tree, batch rename
-                             (dry-run by default)
-  sys                        System inspection tools: info, disk, processes
-                             (read-only)
-  net                        Network diagnostics: port check, ping, fetch, local
-                             IP
-  text                       Text tools: search, replace (dry-run by default),
-                             count
-  skill                      Manage Tau skills (SKILL.md plugins)
-  history                    Inspect and replay what Tau ran (JSONL store under
-                             TAU_HOME)
-  alias                      Manage command aliases stored in your Tau config
-  provider                   Manage AI providers: API keys, live model discovery
-                             and model selection
-  config                     View and change Tau configuration (stored under
-                             TAU_HOME)
-  plugin                     Manage MCP plugins (external tool servers: dsh, VS
-                             Code, filesystem, ...)
-  tui                        Start an interactive terminal session (REPL)
-  web [options]              Serve the Tau web UI on localhost
-  help [command]             display help for command
+  ask [options] <intent...>   Turn a natural-language intent into a reviewed,
+                              confirmed execution plan
+  goal [options] <intent...>  Run an intent as a multi-round agent loop (plan ->
+                              run -> reflect -> repeat)
+  file                        Filesystem tools: find, stat, tree, batch rename
+                              (dry-run by default)
+  sys                         System inspection tools: info, disk, processes
+                              (read-only)
+  net                         Network diagnostics: port check, ping, fetch,
+                              local IP
+  text                        Text tools: search, replace (dry-run by default),
+                              count
+  skill                       Manage Tau skills (SKILL.md plugins)
+  history                     Inspect and replay what Tau ran (JSONL store under
+                              TAU_HOME)
+  alias                       Manage command aliases stored in your Tau config
+  provider                    Manage AI providers: API keys, live model
+                              discovery and model selection
+  config                      View and change Tau configuration (stored under
+                              TAU_HOME)
+  plugin                      Manage MCP plugins (external tool servers: dsh, VS
+                              Code, filesystem, ...)
+  tui                         Start an interactive terminal session (REPL)
+  web [options]               Serve the Tau web UI on localhost
+  help [command]              display help for command
 "
 `;
 

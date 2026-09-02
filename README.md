@@ -5,7 +5,7 @@
 [![CI](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml/badge.svg)](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-391%20passing-success)](vitest.config.ts)
+[![Tests](https://img.shields.io/badge/tests-427%20passing-success)](vitest.config.ts)
 [![pnpm](https://img.shields.io/badge/pnpm-monorepo-F69220)](pnpm-workspace.yaml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 [![中文文档](https://img.shields.io/badge/docs-中文-red)](README.zh-CN.md)
@@ -18,6 +18,7 @@ gate before it can touch your machine.
 ```bash
 tau ask "找出所有 TODO 的地方"          # intent -> plan -> confirm -> done
 tau ask "how much disk is left?" --yes  # auto-approve low risk (medium only with allowMediumAutoApprove)
+tau goal "migrate the config format"    # multi-round agent loop: plan -> run -> reflect -> repeat
 tau file find "*.ts"                    # or use the tools directly
 ```
 
@@ -44,6 +45,7 @@ around: **the AI proposes, deterministic code disposes.**
 | Area           | What you get                                                                                                                   |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `tau ask`      | NL intent → provider plan → safety review → confirm UI → execution → history                                                   |
+| `tau goal`     | multi-round agent loop: plan → run → reflect → repeat (round cap, per-round safety review, same confirmation gates)            |
 | `tau file`     | glob find (prunes node_modules), tree, stat, line-numbered read (offset/limit), dir list, regex batch rename (dry-run default) |
 | `tau sys`      | OS/CPU/memory info, disk usage, top processes, datetime (local/ISO/epoch/tz), which, env lookup (one name, medium risk)        |
 | `tau net`      | TCP port check, ping, SSRF-guarded fetch, local IPs                                                                            |

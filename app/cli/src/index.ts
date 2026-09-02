@@ -90,6 +90,17 @@ export function buildProgram(): Command {
       await runAsk(intentParts, options, command);
     });
 
+  // Lazy: same agent chain as ask, plus the multi-round reflection loop.
+  program
+    .command("goal")
+    .description("Run an intent as a multi-round agent loop (plan -> run -> reflect -> repeat)")
+    .argument("<intent...>", "the goal, in plain words (Chinese or English)")
+    .option("--rounds <n>", "max rounds (default 3, hard ceiling 5)")
+    .action(async (intentParts: string[], options: { rounds?: string }, command: Command) => {
+      const { runGoalCli } = await import("./goal.js");
+      await runGoalCli(intentParts, options, command);
+    });
+
   // Light families: their module graph is cheap (commander + @tau/ui + core).
   registerFileCommands(program);
   registerSysCommands(program);

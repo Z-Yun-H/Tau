@@ -6,6 +6,7 @@
  * execute anything.
  */
 export * from "./prompt.js";
+export * from "./reflect.js";
 export * from "./registry.js";
 export * from "./models.js";
 export * from "./providers/http.js";

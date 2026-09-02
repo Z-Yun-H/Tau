@@ -126,6 +126,24 @@ mock provider + tests + this file + README example.
 5. Update README (both languages) provider table + `tau config list` output
    if it changes.
 
+## Reflection — the agent-loop capability (optional)
+
+`reflect?()` on AIProvider (packages/ai/src/reflect.ts owns the prompt +
+zod schema) turns a single-round planner into a goal-capable agent:
+after each executed round the loop calls reflect with the intent, the
+catalog snapshot, and the executed rounds (outputs truncated to 4k chars
+each); the provider answers either `{done:true, answer}` or
+`{done:false, plan}` — and a proposed plan is ALWAYS re-graded by the
+deterministic reviewer before it can run (the AI never grades itself).
+
+- Implemented by: `mock` (deterministic decision table, offline tests) and
+  `openai` (same chat/completions wire path as plan). NOT yet: ollama,
+  deepseek, zai — they degrade to one executed round with an honest note.
+- Validation mirrors plan validation (fences/prose tolerated, strict
+  schema otherwise): `validateReflectResponse` + `reflectSchema`.
+- Round history kept in the prompt is capped (last 3 verbatim; older
+  rounds summarized in one line) so long goals cannot blow the context.
+
 ## Provider HTTP hardening (chatJSON contract)
 
 `chatJSON` (`providers/http.ts`) is the production seam for non-streaming
