@@ -86,6 +86,22 @@ describe("CLI integration (in-process)", () => {
     expect(process.exitCode ?? 0).toBe(0);
   });
 
+  it("tau goal completes a single-round mock goal and records history", async () => {
+    await run("goal", "echo GOAL_COMPLETE: done via cli", "--provider", "mock", "--yes");
+    expect(process.exitCode ?? 0).toBe(0);
+    const history = fs.readFileSync(path.join(tmp, "home", "history.jsonl"), "utf8");
+    expect(history).toContain('"kind":"plan"');
+  });
+
+  it("tau goal --help documents the loop flags", async () => {
+    const program = buildProgram();
+    const goal = program.commands.find((command) => command.name() === "goal");
+    expect(goal).toBeDefined();
+    const help = goal!.helpInformation();
+    expect(help).toContain("--rounds");
+    expect(help).toContain("multi-round");
+  });
+
   it("config set/get round-trips", async () => {
     await run("config", "set", "provider", "openai");
     await run("config", "get", "provider");

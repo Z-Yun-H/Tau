@@ -5,6 +5,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+### Added
+
+- **Multi-round agent loop (`tau goal`).** One intent, up to five reviewed
+  rounds: plan → run → reflect → repeat. After each executed round the
+  provider decides — via a new optional `reflect()` capability (mock and
+  OpenAI-compatible providers ship it; others degrade to a single round
+  with an honest note) — whether the goal is done (with a final answer) or
+  one more plan should run. Every round passes the same deterministic
+  safety review and the same confirmation gates as `tau ask`; a proposed
+  round the reviewer denies ends the goal without executing; round caps
+  (default 3, `--rounds`, hard ceiling 5) guard against runaway loops.
+  Shell steps are now cancellable end-to-end (abort kills the whole
+  process group), plumbing shared with the upcoming WebUI agent mode.
+
 ## 0.3.0 — 2026-09-02
 
 The UX-and-harness release: the WebUI gains **light & dark themes**, a

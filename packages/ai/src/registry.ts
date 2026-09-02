@@ -52,9 +52,15 @@ export function resolveProvider(flag?: string): ProviderChoice {
   return { provider, source: "default" };
 }
 
-// Built-in registrations.
-registerProvider(new MockProvider());
-registerProvider(new OllamaProvider());
-registerProvider(new OpenAIProvider());
-registerProvider(new DeepSeekProvider());
-registerProvider(new ZaiProvider());
+// Built-in registrations (idempotent helper kept public: resetProviders +
+// registerProviderBuiltins is the test/reset idiom).
+registerProviderBuiltins();
+
+/** (Re-)register the five built-ins — the inverse of resetProviders. */
+export function registerProviderBuiltins(): void {
+  registerProvider(new MockProvider());
+  registerProvider(new OllamaProvider());
+  registerProvider(new OpenAIProvider());
+  registerProvider(new DeepSeekProvider());
+  registerProvider(new ZaiProvider());
+}

@@ -9,7 +9,14 @@
  * self-contained by construction (AGENTS/ai-integration.md).
  */
 
-import type { AIProvider, ModelInfo, Plan, PlanningContext } from "@tau/core";
+import type {
+  AgentDecision,
+  AIProvider,
+  ModelInfo,
+  Plan,
+  PlanningContext,
+  ReflectContext,
+} from "@tau/core";
 
 /**
  * Mock provider — deterministic, zero-network.
@@ -114,6 +121,64 @@ export class MockProvider implements AIProvider {
         },
       ],
       selfAssessedRisk: "low",
+    };
+  }
+
+  /**
+   * Deterministic reflection for tests and offline demos of the agent loop.
+   *
+   * Decision table (keyword-driven, zero-network):
+   * - last round `ok` + outputs contain "GOAL_COMPLETE" → done (answer
+   *   echoes the marker's tail, letting tests assert end-to-end data flow)
+   * - last round `ok` (no marker) → one more round: a `file.find` probe,
+   *   so multi-round loops have a cheap deterministic second act
+   * - last round `failed` → one repair round: `echo` the failure back
+   *   (deterministic, low-risk, exercisable end-to-end)
+   * - `cancelled`/`denied` never reach reflection (the loop stops first)
+   */
+  async reflect(ctx: ReflectContext): Promise<AgentDecision> {
+    const last = ctx.rounds[ctx.rounds.length - 1];
+    if (!last) {
+      return { done: true, answer: "No executed rounds to reflect on." };
+    }
+    const joined = last.outputs.join("\n");
+    const marker = joined.match(/GOAL_COMPLETE[:\s]*(.*)/)?.[1]?.trim();
+
+    if (last.status === "ok" && marker !== undefined) {
+      return { done: true, answer: marker || "Goal complete." };
+    }
+    if (last.status !== "ok") {
+      return {
+        done: false,
+        plan: {
+          explanation: `Mock repair round: previous round failed (${joined.slice(0, 80) || "no output"})`,
+          steps: [
+            {
+              kind: "shell",
+              command: 'echo "mock repair: retry after failure"',
+              reason: "deterministic repair probe",
+            },
+          ],
+          selfAssessedRisk: "low",
+        },
+        note: "mock repair",
+      };
+    }
+    return {
+      done: false,
+      plan: {
+        explanation: "Mock continue: probe the workspace once more before concluding.",
+        steps: [
+          {
+            kind: "tool",
+            tool: "file.find",
+            args: { pattern: "*.ts", path: "." },
+            reason: "deterministic continue probe",
+          },
+        ],
+        selfAssessedRisk: "low",
+      },
+      note: "mock continue",
     };
   }
 }
