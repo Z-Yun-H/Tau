@@ -4,6 +4,9 @@
  * on the card: the steps, the deterministic verdict, the issues, the plugin
  * warnings. High-risk confirmation is card-local state (explicit intent, no
  * global checkbox). Deny verdicts hard-disable Run.
+ *
+ * `Run plan` is the chrome primary action — the only non-identity element
+ * that carries the gradient sweep. It marks "this is the gate control."
  */
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { renderMarkdown } from "@tau/markdown";
@@ -36,58 +39,66 @@ onMounted(() => {
 
 <template>
   <article ref="rootEl" class="tau-card plan-enter">
-    <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-      <span class="font-mono text-[11px] uppercase tracking-1px text-tau-faint">plan</span>
+    <!-- eyebrow: PLAN label + risk badge + provider -->
+    <div class="card-eyebrow">
+      <span class="eyebrow-label">plan</span>
       <RiskBadge :level="card.review.overallRisk" />
-      <span class="font-mono text-[11px] text-tau-faint">
-        via {{ card.providerLabel || card.provider }}
-      </span>
+      <span class="eyebrow-meta">via {{ card.providerLabel || card.provider }}</span>
     </div>
-    <!-- markdown preview (escaped-first renderer, see lib/markdown.ts) -->
+
+    <!-- markdown preview (escaped-first renderer, see @tau/markdown) -->
     <div class="md-body md-lead" v-html="explanation" />
 
-    <ol
-      v-if="card.plan.steps?.length"
-      class="list-none m-0 mt-2 px-0 border-l border-tau-line pl-3"
-    >
+    <!-- steps on a numbered rail -->
+    <ol v-if="card.plan.steps?.length" class="step-list">
       <StepRow v-for="(step, s) in card.plan.steps" :key="s" :step="step" :index="s" />
     </ol>
-    <p v-else class="m-0 mt-2 text-[12px] text-tau-faint">empty plan</p>
+    <p v-else class="empty-plan">empty plan</p>
 
-    <div v-if="issues.length" class="mt-2 flex flex-col gap-0.5">
+    <!-- issues -->
+    <div v-if="issues.length" class="issues">
       <p
         v-for="(issue, ii) in issues"
         :key="ii"
-        class="m-0 text-[12px] font-mono"
-        :class="issue.level === 'blocked' ? 'text-tau-danger' : 'text-tau-warn'"
+        class="issue"
+        :class="issue.level === 'blocked' ? 'issue-blocked' : 'issue-caution'"
       >
-        {{ issue.level === "blocked" ? "▌ blocked" : "▌ caution" }} {{ issue.message }}
+        <span class="issue-mark">{{ issue.level === "blocked" ? "▌" : "▌" }}</span>
+        <span class="issue-label">{{ issue.level === "blocked" ? "blocked" : "caution" }}</span>
+        <span class="issue-msg">{{ issue.message }}</span>
       </p>
     </div>
 
-    <p
-      v-for="(warning, wi) in card.warnings"
-      :key="'w' + wi"
-      class="m-0 mt-0.5 text-[12px] font-mono text-tau-warn"
-    >
-      ▌ plugin {{ warning }}
+    <!-- plugin warnings -->
+    <p v-for="(warning, wi) in card.warnings" :key="'w' + wi" class="plugin-warn">
+      <span class="issue-mark">▌</span>
+      <span class="issue-label">plugin</span>
+      <span class="issue-msg">{{ warning }}</span>
     </p>
 
-    <div
-      v-if="card.review.verdict === 'deny'"
-      class="mt-2.5 border border-tau-danger/40 bg-tau-danger/10 text-tau-danger rounded-6px px-2.5 py-1.5 text-[12px]"
-    >
+    <!-- deny banner -->
+    <div v-if="card.review.verdict === 'deny'" class="deny-banner">
       The safety review denied this plan. It cannot be executed here.
     </div>
 
-    <div class="flex flex-wrap gap-2 mt-3 items-center">
-      <button class="tau-btn-primary" :disabled="!runnable" @click="emit('run', card)">
-        <span
-          v-if="card.running"
-          class="running-dot w-1.5 h-1.5 rounded-full bg-tau-ok inline-block"
-        />
-        {{ card.running ? "Running" : "Run plan" }}
+    <!-- actions: Run plan (chrome primary) + Discard (ghost) + high-risk checkbox -->
+    <div class="actions">
+      <button class="run-btn tau-chrome-bg" :disabled="!runnable" @click="emit('run', card)">
+        <span v-if="card.running" class="running-dot" />
+        <svg
+          v-else
+          class="run-icon"
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path d="M3 2L10 6L3 10V2Z" fill="currentColor" />
+        </svg>
+        <span class="run-label">{{ card.running ? "Running" : "Run plan" }}</span>
       </button>
+
       <button
         class="tau-btn tau-btn-danger-hover"
         :disabled="card.running"
@@ -95,16 +106,13 @@ onMounted(() => {
       >
         Discard
       </button>
+
       <label
         v-if="card.review.overallRisk === 'high' && card.review.verdict !== 'deny'"
-        class="flex gap-1.5 items-center text-tau-warn text-[12px] cursor-pointer select-none"
+        class="high-risk-check"
       >
-        <input
-          v-model="card.confirmHighRisk"
-          type="checkbox"
-          class="accent-tau-warn w-3.5 h-3.5 cursor-pointer"
-        />
-        high risk — run it
+        <input v-model="card.confirmHighRisk" type="checkbox" class="high-risk-box" />
+        <span>high risk — run it</span>
       </label>
     </div>
   </article>
@@ -116,7 +124,162 @@ onMounted(() => {
   animation-delay: v-bind(enterDelay);
 }
 
+.card-eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 8px;
+}
+
+.eyebrow-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #5c6776; /* tau.faint */
+}
+
+.eyebrow-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #5c6776; /* tau.faint */
+}
+
+.step-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0 0 0 12px;
+  border-left: 1px solid #1b2230; /* tau.line */
+}
+
+.empty-plan {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: #5c6776; /* tau.faint */
+}
+
+.issues {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.issue,
+.plugin-warn {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.issue-mark {
+  flex: none;
+}
+
+.issue-blocked,
+.issue-blocked .issue-mark,
+.issue-blocked .issue-label {
+  color: #e5534b; /* tau.danger */
+}
+
+.issue-caution,
+.issue-caution .issue-mark,
+.issue-caution .issue-label,
+.plugin-warn,
+.plugin-warn .issue-mark,
+.plugin-warn .issue-label {
+  color: #e0a53c; /* tau.warn */
+}
+
+.issue-msg {
+  color: #9aa5b4; /* tau.muted */
+  flex: 1;
+  min-width: 0;
+}
+
+.deny-banner {
+  margin-top: 10px;
+  border: 1px solid rgba(229, 83, 75, 0.4);
+  background: rgba(229, 83, 75, 0.1);
+  color: #e5534b; /* tau.danger */
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  align-items: center;
+}
+
+.run-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid #44454d; /* tau.chrome-3 */
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: #e6ebf2; /* tau.text */
+  transition:
+    background-position var(--t-slow) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    opacity var(--t-fast) var(--ease);
+}
+
+.run-btn:hover:not(:disabled) {
+  background-position: 100% 50%;
+  border-color: #747689; /* tau.chrome-4 */
+}
+
+.run-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.run-icon {
+  color: #0b0e13; /* dark icon on chrome sweep */
+}
+
 .running-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #5ec97a; /* tau.ok */
+  display: inline-block;
   animation: tau-pulse 1s var(--ease) infinite;
+}
+
+.run-label {
+  line-height: 1;
+}
+
+.high-risk-check {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: #e0a53c; /* tau.warn */
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.high-risk-box {
+  width: 14px;
+  height: 14px;
+  accent-color: #e0a53c;
+  cursor: pointer;
 }
 </style>

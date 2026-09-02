@@ -20,30 +20,89 @@ const ROWS: { keys: string; action: string }[] = [
 </script>
 
 <template>
-  <div
-    class="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-4"
-    @click.self="emit('close')"
-  >
-    <div class="tau-panel w-full max-w-[420px] px-4 py-3.5" role="dialog" aria-label="shortcuts">
-      <div class="flex items-center gap-2">
-        <span class="font-mono text-[11px] uppercase tracking-1px text-tau-faint">shortcuts</span>
+  <div class="modal-overlay" @click.self="emit('close')">
+    <div class="modal-panel tau-panel" role="dialog" aria-label="shortcuts">
+      <div class="modal-head">
+        <span class="eyebrow-label">shortcuts</span>
         <RiskBadge level="low" label="client-only" />
         <span class="flex-1" />
-        <button class="tau-btn !px-2 !py-0.5 text-[11px]" @click="emit('close')">esc</button>
+        <button class="tau-btn !px-2.5 !py-1 text-[11px]" @click="emit('close')">esc</button>
       </div>
-      <table class="w-full mt-2 border-collapse">
+      <table class="modal-table">
         <tbody>
-          <tr v-for="row in ROWS" :key="row.keys" class="align-baseline">
-            <td class="py-1 pr-3 whitespace-nowrap">
+          <tr v-for="row in ROWS" :key="row.keys" class="modal-row">
+            <td class="modal-keys">
               <kbd class="tau-kbd">{{ row.keys }}</kbd>
             </td>
-            <td class="py-1 text-[12.5px] text-tau-muted">{{ row.action }}</td>
+            <td class="modal-action">{{ row.action }}</td>
           </tr>
         </tbody>
       </table>
-      <p class="m-0 mt-2 font-mono text-[10px] text-tau-faint">
-        the safety gate is untouched: nothing runs until you press Run plan
-      </p>
+      <p class="modal-foot">the safety gate is untouched: nothing runs until you press Run plan</p>
     </div>
   </div>
 </template>
+
+<style scoped>
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 16px;
+  animation: tau-enter var(--t-med) var(--ease) both;
+}
+
+.modal-panel {
+  width: 100%;
+  max-width: 440px;
+  padding: 18px 20px;
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.eyebrow-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #5c6776; /* tau.faint */
+}
+
+.modal-table {
+  width: 100%;
+  margin-top: 10px;
+  border-collapse: collapse;
+}
+
+.modal-row {
+  vertical-align: baseline;
+}
+
+.modal-keys {
+  padding: 7px 14px 7px 0;
+  white-space: nowrap;
+}
+
+.modal-action {
+  padding: 7px 0;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  color: #9aa5b4; /* tau.muted */
+}
+
+.modal-foot {
+  margin: 12px 0 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #5c6776; /* tau.faint */
+}
+</style>
