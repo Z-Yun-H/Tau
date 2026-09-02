@@ -43,11 +43,11 @@ const enterDelay = computed(() => `${Math.min((props.enterIndex ?? 0) * 40, 200)
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
 }
 
 .intent-text {
-  color: #9aa5b4; /* tau.muted */
+  color: var(--tau-muted); /* tau.muted */
   font-size: 12px;
   min-width: 0;
   overflow: hidden;
@@ -60,7 +60,7 @@ const enterDelay = computed(() => `${Math.min((props.enterIndex ?? 0) * 40, 200)
   margin: 8px 0 0;
   font-family: var(--font-mono);
   font-size: 13px;
-  color: #e5534b; /* tau.danger */
+  color: var(--tau-danger); /* tau.danger */
   line-height: 1.5;
   word-break: break-word;
 }
@@ -69,16 +69,16 @@ const enterDelay = computed(() => `${Math.min((props.enterIndex ?? 0) * 40, 200)
   margin: 6px 0 0;
   font-family: var(--font-sans);
   font-size: 12px;
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
   line-height: 1.5;
 }
 
 .inline-code {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: #9aa5b4; /* tau.muted */
-  background: #141a24; /* tau.raised */
-  border: 1px solid #1b2230; /* tau.line */
+  color: var(--tau-muted); /* tau.muted */
+  background: var(--tau-raised); /* tau.raised */
+  border: 1px solid var(--tau-line); /* tau.line */
   border-radius: 4px;
   padding: 0 4px;
 }

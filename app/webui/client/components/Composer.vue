@@ -123,35 +123,30 @@ defineExpose({ focus });
   position: relative;
   border-radius: 12px;
   padding: 1.5px;
-  background: linear-gradient(180deg, #4a5466 0%, #2f3847 100%);
+  background: linear-gradient(180deg, var(--tau-faint) 0%, var(--tau-line-strong) 100%);
   transition:
     background var(--t-fast) var(--ease),
     box-shadow var(--t-med) var(--ease);
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.03);
+  box-shadow: var(--tau-elev-2);
 }
 
 .composer-beam.focused {
   background: conic-gradient(
     from var(--beam-angle, 0deg),
-    #5ec97a 0deg,
-    #6bb3d9 80deg,
-    #a8aab8 160deg,
-    #d4d6dc 180deg,
-    #a8aab8 200deg,
-    #6bb3d9 280deg,
-    #5ec97a 360deg
+    var(--tau-ok) 0deg,
+    var(--tau-info) 80deg,
+    var(--tau-chrome-5) 160deg,
+    var(--tau-chrome-5) 180deg,
+    var(--tau-chrome-5) 200deg,
+    var(--tau-info) 280deg,
+    var(--tau-ok) 360deg
   );
   animation: tau-beam 3s linear infinite;
-  box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.45),
-    0 0 0 2px rgba(94, 201, 122, 0.15),
-    0 0 20px rgba(94, 201, 122, 0.2);
+  box-shadow: var(--tau-elev-3);
 }
 
 .composer-shell {
-  background: #0e1219; /* tau.panel */
+  background: var(--tau-panel); /* tau.panel */
   border-radius: 11px;
   display: flex;
   flex-direction: column;
@@ -163,7 +158,7 @@ defineExpose({ focus });
   border: 0;
   outline: 0;
   background: transparent;
-  color: #e6ebf2; /* tau.text */
+  color: var(--tau-text); /* tau.text */
   font-family: var(--font-sans);
   font-size: 14px;
   line-height: 1.5;
@@ -175,7 +170,7 @@ defineExpose({ focus });
 }
 
 .composer-text::placeholder {
-  color: #3f4856; /* tau.placeholder */
+  color: var(--tau-placeholder); /* tau.placeholder */
 }
 
 .composer-text:disabled {
@@ -189,7 +184,7 @@ defineExpose({ focus });
   justify-content: space-between;
   gap: 8px;
   padding: 6px 8px 6px 12px;
-  border-top: 1px solid #1b2230; /* tau.line */
+  border-top: 1px solid var(--tau-line); /* tau.line */
 }
 
 .toolbar-left {
@@ -206,7 +201,7 @@ defineExpose({ focus });
   gap: 4px;
   font-family: var(--font-mono);
   font-size: 10px;
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
   background: transparent;
   border: 0;
   padding: 0;
@@ -223,7 +218,7 @@ defineExpose({ focus });
 }
 
 .hint-btn:hover {
-  color: #9aa5b4; /* tau.muted */
+  color: var(--tau-muted); /* tau.muted */
 }
 
 .hint-text {
@@ -240,7 +235,7 @@ defineExpose({ focus });
 }
 
 .hint-sep {
-  color: #3f4856;
+  color: var(--tau-placeholder);
   font-family: var(--font-mono);
   font-size: 10px;
 }
@@ -252,9 +247,9 @@ defineExpose({ focus });
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #141a24; /* tau.raised */
-  color: #5c6776; /* tau.faint */
-  border: 1px solid #28303f; /* tau.line-strong */
+  background: var(--tau-raised); /* tau.raised */
+  color: var(--tau-faint); /* tau.faint */
+  border: 1px solid var(--tau-line-strong); /* tau.line-strong */
   border-radius: 8px;
   cursor: not-allowed;
   padding: 0;
@@ -268,16 +263,16 @@ defineExpose({ focus });
 .send-btn.ready {
   background-image: linear-gradient(
     90deg,
-    #191a1d 0%,
-    #44454d 30%,
-    #a8aab8 50%,
-    #44454d 70%,
-    #191a1d 100%
+    var(--tau-chrome-1) 0%,
+    var(--tau-chrome-3) 30%,
+    var(--tau-chrome-5) 50%,
+    var(--tau-chrome-3) 70%,
+    var(--tau-chrome-1) 100%
   );
   background-size: 200% 100%;
   background-position: 0% 50%;
-  color: #0b0e13; /* tau.bg — icon sits on chrome */
-  border-color: #44454d; /* tau.chrome-3 */
+  color: var(--tau-bg); /* tau.bg — icon sits on chrome */
+  border-color: var(--tau-chrome-3);
   cursor: pointer;
 }
 

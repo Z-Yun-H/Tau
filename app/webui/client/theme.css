@@ -2,20 +2,84 @@
  * Tau WebUI — base layer and design tokens.
  *
  * The visual language is "terminal precision" with a chat.z.ai-inspired
- * quiet: a dark neutral ramp fused to the page bg, ONE semantic color
- * system (the risk levels: low green / medium amber / high red / blocked
- * gray), monospace for data and system sans for prose, with a single
- * ornamental chrome sweep reserved for the brand mark and the Run plan
- * primary action. Decorative color, gradients and glass effects are
- * deliberately absent from data surfaces — the UI is information-first,
- * like the CLI it fronts.
+ * quiet: a neutral ramp fused to the page bg, ONE semantic color system
+ * (the risk levels: low green / medium amber / high red / blocked gray),
+ * monospace for data and system sans for prose, with a single ornamental
+ * chrome sweep reserved for the brand mark and the Run plan primary
+ * action. Surfaces are LAYERED, not line-drawn: every panel carries an
+ * elevation shadow and a gradient edge — a bare 1px hairline on a flat
+ * background is a design bug (DESIGN.md §3).
  *
- * Color tokens live in uno.config.ts (theme.colors.tau) — the single
- * source the utilities are generated from. This file owns typography,
- * motion, focus, and element bases. Normative spec: DESIGN.md.
+ * Color tokens: this file defines the `--tau-*` CSS variables (the single
+ * source of truth) for BOTH themes — dark on `:root` (the no-JS default,
+ * pinned by tests + product lineage), light on `html[data-theme="light"]`.
+ * uno.config.ts maps its `tau.*` colors to these vars, so utilities follow
+ * the active theme without class-name changes. Theme preference: the
+ * three-state user choice ('light'|'dark'|'system') persists in the
+ * `tau-webui-theme-v1` localStorage key; a boot script in index.html
+ * resolves it against prefers-color-scheme before first paint.
  */
 :root {
   color-scheme: dark;
+
+  /* ---- Neutral ramp (dark) — page → panel → raised → active ---------- */
+  --tau-bg: #0b0e13;
+  --tau-panel: #0e1219;
+  --tau-raised: #141a24;
+  --tau-active: #1b2331;
+  /* hairlines */
+  --tau-line: #1b2230;
+  --tau-line-strong: #28303f;
+  /* text: primary / muted / faint / placeholder */
+  --tau-text: #e6ebf2;
+  --tau-muted: #9aa5b4;
+  --tau-faint: #5c6776;
+  --tau-placeholder: #3f4856;
+  /* semantic: the risk levels + provider info accent */
+  --tau-ok: #5ec97a;
+  --tau-warn: #e0a53c;
+  --tau-danger: #e5534b;
+  --tau-blocked: #6e7887;
+  --tau-info: #6bb3d9;
+  /* semantic two-step system: -soft (surface tint ~10-12%) and
+     -edge (control border ~45%) replace ad-hoc alpha modifiers so both
+     themes tune them independently (DESIGN.md §3). */
+  --tau-ok-soft: rgba(94, 201, 122, 0.11);
+  --tau-ok-edge: rgba(94, 201, 122, 0.45);
+  --tau-warn-soft: rgba(224, 165, 60, 0.1);
+  --tau-warn-edge: rgba(224, 165, 60, 0.45);
+  --tau-danger-soft: rgba(229, 83, 75, 0.1);
+  --tau-danger-edge: rgba(229, 83, 75, 0.45);
+  --tau-info-soft: rgba(107, 179, 217, 0.1);
+  --tau-info-edge: rgba(107, 179, 217, 0.45);
+  /* chrome sweep — metallic, identical in both themes (self-colored). */
+  --tau-chrome-1: #191a1d;
+  --tau-chrome-2: #222327;
+  --tau-chrome-3: #44454d;
+  --tau-chrome-4: #747689;
+  --tau-chrome-5: #a8aab8;
+  --tau-chrome-6: #747689;
+  --tau-chrome-7: #44454d;
+  --tau-chrome-8: #222327;
+  --tau-chrome-9: #191a1d;
+  /* Text/icons placed ON the chrome sweep. The sweep is self-colored dark
+     metal in BOTH themes, so its foreground is a constant light tone —
+     NOT var(--tau-text), which flips dark in the light theme and would
+     vanish on the pill. */
+  --tau-on-chrome: #f0f2f7;
+  /* Layered surfaces — every panel carries a soft shadow + a light rim;
+     a bare 1px hairline on a flat bg is a design bug (DESIGN.md §3). */
+  --tau-elev-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.02);
+  --tau-elev-2:
+    0 2px 6px rgba(0, 0, 0, 0.32), 0 8px 24px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.025);
+  --tau-elev-3:
+    0 4px 12px rgba(0, 0, 0, 0.4), 0 16px 48px rgba(0, 0, 0, 0.42),
+    0 0 0 1px rgba(255, 255, 255, 0.03);
+  /* Gradient edge for raised surfaces (padding-box/border-box trick). */
+  --tau-edge-gradient: linear-gradient(180deg, #2a3342 0%, #1b2230 100%);
+  /* Modal/drawer scrim. */
+  --tau-backdrop: rgba(0, 0, 0, 0.6);
 
   /* Type: sans for prose/UI, mono for commands/args/paths/output, serif
      for the editorial empty-state headline only. */
@@ -41,6 +105,46 @@
   --beam-angle: 0deg;
 }
 
+/* ---- Light theme — same structure, tuned for AA on a bright bg ------- */
+html[data-theme="light"] {
+  color-scheme: light;
+
+  --tau-bg: #eef1f6;
+  --tau-panel: #f7f9fc;
+  --tau-raised: #ffffff;
+  --tau-active: #e6ecf4;
+  --tau-line: #d9e0ea;
+  --tau-line-strong: #bcc7d5;
+  --tau-text: #1a2230;
+  --tau-muted: #5a6575;
+  --tau-faint: #8a94a4;
+  --tau-placeholder: #a8b1bf;
+  /* Risk colors re-tuned for AA contrast on light surfaces (darker, less
+     saturated than their dark-theme siblings; same hue family). */
+  --tau-ok: #1e7a46;
+  --tau-warn: #93641a;
+  --tau-danger: #c0342e;
+  --tau-blocked: #5f6a7a;
+  --tau-info: #22629e;
+  --tau-ok-soft: rgba(30, 122, 70, 0.09);
+  --tau-ok-edge: rgba(30, 122, 70, 0.42);
+  --tau-warn-soft: rgba(147, 100, 26, 0.09);
+  --tau-warn-edge: rgba(147, 100, 26, 0.42);
+  --tau-danger-soft: rgba(192, 52, 46, 0.08);
+  --tau-danger-edge: rgba(192, 52, 46, 0.42);
+  --tau-info-soft: rgba(34, 98, 158, 0.09);
+  --tau-info-edge: rgba(34, 98, 158, 0.42);
+  --tau-elev-1: 0 1px 2px rgba(16, 24, 40, 0.05), 0 0 0 1px rgba(255, 255, 255, 0.6);
+  --tau-elev-2:
+    0 2px 6px rgba(16, 24, 40, 0.06), 0 8px 24px rgba(16, 24, 40, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.7);
+  --tau-elev-3:
+    0 4px 12px rgba(16, 24, 40, 0.08), 0 16px 48px rgba(16, 24, 40, 0.12),
+    0 0 0 1px rgba(255, 255, 255, 0.8);
+  --tau-edge-gradient: linear-gradient(180deg, #c9d3e0 0%, #dde4ee 100%);
+  --tau-backdrop: rgba(16, 24, 40, 0.45);
+}
+
 @property --beam-angle {
   syntax: "<angle>";
   initial-value: 0deg;
@@ -60,8 +164,8 @@ body {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: #0b0e13;
-  color: #e6ebf2;
+  background: var(--tau-bg);
+  color: var(--tau-text);
   font:
     13px/1.55 var(--font-sans),
     sans-serif;
@@ -78,13 +182,13 @@ body {
 }
 
 ::selection {
-  background: rgba(94, 201, 122, 0.28);
-  color: #fff;
+  background: var(--tau-ok-soft);
+  color: var(--tau-text);
 }
 
 /* Keyboard reachability: a visible, restrained ring on every focus. */
 :focus-visible {
-  outline: 2px solid #5ec97a;
+  outline: 2px solid var(--tau-ok);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -92,18 +196,18 @@ body {
 /* Slim scrollbars — visible enough to grab, quiet at rest. */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #28303f transparent;
+  scrollbar-color: var(--tau-line-strong) transparent;
 }
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #28303f;
+  background: var(--tau-line-strong);
   border-radius: 4px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: #38424f;
+  background: var(--tau-faint);
 }
 *::-webkit-scrollbar-track {
   background: transparent;
@@ -166,8 +270,52 @@ body {
   /* The beam becomes a static ok border. */
   .composer-beam {
     animation: none !important;
-    border-color: rgba(94, 201, 122, 0.5) !important;
+    border-color: var(--tau-ok-edge) !important;
   }
+}
+
+/* ---- Layered surfaces (no bare hairlines) ---------------------------- */
+
+/*
+ * .tau-surface — the standard raised panel: gradient edge via the
+ * padding-box/border-box trick + elevation-1 shadow. Replaces the old
+ * `border border-tau-line` flat treatment on major surfaces (cards,
+ * sidebar dock, modal, composer shell). Elements that need to sit above
+ * the page use .tau-surface-raised (elev-2) and .tau-surface-floating
+ * (elev-3, modals/menus).
+ */
+.tau-surface {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--tau-panel), var(--tau-panel)) padding-box,
+    var(--tau-edge-gradient) border-box;
+  box-shadow: var(--tau-elev-1);
+}
+
+.tau-surface-raised {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--tau-panel), var(--tau-panel)) padding-box,
+    var(--tau-edge-gradient) border-box;
+  box-shadow: var(--tau-elev-2);
+}
+
+.tau-surface-floating {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--tau-raised), var(--tau-raised)) padding-box,
+    var(--tau-edge-gradient) border-box;
+  box-shadow: var(--tau-elev-3);
+}
+
+/* Gradient divider — a soft fade, not a bare 1px line. */
+.tau-divider {
+  height: 1px;
+  width: 100%;
+  margin: 0;
+  border: 0;
+  flex: none;
+  background: linear-gradient(90deg, transparent, var(--tau-line-strong), transparent);
 }
 
 /* ---- Keyboard keycap ------------------------------------------------ */
@@ -179,12 +327,12 @@ body {
 .tau-kbd {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: #5ec97a; /* tau.ok — keep in sync with uno.config.ts */
-  border: 1px solid #28303f;
+  color: var(--tau-ok);
+  border: 1px solid var(--tau-line-strong);
   border-bottom-width: 2px;
   border-radius: 4px;
   padding: 0 5px;
-  background: #141a24;
+  background: var(--tau-raised);
   display: inline-block;
   line-height: 1.5;
 }
@@ -196,11 +344,11 @@ body {
 .tau-chrome-text {
   background-image: linear-gradient(
     90deg,
-    #191a1d 0%,
-    #44454d 30%,
-    #a8aab8 50%,
-    #44454d 70%,
-    #191a1d 100%
+    var(--tau-chrome-1) 0%,
+    var(--tau-chrome-3) 30%,
+    var(--tau-chrome-5) 50%,
+    var(--tau-chrome-3) 70%,
+    var(--tau-chrome-1) 100%
   );
   background-size: 200% 100%;
   background-position: 0% 50%;
@@ -217,15 +365,15 @@ body {
 .tau-chrome-bg {
   background-image: linear-gradient(
     90deg,
-    #191a1d 0%,
-    #222327 18%,
-    #44454d 34%,
-    #747689 46%,
-    #a8aab8 50%,
-    #747689 54%,
-    #44454d 66%,
-    #222327 82%,
-    #191a1d 100%
+    var(--tau-chrome-1) 0%,
+    var(--tau-chrome-2) 18%,
+    var(--tau-chrome-3) 34%,
+    var(--tau-chrome-4) 46%,
+    var(--tau-chrome-5) 50%,
+    var(--tau-chrome-6) 54%,
+    var(--tau-chrome-7) 66%,
+    var(--tau-chrome-8) 82%,
+    var(--tau-chrome-9) 100%
   );
   background-size: 200% 100%;
   background-position: 0% 50%;
@@ -243,7 +391,7 @@ body {
  * result/plan cards, so it inherits that background and border.
  */
 .md-body {
-  color: #9aa5b4; /* tau.muted */
+  color: var(--tau-muted);
   font-size: 12.5px;
   line-height: 1.6;
   word-break: break-word;
@@ -269,18 +417,18 @@ body {
 .md-body h5,
 .md-body h6 {
   margin: 12px 0 4px;
-  color: #e6ebf2; /* tau.text */
+  color: var(--tau-text);
   font-size: 13.5px;
   line-height: 1.4;
 }
 
 .md-body strong {
-  color: #e6ebf2; /* tau.text */
+  color: var(--tau-text);
   font-weight: 600;
 }
 
 .md-body em {
-  color: #c4ccd6;
+  color: var(--tau-muted);
 }
 
 .md-body ul,
@@ -296,8 +444,8 @@ body {
 .md-body code {
   font-family: var(--font-mono);
   font-size: 11px;
-  background: #141a24; /* tau.raised */
-  border: 1px solid #1b2230; /* tau.line */
+  background: var(--tau-raised);
+  border: 1px solid var(--tau-line);
   border-radius: 3px;
   padding: 0 4px;
 }
@@ -319,28 +467,28 @@ body {
 .md-body blockquote {
   margin: 6px 0;
   padding: 2px 10px;
-  border-left: 2px solid #28303f; /* tau.line-strong */
-  color: #5c6776; /* tau.faint */
+  border-left: 2px solid var(--tau-line-strong);
+  color: var(--tau-faint);
 }
 
 .md-body a {
-  color: #6bb3d9; /* tau.info */
+  color: var(--tau-info);
   text-decoration: none;
-  border-bottom: 1px solid rgba(107, 179, 217, 0.4);
+  border-bottom: 1px solid var(--tau-info-edge);
 }
 
 .md-body a:hover {
-  border-bottom-color: #6bb3d9;
+  border-bottom-color: var(--tau-info);
 }
 
 .md-body hr {
   border: 0;
-  border-top: 1px solid #1b2230; /* tau.line */
+  border-top: 1px solid var(--tau-line);
   margin: 10px 0;
 }
 
 /* Plan explanation lead — one step brighter than result prose. */
 .md-lead {
   font-size: 13px;
-  color: #dbe2ea;
+  color: var(--tau-text);
 }

@@ -137,26 +137,26 @@ onMounted(() => {
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
 }
 
 .eyebrow-meta {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
 }
 
 .step-list {
   list-style: none;
   margin: 12px 0 0;
   padding: 0 0 0 12px;
-  border-left: 1px solid #1b2230; /* tau.line */
+  border-left: 1px solid var(--tau-line); /* tau.line */
 }
 
 .empty-plan {
   margin: 8px 0 0;
   font-size: 12px;
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
 }
 
 .issues {
@@ -183,7 +183,7 @@ onMounted(() => {
 .issue-blocked,
 .issue-blocked .issue-mark,
 .issue-blocked .issue-label {
-  color: #e5534b; /* tau.danger */
+  color: var(--tau-danger); /* tau.danger */
 }
 
 .issue-caution,
@@ -192,20 +192,20 @@ onMounted(() => {
 .plugin-warn,
 .plugin-warn .issue-mark,
 .plugin-warn .issue-label {
-  color: #e0a53c; /* tau.warn */
+  color: var(--tau-warn); /* tau.warn */
 }
 
 .issue-msg {
-  color: #9aa5b4; /* tau.muted */
+  color: var(--tau-muted); /* tau.muted */
   flex: 1;
   min-width: 0;
 }
 
 .deny-banner {
   margin-top: 10px;
-  border: 1px solid rgba(229, 83, 75, 0.4);
-  background: rgba(229, 83, 75, 0.1);
-  color: #e5534b; /* tau.danger */
+  border: 1px solid var(--tau-danger-edge);
+  background: var(--tau-danger-soft);
+  color: var(--tau-danger); /* tau.danger */
   border-radius: 8px;
   padding: 6px 10px;
   font-size: 12px;
@@ -226,13 +226,13 @@ onMounted(() => {
   gap: 6px;
   height: 36px;
   padding: 0 16px;
-  border: 1px solid #44454d; /* tau.chrome-3 */
+  border: 1px solid var(--tau-chrome-3);
   border-radius: 8px;
   cursor: pointer;
   font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 600;
-  color: #e6ebf2; /* tau.text */
+  color: var(--tau-on-chrome); /* constant light — chrome sweep is self-colored */
   transition:
     background-position var(--t-slow) var(--ease),
     border-color var(--t-fast) var(--ease),
@@ -241,7 +241,7 @@ onMounted(() => {
 
 .run-btn:hover:not(:disabled) {
   background-position: 100% 50%;
-  border-color: #747689; /* tau.chrome-4 */
+  border-color: var(--tau-chrome-4);
 }
 
 .run-btn:disabled {
@@ -250,14 +250,14 @@ onMounted(() => {
 }
 
 .run-icon {
-  color: #0b0e13; /* dark icon on chrome sweep */
+  color: var(--tau-on-chrome); /* on the chrome sweep, not on the panel */
 }
 
 .running-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #5ec97a; /* tau.ok */
+  background: var(--tau-ok); /* tau.ok */
   display: inline-block;
   animation: tau-pulse 1s var(--ease) infinite;
 }
@@ -270,7 +270,7 @@ onMounted(() => {
   display: flex;
   gap: 6px;
   align-items: center;
-  color: #e0a53c; /* tau.warn */
+  color: var(--tau-warn); /* tau.warn */
   font-size: 12px;
   cursor: pointer;
   user-select: none;
@@ -279,7 +279,7 @@ onMounted(() => {
 .high-risk-box {
   width: 14px;
   height: 14px;
-  accent-color: #e0a53c;
+  accent-color: var(--tau-warn);
   cursor: pointer;
 }
 </style>

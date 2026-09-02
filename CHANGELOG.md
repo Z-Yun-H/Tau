@@ -7,6 +7,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Added
 
+- **Light & dark themes for the WebUI.** The interface now ships two full
+  color ramps — dark (the rendering baseline) and a light theme tuned for
+  AA contrast — switched from a new header button or `Alt+T`, with a
+  three-state preference (`light` / `dark` / `system`) that defaults to
+  following the OS scheme, persists in the new `tau-webui-theme-v1`
+  localStorage key (all existing keys untouched), and resolves before
+  first paint so neither theme flashes. Risk colors and elevation shadows
+  are re-tuned per theme; 6 new unit tests pin the resolver and the
+  persistence cycle, and a new `plan-light.png` screenshot is regenerated
+  alongside the dark set.
 - **Function-calling schema export for the tool layer.** `@tau/tools` now
   renders the whole registry as OpenAI-compatible `tools` entries
   (`functionTools()`), so any OpenAI-compatible backend can bind Tau's tools
@@ -29,6 +39,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Changed
 
+- **Layered surfaces replace bare hairlines across the WebUI.** Cards, the
+  session sidebar, composer, header and modal now sit on elevation tokens
+  (`--tau-elev-1/2/3`) with gradient edges and `.tau-divider` section
+  separators instead of 1px lines drawn on flat fills, and every semantic
+  color exposes `-soft`/`-edge` two-step tokens so themes tune tint and
+  border independently. Chrome-filled buttons (Run plan, + new
+  conversation) label themselves with a constant `--tau-on-chrome` tone so
+  they stay readable in the light theme. Utility class names, the DOM
+  snapshots, and all server/API contracts are unchanged.
 - **AI provider + agent tool catalog + UI display refactor.** Three coupled
   changes per `AGENTS/ai-integration.md`: (1) `BaseHttpProvider`
   (`packages/ai/src/providers/base.ts`) — shared scaffolding for

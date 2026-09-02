@@ -41,15 +41,15 @@ function confirmRemove(thread: Thread): void {
 </script>
 
 <template>
-  <aside
-    class="sidebar-shell flex flex-col min-h-0 overflow-hidden bg-tau-panel lg:border lg:border-tau-line lg:rounded-12px"
-  >
+  <aside class="sidebar-shell tau-surface flex flex-col min-h-0 overflow-hidden lg:rounded-12px">
     <!-- new conversation: chrome primary action, full width -->
-    <div class="px-2.5 pt-2.5 pb-2 border-b border-tau-line flex-none">
+    <div class="px-2.5 pt-2.5 pb-2 flex-none">
       <button class="new-btn tau-chrome-bg w-full" @click="createThread()">
-        <span class="font-mono text-[12px] text-tau-text">+ new conversation</span>
+        <span class="font-mono text-[12px]">+ new conversation</span>
       </button>
     </div>
+
+    <hr class="tau-divider flex-none" />
 
     <!-- thread list -->
     <div class="overflow-y-auto flex-1 min-h-0 py-1.5">
@@ -89,8 +89,10 @@ function confirmRemove(thread: Thread): void {
       </div>
     </div>
 
+    <hr class="tau-divider flex-none" />
+
     <!-- footer hint -->
-    <div class="px-3 py-2 border-t border-tau-line flex-none">
+    <div class="px-3 py-2 flex-none">
       <p class="m-0 font-mono text-[10px] text-tau-faint">
         <kbd class="tau-kbd">Alt+N</kbd> new · <kbd class="tau-kbd">Ctrl+K</kbd> focus
       </p>
@@ -108,8 +110,9 @@ function confirmRemove(thread: Thread): void {
 .new-btn {
   height: 36px;
   border-radius: 8px;
-  border: 1px solid #44454d; /* tau.chrome-3 */
+  border: 1px solid var(--tau-chrome-3);
   cursor: pointer;
+  color: var(--tau-on-chrome); /* constant light on the self-colored sweep */
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -120,7 +123,7 @@ function confirmRemove(thread: Thread): void {
 
 .new-btn:hover {
   background-position: 100% 50%;
-  border-color: #747689; /* tau.chrome-4 */
+  border-color: var(--tau-chrome-4);
 }
 
 .thread-row {
@@ -138,16 +141,16 @@ function confirmRemove(thread: Thread): void {
 }
 
 .thread-row:hover {
-  background: #141a24; /* tau.raised */
+  background: var(--tau-raised); /* tau.raised */
 }
 
 .thread-row.active {
-  background: #1b2331; /* tau.active */
-  border-color: #28303f; /* tau.line-strong */
+  background: var(--tau-active); /* tau.active */
+  border-color: var(--tau-line-strong); /* tau.line-strong */
 }
 
 .thread-row.armed {
-  border-color: rgba(229, 83, 75, 0.4); /* tau.danger/40 */
+  border-color: var(--tau-danger-edge);
 }
 
 .row-action {
@@ -158,8 +161,8 @@ function confirmRemove(thread: Thread): void {
   align-items: center;
   justify-content: center;
   background: transparent;
-  color: #5c6776; /* tau.faint */
-  border: 1px solid #1b2230; /* tau.line */
+  color: var(--tau-faint); /* tau.faint */
+  border: 1px solid var(--tau-line); /* tau.line */
   border-radius: 6px;
   font-size: 10px;
   font-family: var(--font-mono);
@@ -172,24 +175,24 @@ function confirmRemove(thread: Thread): void {
 }
 
 .row-action:hover {
-  color: #e6ebf2; /* tau.text */
-  border-color: #28303f; /* tau.line-strong */
-  background: #141a24; /* tau.raised */
+  color: var(--tau-text); /* tau.text */
+  border-color: var(--tau-line-strong); /* tau.line-strong */
+  background: var(--tau-raised); /* tau.raised */
 }
 
 .row-action.armed {
-  color: #e5534b; /* tau.danger */
-  border-color: rgba(229, 83, 75, 0.6);
-  background: rgba(229, 83, 75, 0.1);
+  color: var(--tau-danger); /* tau.danger */
+  border-color: var(--tau-danger);
+  background: var(--tau-danger-soft);
 }
 
 .row-action.armed:hover {
-  background: rgba(229, 83, 75, 0.18);
+  background: var(--tau-danger-soft);
 }
 
 .panel-empty {
   margin: 0;
   font-size: 12px;
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
 }
 </style>

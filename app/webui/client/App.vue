@@ -32,8 +32,10 @@ import SidePanel from "./components/SidePanel.vue";
 import StatusHeader from "./components/StatusHeader.vue";
 import { usePlanFlow } from "./composables/plan-flow.js";
 import { useSession } from "./composables/session.js";
+import { useTheme } from "./lib/theme.js";
 
 const { cards, planning, submitIntent, runPlan, discard, createThread } = usePlanFlow();
+const { cyclePreference: cycleTheme } = useTheme();
 
 const streamEl = ref<HTMLElement | null>(null);
 const composer = ref<InstanceType<typeof Composer> | null>(null);
@@ -60,6 +62,9 @@ function onKeydown(event: KeyboardEvent): void {
     } else if (key === "s") {
       event.preventDefault();
       railOpen.value = !railOpen.value;
+    } else if (key === "t") {
+      event.preventDefault();
+      cycleTheme();
     }
     return;
   }
@@ -131,7 +136,7 @@ watchDebounced(
     <!-- conversation stream -->
     <section class="flex flex-col min-h-0">
       <!-- narrow-screen top bar: drawer toggle + rail toggle -->
-      <div class="flex items-center gap-2 px-3 py-2 lg:hidden flex-none border-b border-tau-line">
+      <div class="flex items-center gap-2 px-3 py-2 lg:hidden flex-none">
         <button
           class="tau-btn !py-1 !px-2 text-[12px]"
           title="open conversation list (Alt+N for new)"
@@ -148,6 +153,8 @@ watchDebounced(
           {{ railOpen ? "hide rail" : "show rail" }}
         </button>
       </div>
+
+      <hr class="tau-divider flex-none lg:hidden" />
 
       <div ref="streamEl" aria-live="polite" class="stream-scroll flex-1 min-h-0 overflow-y-auto">
         <div class="stream-inner">
@@ -235,7 +242,7 @@ watchDebounced(
   .composer-dock {
     position: sticky;
     bottom: 0;
-    background: #0b0e13; /* tau.bg */
+    background: var(--tau-bg); /* tau.bg */
     padding-bottom: 12px;
     z-index: 10;
   }
@@ -250,9 +257,9 @@ watchDebounced(
 
 .user-bubble {
   max-width: 78%;
-  background: #1b2331; /* tau.active */
-  border: 1px solid #28303f; /* tau.line-strong */
-  color: #e6ebf2; /* tau.text */
+  background: var(--tau-active); /* tau.active */
+  border: 1px solid var(--tau-line-strong); /* tau.line-strong */
+  color: var(--tau-text); /* tau.text */
   border-radius: 12px;
   border-bottom-right-radius: 4px;
   padding: 8px 12px;
