@@ -123,11 +123,13 @@ defineExpose({ focus });
   position: relative;
   border-radius: 12px;
   padding: 1.5px;
-  background: linear-gradient(180deg, #38424f 0%, #28303f 100%);
+  background: linear-gradient(180deg, #4a5466 0%, #2f3847 100%);
   transition:
     background var(--t-fast) var(--ease),
     box-shadow var(--t-med) var(--ease);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.03);
 }
 
 .composer-beam.focused {
@@ -143,9 +145,9 @@ defineExpose({ focus });
   );
   animation: tau-beam 3s linear infinite;
   box-shadow:
-    0 6px 24px rgba(0, 0, 0, 0.3),
-    0 0 0 2px rgba(94, 201, 122, 0.12),
-    0 0 16px rgba(94, 201, 122, 0.15);
+    0 8px 28px rgba(0, 0, 0, 0.45),
+    0 0 0 2px rgba(94, 201, 122, 0.15),
+    0 0 20px rgba(94, 201, 122, 0.2);
 }
 
 .composer-shell {
