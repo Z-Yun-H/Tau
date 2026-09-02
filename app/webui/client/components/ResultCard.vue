@@ -5,6 +5,8 @@
  * preview vs the exact bytes), one-click copy, and expand for long output.
  * The raw view is always one click away — the preview never hides what the
  * steps actually printed.
+ *
+ * The `streaming…` pulse uses tau-pulse (single definition, in theme.css).
  */
 import { computed, nextTick, ref, watch } from "vue";
 import { useClipboard } from "@vueuse/core";
@@ -71,16 +73,12 @@ const statusLevel = computed(() =>
 
 <template>
   <article ref="rootEl" class="tau-card result-enter">
-    <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-      <span class="font-mono text-[11px] uppercase tracking-1px text-tau-faint">result</span>
-      <span class="text-tau-muted text-[12px] min-w-0 truncate" :title="card.intent">
-        {{ card.intent }}
-      </span>
+    <div class="card-eyebrow">
+      <span class="eyebrow-label">result</span>
+      <span class="intent-text" :title="card.intent">{{ card.intent }}</span>
       <RiskBadge :level="statusLevel" :label="card.status" />
-      <span v-if="tally" class="font-mono text-[11px] text-tau-faint">{{ tally }}</span>
-      <span v-if="card.streaming" class="font-mono text-[11px] text-tau-ok tau-pulse"
-        >streaming…</span
-      >
+      <span v-if="tally" class="tally">{{ tally }}</span>
+      <span v-if="card.streaming" class="streaming">streaming…</span>
       <span class="flex-1" />
       <span class="view-toggle">
         <button
@@ -94,15 +92,11 @@ const statusLevel = computed(() =>
           raw
         </button>
       </span>
-      <button
-        class="view-toggle !border-0 !bg-transparent"
-        :title="copied ? 'copied' : 'copy output'"
-        @click="copy"
-      >
+      <button class="text-btn" :title="copied ? 'copied' : 'copy output'" @click="copy">
         {{ copied ? "copied ✓" : "copy" }}
       </button>
       <button
-        class="view-toggle !border-0 !bg-transparent"
+        class="text-btn"
         :title="expanded ? 'collapse' : 'expand'"
         @click="expanded = !expanded"
       >
@@ -121,11 +115,50 @@ const statusLevel = computed(() =>
   animation-delay: v-bind(enterDelay);
 }
 
+.card-eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 8px;
+}
+
+.eyebrow-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #5c6776; /* tau.faint */
+}
+
+.intent-text {
+  color: #9aa5b4; /* tau.muted */
+  font-size: 12px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 320px;
+}
+
+.tally {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #5c6776; /* tau.faint */
+}
+
+.streaming {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #5ec97a; /* tau.ok */
+  animation: tau-pulse 1.1s ease-in-out infinite;
+}
+
 .view-toggle {
   display: inline-flex;
   align-items: center;
-  border: 1px solid #1e2530; /* tau.line */
-  border-radius: 4px;
+  border: 1px solid #1b2230; /* tau.line */
+  border-radius: 6px;
   overflow: hidden;
   flex: none;
 }
@@ -133,10 +166,10 @@ const statusLevel = computed(() =>
 .view-toggle button {
   background: transparent;
   border: 0;
-  color: #5c6878; /* tau.faint */
+  color: #5c6776; /* tau.faint */
   font-family: var(--font-mono);
   font-size: 10px;
-  padding: 1px 7px;
+  padding: 2px 8px;
   cursor: pointer;
   transition:
     color var(--t-fast) var(--ease),
@@ -148,16 +181,31 @@ const statusLevel = computed(() =>
   background: rgba(94, 201, 122, 0.1);
 }
 
+.text-btn {
+  background: transparent;
+  border: 0;
+  color: #5c6776; /* tau.faint */
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 4px;
+  cursor: pointer;
+  transition: color var(--t-fast) var(--ease);
+}
+
+.text-btn:hover {
+  color: #9aa5b4; /* tau.muted */
+}
+
 .out {
-  margin: 8px 0 0;
-  padding: 8px 10px;
-  background: #0a0d12; /* tau.bg0 */
-  border: 1px solid #1e2530; /* tau.line0 */
-  border-radius: 6px;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  background: #0b0e13; /* tau.bg */
+  border: 1px solid #1b2230; /* tau.line */
+  border-radius: 8px;
   font-family: var(--font-mono);
   font-size: 12px;
   line-height: 1.5;
-  color: #93a0af; /* tau.text1 */
+  color: #9aa5b4; /* tau.muted */
   white-space: pre-wrap;
   word-break: break-word;
   max-height: 15rem;
@@ -171,26 +219,12 @@ const statusLevel = computed(() =>
 /* shiki blocks replace the inner pre — blend them into the card shell */
 .out :deep(pre.shiki) {
   margin: 0;
-  padding: 8px 10px;
-  border-radius: 6px;
+  padding: 10px 12px;
+  border-radius: 8px;
   font-family: var(--font-mono);
   font-size: 12px;
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
-}
-
-.tau-pulse {
-  animation: tau-pulse 1.1s ease-in-out infinite;
-}
-
-@keyframes tau-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.45;
-  }
 }
 </style>

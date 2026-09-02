@@ -7,6 +7,28 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Changed
 
+- **WebUI full frontend redesign — chat.z.ai-inspired.** All 11 components in
+  `app/webui/client/` rewritten against a new unified design spec
+  ([`app/webui/DESIGN.md`](./app/webui/DESIGN.md)). Visual language: dark fused
+  neutral ramp (bg/panel/raised/active separated by hairlines, not tonal jumps),
+  the risk palette as the ONE semantic color system, a single metallic chrome
+  gradient reserved for two surfaces (the `τ` brand mark — vertical metallic
+  sheen via `background-clip:text`; the `Run plan` button — full 9-stop
+  horizontal sweep marking "this is the gate control"), a chat.z.ai-style beam
+  composer (rotating conic-gradient border on focus-within, soft elevation
+  shadow), and a two-font system (Inter sans / JetBrains Mono / Crimson Text
+  serif — serif only on the empty-state hero headline). Composer Send button
+  is no longer labeled "Plan" — the composer _sends an intent_, the plan card
+  _runs the plan_ (two actions, two controls, two visual treatments).
+  `RiskBadge` gains a `review` sentinel (info-blue) for the streaming state
+  (previously fell through to `blocked`/dim-gray). All test-pinned contracts
+  preserved byte-for-byte: HTTP API, NDJSON event names/fields/order, 403-as-JSON,
+  `/api/tools` never containing `"run"`, localStorage key `tau-webui-threads-v1`,
+  `Run plan` button text, `file.find in` output prefix. `SKILL.md` refactored
+  to the contract/checklist layer (visual spec → DESIGN.md). Screenshots
+  regenerated. Behavior unchanged; `pnpm test app/webui` 4 files / 25 tests
+  green (byte-level snapshots preserved).
+
 - **Provider module boundary: mock vs real backends.** `packages/ai/src/providers/http.ts`
   now houses the shared `chatJSON` helper that `openai.ts` and `ollama.ts` consume;
   `mock.ts` returns to being a self-contained zero-network demo / test fixture and

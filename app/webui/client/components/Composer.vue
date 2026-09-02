@@ -1,17 +1,22 @@
 <script setup lang="ts">
 /**
- * Composer — the intent input. Enter submits, Shift+Enter is a newline, the
- * textarea auto-grows up to a cap. The hint row documents the keyboard
- * contract inline (`?` opens the full panel). Sticky at the bottom of the
- * chat column on narrow screens.
+ * Composer — the intent input. chat.z.ai-inspired beam composer: a single
+ * rounded panel with a soft shadow, a rotating conic-gradient beam border
+ * on focus-within, and a chrome Send button. Enter submits, Shift+Enter is
+ * a newline, the textarea auto-grows up to a cap. Sticky at the bottom of
+ * the chat column on narrow screens.
+ *
+ * The Send button is NOT labeled "Plan" — the composer *sends an intent*;
+ * the plan card *runs the plan*. Two actions, two controls.
  */
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 const props = defineProps<{ planning: boolean }>();
 const emit = defineEmits<{ submit: [intent: string] }>();
 
 const intent = ref("");
 const input = ref<HTMLTextAreaElement | null>(null);
+const focused = ref(false);
 
 function autoGrow(): void {
   const el = input.value;
@@ -40,39 +45,262 @@ function focus(): void {
   input.value?.focus();
 }
 
+const canSend = computed(() => intent.value.trim().length > 0 && !props.planning);
+
 defineExpose({ focus });
 </script>
 
 <template>
-  <form class="flex flex-col gap-1.5 pt-3" @submit.prevent="onSubmit">
-    <textarea
-      ref="input"
-      v-model="intent"
-      class="tau-input resize-none min-h-[38px] max-h-[160px] leading-5.5"
-      rows="1"
-      autocomplete="off"
-      spellcheck="false"
-      aria-label="intent"
-      placeholder="e.g. list ts files under src — 自然语言也可以"
-      :disabled="planning"
-      @keydown="onKeydown"
-    />
-    <div class="flex items-center justify-between gap-2">
-      <p class="m-0 font-mono text-[10px] text-tau-faint select-none">
-        <kbd class="tau-kbd">Enter</kbd> send · <kbd class="tau-kbd">Shift+Enter</kbd> newline ·
-        <button
-          type="button"
-          class="bg-transparent border-0 p-0 cursor-pointer font-mono text-[10px] text-tau-faint underline decoration-dotted underline-offset-2 hover:text-tau-muted"
-          @click="focus()"
-        >
-          <kbd class="tau-kbd">Ctrl+K</kbd>
-        </button>
-        focus ·
-        <kbd class="tau-kbd">?</kbd> all shortcuts
-      </p>
-      <button type="submit" class="tau-btn-primary flex-none" :disabled="planning">
-        {{ planning ? "planning…" : "Plan" }}
-      </button>
+  <form class="composer-form" @submit.prevent="onSubmit">
+    <div
+      class="composer-beam"
+      :class="{ focused, 'has-content': intent.length > 0 }"
+      @focusin="focused = true"
+      @focusout="focused = false"
+    >
+      <div class="composer-shell">
+        <textarea
+          ref="input"
+          v-model="intent"
+          class="composer-text"
+          rows="1"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="intent"
+          placeholder="Describe what you want Tau to do…"
+          :disabled="planning"
+          @keydown="onKeydown"
+        />
+
+        <div class="composer-toolbar">
+          <div class="toolbar-left">
+            <span class="hint">
+              <kbd class="tau-kbd">⌘K</kbd>
+              <span class="hint-text">focus</span>
+            </span>
+            <span class="hint-sep">·</span>
+            <button type="button" class="hint-btn" title="press ? when focused" @click="focus">
+              <kbd class="tau-kbd">?</kbd>
+              <span class="hint-text">shortcuts</span>
+            </button>
+          </div>
+
+          <button
+            type="submit"
+            class="send-btn"
+            :class="{ ready: canSend }"
+            :disabled="!canSend"
+            :title="planning ? 'planning…' : canSend ? 'send (Enter)' : 'type to send'"
+            aria-label="send"
+          >
+            <svg
+              v-if="!planning"
+              class="send-icon"
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path d="M3 8.5L13 4L11.5 13L8.5 10.5L6.5 12.5L6 9L3 8.5Z" fill="currentColor" />
+            </svg>
+            <span v-else class="send-spinner" aria-label="planning" />
+          </button>
+        </div>
+      </div>
     </div>
   </form>
 </template>
+
+<style scoped>
+.composer-form {
+  width: 100%;
+  max-width: 768px;
+  margin: 0 auto;
+}
+
+.composer-beam {
+  position: relative;
+  border-radius: 12px;
+  padding: 1.5px;
+  background: linear-gradient(180deg, #4a5466 0%, #2f3847 100%);
+  transition:
+    background var(--t-fast) var(--ease),
+    box-shadow var(--t-med) var(--ease);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+.composer-beam.focused {
+  background: conic-gradient(
+    from var(--beam-angle, 0deg),
+    #5ec97a 0deg,
+    #6bb3d9 80deg,
+    #a8aab8 160deg,
+    #d4d6dc 180deg,
+    #a8aab8 200deg,
+    #6bb3d9 280deg,
+    #5ec97a 360deg
+  );
+  animation: tau-beam 3s linear infinite;
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.45),
+    0 0 0 2px rgba(94, 201, 122, 0.15),
+    0 0 20px rgba(94, 201, 122, 0.2);
+}
+
+.composer-shell {
+  background: #0e1219; /* tau.panel */
+  border-radius: 11px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.composer-text {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #e6ebf2; /* tau.text */
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 12px 14px 4px;
+  resize: none;
+  min-height: 44px;
+  max-height: 160px;
+  display: block;
+}
+
+.composer-text::placeholder {
+  color: #3f4856; /* tau.placeholder */
+}
+
+.composer-text:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.composer-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px 6px 12px;
+  border-top: 1px solid #1b2230; /* tau.line */
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.hint,
+.hint-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #5c6776; /* tau.faint */
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: default;
+  user-select: none;
+}
+
+.hint-btn {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+  transition: color var(--t-fast) var(--ease);
+}
+
+.hint-btn:hover {
+  color: #9aa5b4; /* tau.muted */
+}
+
+.hint-text {
+  /* Hide the text on very narrow screens; the kbd alone reads fine. */
+}
+
+@media (max-width: 480px) {
+  .hint-text {
+    display: none;
+  }
+  .hint-sep {
+    display: none;
+  }
+}
+
+.hint-sep {
+  color: #3f4856;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.send-btn {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #141a24; /* tau.raised */
+  color: #5c6776; /* tau.faint */
+  border: 1px solid #28303f; /* tau.line-strong */
+  border-radius: 8px;
+  cursor: not-allowed;
+  padding: 0;
+  transition:
+    background-image var(--t-slow) var(--ease),
+    color var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    background-position var(--t-slow) var(--ease);
+}
+
+.send-btn.ready {
+  background-image: linear-gradient(
+    90deg,
+    #191a1d 0%,
+    #44454d 30%,
+    #a8aab8 50%,
+    #44454d 70%,
+    #191a1d 100%
+  );
+  background-size: 200% 100%;
+  background-position: 0% 50%;
+  color: #0b0e13; /* tau.bg — icon sits on chrome */
+  border-color: #44454d; /* tau.chrome-3 */
+  cursor: pointer;
+}
+
+.send-btn.ready:hover {
+  background-position: 100% 50%;
+}
+
+.send-btn.ready:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.send-icon {
+  display: block;
+}
+
+.send-spinner {
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: tau-pulse 1.1s var(--ease) infinite;
+  display: inline-block;
+}
+</style>

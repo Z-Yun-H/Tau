@@ -3,10 +3,14 @@
  * Tau WebUI — shell, agent-mode layout. Composition only: state lives in
  * composables, pieces in components/.
  *
- *   ≥1024px  chat threads (left) | conversation stream (center) | reference
- *            rail (right, Alt+S toggleable)
+ *   ≥1024px  chat threads (left, 260px) | conversation stream (center,
+ *            composer max-w-768 centered) | reference rail (right, 320px,
+ *            Alt+S toggleable) — each column scrolls independently,
+ *            viewport-locked (h-dvh).
  *   <1024px  single scrolling flow — the thread list becomes an overlay
- *            drawer behind the ☰ chats button
+ *            drawer behind the ☰ chats button; the reference rail moves
+ *            below the chat (max-h 45vh); the composer is sticky at the
+ *            bottom.
  *
  * Keyboard contract (see ShortcutsModal): Enter send · Shift+Enter newline ·
  * Ctrl/⌘+K focus composer · ? shortcuts · Alt+N new thread · Alt+S rail.
@@ -46,6 +50,7 @@ function onKeydown(event: KeyboardEvent): void {
   }
   if (event.key === "Escape") {
     if (shortcutsOpen.value) shortcutsOpen.value = false;
+    if (sidebarOpen.value) sidebarOpen.value = false;
     return;
   }
   if (event.altKey && !event.ctrlKey && !event.metaKey) {
@@ -106,49 +111,63 @@ watchDebounced(
 <template>
   <StatusHeader />
   <main
-    class="flex-1 min-h-0 w-full max-w-[1600px] mx-auto flex flex-col gap-3 px-4 py-3 lg:grid lg:overflow-hidden"
+    class="app-shell flex-1 min-h-0 w-full mx-auto flex flex-col lg:grid lg:overflow-hidden"
     :class="
-      railOpen ? 'lg:grid-cols-[240px_minmax(0,1fr)_320px]' : 'lg:grid-cols-[240px_minmax(0,1fr)]'
+      railOpen ? 'lg:grid-cols-[260px_minmax(0,1fr)_320px]' : 'lg:grid-cols-[260px_minmax(0,1fr)]'
     "
   >
     <!-- chat threads: overlay drawer on narrow screens, first column on lg+ -->
     <div
       v-if="sidebarOpen"
-      class="fixed inset-0 z-30 bg-black/55 lg:hidden"
+      class="fixed inset-0 z-30 bg-black/55 lg:hidden backdrop-blur-0"
       @click="sidebarOpen = false"
     />
     <SessionSidebar
-      class="fixed inset-y-0 left-0 z-40 w-[280px] rounded-none border-y-0 border-l-0 transition-transform duration-200 ease-out lg:static lg:z-auto lg:w-auto lg:translate-x-0 lg:rounded-10px lg:border"
+      class="sidebar-dock fixed inset-y-0 left-0 z-40 w-[280px] lg:static lg:z-auto lg:w-auto lg:translate-x-0 transition-transform duration-200 ease-out"
       :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
       @navigate="sidebarOpen = false"
     />
 
     <!-- conversation stream -->
     <section class="flex flex-col min-h-0">
-      <div class="flex items-center gap-2 mb-1 lg:hidden">
-        <button class="tau-btn !py-1 text-[12px]" @click="sidebarOpen = true">chats</button>
+      <!-- narrow-screen top bar: drawer toggle + rail toggle -->
+      <div class="flex items-center gap-2 px-3 py-2 lg:hidden flex-none border-b border-tau-line">
+        <button
+          class="tau-btn !py-1 !px-2 text-[12px]"
+          title="open conversation list (Alt+N for new)"
+          @click="sidebarOpen = true"
+        >
+          <span class="font-mono">≡</span> chats
+        </button>
+        <span class="flex-1" />
+        <button
+          class="tau-btn !py-1 !px-2 text-[12px]"
+          :title="railOpen ? 'hide reference rail (Alt+S)' : 'show reference rail (Alt+S)'"
+          @click="railOpen = !railOpen"
+        >
+          {{ railOpen ? "hide rail" : "show rail" }}
+        </button>
       </div>
-      <div
-        ref="streamEl"
-        aria-live="polite"
-        class="flex-1 min-h-0 overflow-y-auto pr-1.5 flex flex-col lg:overflow-y-auto"
-      >
-        <EmptyState v-if="cards.length === 0" />
 
-        <template v-for="(card, i) in cards" :key="card.id">
-          <div v-if="card.type === 'user'" class="user-row">
-            <div class="user-bubble" :title="card.ts">{{ card.text }}</div>
-          </div>
-          <PlanCard
-            v-else-if="card.type === 'plan'"
-            :card="card"
-            :enter-index="i"
-            @run="runPlan"
-            @discard="discard"
-          />
-          <ResultCard v-else-if="card.type === 'result'" :card="card" :enter-index="i" />
-          <ErrorCard v-else :card="card" :enter-index="i" />
-        </template>
+      <div ref="streamEl" aria-live="polite" class="stream-scroll flex-1 min-h-0 overflow-y-auto">
+        <div class="stream-inner">
+          <EmptyState v-if="cards.length === 0" />
+
+          <template v-for="(card, i) in cards" :key="card.id">
+            <div v-if="card.type === 'user'" class="user-row">
+              <div class="user-bubble" :title="card.ts">{{ card.text }}</div>
+            </div>
+            <PlanCard
+              v-else-if="card.type === 'plan'"
+              :card="card"
+              :enter-index="i"
+              @run="runPlan"
+              @discard="discard"
+            />
+            <ResultCard v-else-if="card.type === 'result'" :card="card" :enter-index="i" />
+            <ErrorCard v-else :card="card" :enter-index="i" />
+          </template>
+        </div>
       </div>
 
       <Composer ref="composer" class="composer-dock" :planning="planning" @submit="submitIntent" />
@@ -162,29 +181,81 @@ watchDebounced(
 </template>
 
 <style scoped>
+.app-shell {
+  /* On lg+, the grid handles layout; on smaller, it's a flex column.
+     Content max-width and padding are tuned per breakpoint. */
+  padding: 0;
+}
+
+@media (min-width: 1024px) {
+  .app-shell {
+    padding: 12px;
+    gap: 12px;
+    max-width: 1600px;
+  }
+}
+
+.stream-scroll {
+  /* The conversation column scrolls independently on lg+; on smaller it
+     is the main page scroll. */
+  scroll-behavior: smooth;
+}
+
+.stream-inner {
+  /* Center the conversation content with a max width matching the composer
+     so the active turn reads as the focal column. */
+  width: 100%;
+  max-width: 768px;
+  margin: 0 auto;
+  padding: 16px 16px 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+  .stream-inner {
+    padding: 20px 20px 8px;
+  }
+}
+
+/* Composer dock: on narrow screens, sticky at the bottom so it stays
+   visible while the conversation scrolls. On lg+, it docks in the flex
+   column naturally. */
+.composer-dock {
+  padding: 0 16px 12px;
+}
+
+@media (min-width: 1024px) {
+  .composer-dock {
+    padding: 0 20px 16px;
+  }
+}
+
 @media (max-width: 1023px) {
   .composer-dock {
     position: sticky;
     bottom: 0;
-    background: #0a0d12; /* tau.bg0 */
-    padding-bottom: 4px;
+    background: #0b0e13; /* tau.bg */
+    padding-bottom: 12px;
+    z-index: 10;
   }
 }
 
 .user-row {
   display: flex;
   justify-content: flex-end;
-  margin: 10px 0 2px;
+  margin: 12px 0 4px;
   animation: tau-enter var(--t-med) var(--ease) both;
 }
 
 .user-bubble {
   max-width: 78%;
-  background: #1c2430; /* tau.active */
-  border: 1px solid #2a3342; /* tau.line-strong */
-  color: #e3e9f0; /* tau.text */
-  border-radius: 10px;
-  padding: 6px 11px;
+  background: #1b2331; /* tau.active */
+  border: 1px solid #28303f; /* tau.line-strong */
+  color: #e6ebf2; /* tau.text */
+  border-radius: 12px;
+  border-bottom-right-radius: 4px;
+  padding: 8px 12px;
   font-size: 13px;
   line-height: 1.55;
   white-space: pre-wrap;
