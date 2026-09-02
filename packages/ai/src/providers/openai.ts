@@ -6,7 +6,7 @@
 
 import { loadConfig } from "@tau/core";
 import { buildSystemPrompt, validatePlanResponse } from "../prompt.js";
-import { chatJSON } from "./mock.js";
+import { chatJSON } from "./http.js";
 import type { AIProvider, ModelInfo, Plan, PlanningContext } from "@tau/core";
 
 /** OpenAI-compatible providers (OpenAI, DeepSeek, Moonshot, vLLM, ...). */

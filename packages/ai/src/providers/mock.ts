@@ -3,10 +3,12 @@
  * Test fixture, offline demo, and the factory default so `tau ask` degrades
  * gracefully without any AI backend. Keyword-matches plans over the real tool
  * catalog and ships a fake model catalog for the `tau provider` flow.
+ *
+ * This module deliberately hosts NO shared utility for real providers — the
+ * HTTP chat helper lives in `./http.ts`. The mock stays zero-network and
+ * self-contained by construction (AGENTS/ai-integration.md).
  */
 
-import { theme } from "@tau/ui";
-import { validatePlanResponse } from "../prompt.js";
 import type { AIProvider, ModelInfo, Plan, PlanningContext } from "@tau/core";
 
 /**
@@ -115,31 +117,3 @@ export class MockProvider implements AIProvider {
     };
   }
 }
-
-/** Shared JSON-over-HTTP chat helper for ollama/openai-style providers. */
-export async function chatJSON(
-  url: string,
-  headers: Record<string, string>,
-  body: unknown,
-  timeoutMs = 60000,
-): Promise<string> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "content-type": "application/json", ...headers },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
-    if (!res.ok) {
-      const detail = (await res.text()).slice(0, 300);
-      throw new Error(`${theme.error(`HTTP ${res.status}`)} from provider: ${detail}`);
-    }
-    return await res.text();
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-export { validatePlanResponse };
