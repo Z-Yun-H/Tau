@@ -44,17 +44,25 @@ plan`, ResultCard, ErrorCard, SidePanel with Skills/History/Tools,
   threads persist to `localStorage` (server history stays the durable
   record); keyboard-first (Enter send / Shift+Enter newline / Ctrl+K
   focus / `?` shortcuts panel / Alt+N new thread / Alt+S rail toggle /
-  Esc closes modal + drawer); markdown preview with rendered/raw
-  toggle, copy and expand — rendered by the zero-dependency,
+  Alt+T theme cycle / Esc closes modal + drawer); markdown preview with
+  rendered/raw toggle, copy and expand — rendered by the zero-dependency,
   escape-first `@tau/markdown`, never a sanitizer gap
-- **UnoCSS** (`uno.config.ts`, `presetWind3`) — the design tokens (dark
-  neutral ramp fused to the page bg + the risk palette as THE semantic
-  system + the chrome sweep as the only gradient) and shared shortcuts;
-  typography and motion tokens in `client/theme.css`
+- **Light & dark themes** — three-state preference (`light`/`dark`/
+  `system`, default follows the OS) cycled from the header button or
+  `Alt+T`, persisted in `tau-webui-theme-v1`, resolved before first
+  paint (no wrong-theme flash); both ramps ship as `--tau-*` CSS vars
+  with per-theme risk-color tuning (AA) and per-theme elevation shadows
+- **UnoCSS** (`uno.config.ts`, `presetWind3`) — maps every `tau.*` color
+  to the `--tau-*` CSS variables in `client/theme.css` (the single
+  source, shipping BOTH the dark default and light ramps) plus the risk
+  palette as THE semantic system (`-soft`/`-edge` two-step tokens) and
+  the chrome sweep; typography and motion tokens in `client/theme.css`
 - **Design system**: "terminal precision" with a chat.z.ai-inspired
   quiet — data in mono, prose in sans, serif for the empty-state
-  headline only; no gradients except the chrome sweep on the brand
-  mark + Run plan; no glassmorphism; one shadow on the composer;
+  headline only; layered surfaces (`.tau-surface*` elevation + gradient
+  edges + `.tau-divider` separators — no bare 1px hairlines on flat
+  fills); gradients restricted to the chrome sweep (brand mark + chrome
+  buttons) and the structural edge/divider treatments; no glassmorphism;
   responsive (≥1024px three-column rail, below that a single flow with
   sticky composer); restrained motion with `prefers-reduced-motion`
   support. Normative spec: [DESIGN.md](./DESIGN.md); checklist:

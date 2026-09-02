@@ -77,8 +77,9 @@ offline, mock provider). Regeneration: `app/*/docs/screenshots/README.md`.
 </p>
 
 <p align="center">
-  <img alt="webui plan" src="app/webui/docs/screenshots/plan.png" width="49%">
-  <img alt="webui result" src="app/webui/docs/screenshots/result.png" width="49%">
+  <img alt="webui plan (dark)" src="app/webui/docs/screenshots/plan.png" width="32%">
+  <img alt="webui result (dark)" src="app/webui/docs/screenshots/result.png" width="32%">
+  <img alt="webui plan (light)" src="app/webui/docs/screenshots/plan-light.png" width="32%">
 </p>
 
 ## Quick start

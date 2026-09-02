@@ -15,6 +15,7 @@ const ROWS: { keys: string; action: string }[] = [
   { keys: "?", action: "open this panel (composer empty)" },
   { keys: "Alt + N", action: "new conversation" },
   { keys: "Alt + S", action: "toggle the reference rail" },
+  { keys: "Alt + T", action: "cycle theme system → light → dark" },
   { keys: "Esc", action: "close this panel" },
 ];
 </script>
@@ -51,7 +52,7 @@ const ROWS: { keys: string; action: string }[] = [
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.6);
+  background: var(--tau-backdrop);
   padding: 16px;
   animation: tau-enter var(--t-med) var(--ease) both;
 }
@@ -74,7 +75,7 @@ const ROWS: { keys: string; action: string }[] = [
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
 }
 
 .modal-table {
@@ -96,13 +97,13 @@ const ROWS: { keys: string; action: string }[] = [
   padding: 7px 0;
   font-family: var(--font-sans);
   font-size: 12.5px;
-  color: #9aa5b4; /* tau.muted */
+  color: var(--tau-muted); /* tau.muted */
 }
 
 .modal-foot {
   margin: 12px 0 0;
   font-family: var(--font-mono);
   font-size: 10px;
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
 }
 </style>

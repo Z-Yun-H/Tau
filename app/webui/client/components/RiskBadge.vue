@@ -13,15 +13,15 @@ import { computed } from "vue";
 const props = defineProps<{ level: string; label?: string }>();
 
 const STYLES: Record<string, string> = {
-  ok: "text-tau-ok border-tau-ok/40 bg-tau-ok/10",
-  low: "text-tau-ok border-tau-ok/40 bg-tau-ok/10",
-  warn: "text-tau-warn border-tau-warn/40 bg-tau-warn/10",
-  medium: "text-tau-warn border-tau-warn/40 bg-tau-warn/10",
-  danger: "text-tau-danger border-tau-danger/40 bg-tau-danger/10",
-  high: "text-tau-danger border-tau-danger/40 bg-tau-danger/10",
-  failed: "text-tau-danger border-tau-danger/40 bg-tau-danger/10",
-  deny: "text-tau-danger border-tau-danger/40 bg-tau-danger/10",
-  review: "text-tau-info border-tau-info/40 bg-tau-info/10",
+  ok: "text-tau-ok border-tau-ok-edge bg-tau-ok-soft",
+  low: "text-tau-ok border-tau-ok-edge bg-tau-ok-soft",
+  warn: "text-tau-warn border-tau-warn-edge bg-tau-warn-soft",
+  medium: "text-tau-warn border-tau-warn-edge bg-tau-warn-soft",
+  danger: "text-tau-danger border-tau-danger-edge bg-tau-danger-soft",
+  high: "text-tau-danger border-tau-danger-edge bg-tau-danger-soft",
+  failed: "text-tau-danger border-tau-danger-edge bg-tau-danger-soft",
+  deny: "text-tau-danger border-tau-danger-edge bg-tau-danger-soft",
+  review: "text-tau-info border-tau-info-edge bg-tau-info-soft",
   blocked: "text-tau-blocked border-tau-line-strong bg-tau-raised",
   cancelled: "text-tau-blocked border-tau-line-strong bg-tau-raised",
 };

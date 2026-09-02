@@ -45,7 +45,7 @@
   font-weight: 400;
   line-height: 1.25;
   letter-spacing: -0.5px;
-  color: #e6ebf2; /* tau.text */
+  color: var(--tau-text); /* tau.text */
   max-width: 560px;
 }
 
@@ -63,7 +63,7 @@
   font-family: var(--font-sans);
   font-size: 13px;
   line-height: 1.6;
-  color: #9aa5b4; /* tau.muted */
+  color: var(--tau-muted); /* tau.muted */
   max-width: 480px;
 }
 
@@ -71,19 +71,19 @@
   margin: 8px 0 0;
   font-family: var(--font-mono);
   font-size: 12px;
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
   letter-spacing: 0.02em;
 }
 
 .pipeline-decide {
-  color: #5ec97a; /* tau.ok */
+  color: var(--tau-ok); /* tau.ok */
 }
 
 .empty-hint {
   margin: 8px 0 0;
   font-family: var(--font-mono);
   font-size: 10px;
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
