@@ -7,7 +7,7 @@
 
 import { RISK_ORDER } from "@tau/core";
 import type { Plan, PlanStep, RiskLevel, SafetyIssue, SafetyReview } from "@tau/core";
-import { getTool } from "@tau/tools";
+import { escapesWorkspace, getTool, isSystemWritePath } from "@tau/tools";
 
 /**
  * SafetyReviewer — the gate every AI-generated plan must pass.
@@ -114,6 +114,29 @@ function stepRisk(step: PlanStep, index: number): { risk: RiskLevel; issues: Saf
       stepIndex: index,
     });
     return { risk: "blocked", issues };
+  }
+  // v0.4.0 (issue #96): path-layer checks for the write primitive — the
+  // reviewer is only ever STRENGTHENED (golden rule 1). The tool itself
+  // refuses these too; the reviewer's independent verdict means a deny-
+  // list bypass attempt can't even reach execution.
+  if (step.tool === "file.write" && typeof step.args?.["path"] === "string") {
+    const writePath = step.args["path"];
+    if (isSystemWritePath(writePath)) {
+      issues.push({
+        level: "blocked",
+        message: `file.write targets a system location: ${writePath.slice(0, 120)}`,
+        stepIndex: index,
+      });
+      return { risk: "blocked", issues };
+    }
+    if (escapesWorkspace(writePath)) {
+      issues.push({
+        level: "high",
+        message: `caution: file.write escapes the workspace: ${writePath.slice(0, 120)}`,
+        stepIndex: index,
+      });
+      return { risk: "high", issues };
+    }
   }
   return { risk: tool.risk, issues };
 }

@@ -78,11 +78,15 @@ export async function postNdjson(
   path: string,
   payload: unknown,
   onEvent: (event: StreamEvent) => void,
+  signal?: AbortSignal,
 ): Promise<Response> {
   const response = await fetch(path, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(payload),
+    // Agent-mode Stop: aborting the fetch tears down the connection; the
+    // server's res "close" handler cancels the goal runGoal-side.
+    signal,
   });
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as { error?: string };

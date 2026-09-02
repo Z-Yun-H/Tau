@@ -24,6 +24,7 @@ import { useEventListener, watchDebounced } from "@vueuse/core";
 import Composer from "./components/Composer.vue";
 import EmptyState from "./components/EmptyState.vue";
 import ErrorCard from "./components/ErrorCard.vue";
+import GoalCard from "./components/GoalCard.vue";
 import PlanCard from "./components/PlanCard.vue";
 import ResultCard from "./components/ResultCard.vue";
 import SessionSidebar from "./components/SessionSidebar.vue";
@@ -35,8 +36,21 @@ import { usePlanFlow } from "./composables/plan-flow.js";
 import { useSession } from "./composables/session.js";
 import { useTheme } from "./lib/theme.js";
 
-const { cards, planning, submitIntent, runPlan, discard, createThread } = usePlanFlow();
+const {
+  cards,
+  planning,
+  submitIntent,
+  runPlan,
+  submitGoal,
+  approveGoal,
+  cancelGoal,
+  discard,
+  createThread,
+} = usePlanFlow();
 const { cyclePreference: cycleTheme } = useTheme();
+
+// Composer mode (issue #97): plan (default, historical flow) | agent (goal loop).
+const agentMode = ref(false);
 
 const streamEl = ref<HTMLElement | null>(null);
 const composer = ref<InstanceType<typeof Composer> | null>(null);
@@ -113,9 +127,23 @@ watch(
 
 // Streaming autoscroll: follow live output growth (debounced so per-chunk
 // updates do not thrash smooth scrolling) — never steals scroll position
-// faster than the content grows.
+// faster than the content grows. Goal streams count too (step outputs +
+// round growth are the agent-mode live content).
 watchDebounced(
-  () => cards.value.reduce((n, c) => (c.type === "result" ? n + c.output.length : n), 0),
+  () =>
+    cards.value.reduce((n, c) => {
+      if (c.type === "result") return n + c.output.length;
+      if (c.type === "goal") {
+        return (
+          n +
+          c.rounds.reduce(
+            (sum, round) => sum + round.steps.reduce((acc, step) => acc + step.output.length, 0),
+            0,
+          )
+        );
+      }
+      return n;
+    }, 0),
   () => scrollToEnd(),
   { debounce: 150, maxWait: 600 },
 );
@@ -180,12 +208,26 @@ watchDebounced(
               @discard="discard"
             />
             <ResultCard v-else-if="card.type === 'result'" :card="card" :enter-index="i" />
+            <GoalCard
+              v-else-if="card.type === 'goal'"
+              :card="card"
+              :enter-index="i"
+              @approve="approveGoal"
+              @stop="cancelGoal"
+            />
             <ErrorCard v-else :card="card" :enter-index="i" />
           </template>
         </div>
       </div>
 
-      <Composer ref="composer" class="composer-dock" :planning="planning" @submit="submitIntent" />
+      <Composer
+        ref="composer"
+        class="composer-dock"
+        :planning="planning"
+        :agent-mode="agentMode"
+        @submit="(intent: string) => (agentMode ? submitGoal(intent) : submitIntent(intent))"
+        @mode="(agent: boolean) => (agentMode = agent)"
+      />
     </section>
 
     <!-- reference rail: side column on desktop, section below the chat on narrow screens -->

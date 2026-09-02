@@ -5,7 +5,7 @@
 [![CI](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml/badge.svg)](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-391%20passing-success)](vitest.config.ts)
+[![Tests](https://img.shields.io/badge/tests-474%20passing-success)](vitest.config.ts)
 [![pnpm](https://img.shields.io/badge/pnpm-monorepo-F69220)](pnpm-workspace.yaml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 [![中文文档](https://img.shields.io/badge/docs-中文-red)](README.zh-CN.md)
@@ -18,6 +18,7 @@ gate before it can touch your machine.
 ```bash
 tau ask "找出所有 TODO 的地方"          # intent -> plan -> confirm -> done
 tau ask "how much disk is left?" --yes  # auto-approve low risk (medium only with allowMediumAutoApprove)
+tau goal "migrate the config format"    # multi-round agent loop: plan -> run -> reflect -> repeat
 tau file find "*.ts"                    # or use the tools directly
 ```
 
@@ -41,19 +42,20 @@ around: **the AI proposes, deterministic code disposes.**
 
 ## Features
 
-| Area           | What you get                                                                                                                   |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `tau ask`      | NL intent → provider plan → safety review → confirm UI → execution → history                                                   |
-| `tau file`     | glob find (prunes node_modules), tree, stat, line-numbered read (offset/limit), dir list, regex batch rename (dry-run default) |
-| `tau sys`      | OS/CPU/memory info, disk usage, top processes, datetime (local/ISO/epoch/tz), which, env lookup (one name, medium risk)        |
-| `tau net`      | TCP port check, ping, SSRF-guarded fetch, local IPs                                                                            |
-| `tau text`     | regex search, project-wide replace (dry-run default), line/word stats, sha256/sha1 hash                                        |
-| `tau skill`    | SKILL.md command packs: list/show/new/validate                                                                                 |
-| `tau plugin`   | MCP servers as tool sources: dsh, VS Code, filesystem, ... (list/add/remove/tools)                                             |
-| `tau history`  | everything runs are recorded; inspect, replay, clear                                                                           |
-| `tau alias`    | persistent command aliases (`tau ll` → anything)                                                                               |
-| `tau provider` | API keys + live model discovery: set a key, models auto-refresh, pick interactively                                            |
-| `tau config`   | provider, timeout, risk policy — stored under `$TAU_HOME`                                                                      |
+| Area           | What you get                                                                                                                                                                      |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tau ask`      | NL intent → provider plan → safety review → confirm UI → execution → history                                                                                                      |
+| `tau goal`     | multi-round agent loop: plan → run → reflect → repeat (round cap, per-round safety review, same confirmation gates)                                                               |
+| `tau file`     | glob find (prunes node_modules), tree, stat, line-numbered read (offset/limit), dir list, regex batch rename (dry-run default), text write (workspace-contained, dry-run default) |
+| `tau sys`      | OS/CPU/memory info, disk usage, top processes, datetime (local/ISO/epoch/tz), which, env lookup (one name, medium risk)                                                           |
+| `tau net`      | TCP port check, ping, SSRF-guarded fetch, local IPs                                                                                                                               |
+| `tau text`     | regex search, project-wide replace (dry-run default), line/word stats, sha256/sha1 hash                                                                                           |
+| `tau skill`    | SKILL.md command packs: list/show/new/validate                                                                                                                                    |
+| `tau plugin`   | MCP servers as tool sources: dsh, VS Code, filesystem, ... (list/add/remove/tools)                                                                                                |
+| `tau history`  | everything runs are recorded; inspect, replay, clear                                                                                                                              |
+| `tau alias`    | persistent command aliases (`tau ll` → anything)                                                                                                                                  |
+| `tau provider` | API keys + live model discovery: set a key, models auto-refresh, pick interactively                                                                                               |
+| `tau config`   | provider, timeout, risk policy — stored under `$TAU_HOME`                                                                                                                         |
 
 ## Install
 
@@ -79,7 +81,7 @@ offline, mock provider). Regeneration: `app/*/docs/screenshots/README.md`.
 <p align="center">
   <img alt="webui plan (dark)" src="app/webui/docs/screenshots/plan.png" width="32%">
   <img alt="webui result (dark)" src="app/webui/docs/screenshots/result.png" width="32%">
-  <img alt="webui plan (light)" src="app/webui/docs/screenshots/plan-light.png" width="32%">
+  <img alt="webui agent mode (dark)" src="app/webui/docs/screenshots/agent.png" width="32%">
 </p>
 
 ## Quick start
@@ -252,7 +254,7 @@ workspace resolves them at runtime. Every package and app ships its own
 app/
   cli/            @tau/cli    — bin `tau`: commander app + `tau tui` / `tau web` bridges
   tui/            @tau/tui    — bin `tau-tui`: interactive REPL (markdown & image previews: /md, /view)
-  webui/          @tau/webui  — bin `tau-web`: local web interface (Vue 3 + UnoCSS client, light/dark themes + read-only settings panel, zero-dependency node API)
+  webui/          @tau/webui  — bin `tau-web`: local web interface (Vue 3 + UnoCSS client, light/dark themes, plan mode + multi-round agent mode, zero-dependency node API)
 packages/
   core/           @tau/core    — types, config store, history, TAU_HOME paths
   tools/          @tau/tools   — registry + file/sys/net/text tools

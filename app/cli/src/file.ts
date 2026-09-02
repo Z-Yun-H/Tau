@@ -4,6 +4,7 @@
  */
 
 import type { Command } from "commander";
+import { theme } from "@tau/ui";
 import { runToolDirect } from "./util.js";
 
 export function registerFileCommands(program: Command): void {
@@ -84,6 +85,43 @@ export function registerFileCommands(program: Command): void {
         "file.rename",
         { find, replace, path: opts.path, execute: opts.execute === true },
         `file rename ${find} -> ${replace}${opts.execute ? " (execute)" : " (dry-run)"}`,
+      );
+    });
+
+  file
+    .command("write")
+    .description("Write a text file — DRY RUN by default, add --execute to apply")
+    .argument("<path>", "target file path (workspace-relative)")
+    .argument("[content...]", "file content; a single '-' reads stdin instead")
+    .option("-m, --mode <mode>", "overwrite (default) | append", "overwrite")
+    .option("-d, --create-dirs", "create missing parent directories", false)
+    .option("-e, --execute", "actually write (default: dry-run preview)", false)
+    .action(async (path: string, contentParts: string[], opts) => {
+      let content = contentParts.join(" ");
+      if (content === "-") {
+        // Explicit stdin mode (`echo x | tau file write f.txt -`) — never an
+        // implicit TTY probe, so in-process tests stay deterministic.
+        content = await new Promise<string>((resolve, reject) => {
+          let data = "";
+          process.stdin.on("data", (chunk: Buffer) => (data += chunk.toString()));
+          process.stdin.on("end", () => resolve(data));
+          process.stdin.on("error", reject);
+        });
+      } else if (content.length === 0) {
+        console.error(theme.error("file write: content is required (or pass '-' to read stdin)"));
+        process.exitCode = 1;
+        return;
+      }
+      await runToolDirect(
+        "file.write",
+        {
+          path,
+          content,
+          mode: opts.mode,
+          createDirs: opts.createDirs === true,
+          execute: opts.execute === true,
+        },
+        `file write ${path}${opts.execute ? ` (${opts.mode}, execute)` : " (dry-run)"}`,
       );
     });
 }

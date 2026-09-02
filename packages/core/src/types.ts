@@ -206,7 +206,55 @@ export interface AIProvider {
    * on auth/network failures — the caller owns caching and degradation.
    */
   listModels?(): Promise<ModelInfo[]>;
+  /**
+   * Optional multi-round reflection: after one or more executed rounds the
+   * provider decides whether the goal is DONE (with a final answer) or a
+   * NEXT plan should run. Absent = the provider is single-round; the agent
+   * loop then degrades to one executed round and reports honestly instead
+   * of pretending loop capability. Implemented so far by: mock, openai.
+   * The returned plan (if any) is ALWAYS re-reviewed by the deterministic
+   * safety reviewer before it can touch the world — the AI never grades
+   * itself.
+   */
+  reflect?(ctx: ReflectContext): Promise<AgentDecision>;
 }
+
+/** ---------- Agent loop (multi-round reflection) ---------- */
+
+/** Record of one executed round, fed back to the provider for reflection. */
+export interface RoundFeedback {
+  /** 1-based round index within the goal. */
+  round: number;
+  /** The plan that executed this round (exactly what ran through runPlan). */
+  plan: Plan;
+  /** Terminal status of the round's runPlan invocation. */
+  status: "ok" | "failed" | "cancelled" | "denied";
+  /** Per-step outputs (loop-truncated before reaching the provider). */
+  outputs: string[];
+}
+
+/** Everything the provider needs to reflect on executed rounds. */
+export interface ReflectContext {
+  intent: string;
+  toolCatalog: string;
+  skillCatalog: string;
+  platform: string;
+  cwd: string;
+  /** Executed rounds so far, in order (round 1 first). */
+  rounds: RoundFeedback[];
+}
+
+/**
+ * The provider's post-round decision — a discriminated union:
+ * - `{ done: true, answer }`: the goal is complete; `answer` is the final
+ *   user-facing response (already-executed work stays as-is).
+ * - `{ done: false, plan, note? }`: one more round should run; the plan is
+ *   proposed, never trusted — the deterministic reviewer re-grades it and
+ *   runPlan remains the only execution channel.
+ */
+export type AgentDecision =
+  | { done: true; answer: string }
+  | { done: false; plan: Plan; note?: string };
 
 /** ---------- History ---------- */
 
@@ -256,8 +304,21 @@ export interface PluginConfig {
   description?: string;
 }
 
-/** ---------- Aliases & config ---------- */
+/** ---------- Observability (v0.4.0) ---------- */
 
+/**
+ * Provider token usage for one AI call, normalized across wire shapes
+ * (OpenAI `prompt_tokens`/`completion_tokens`, DeepSeek's cache-adjusted
+ * mapping). All fields are best-effort: a provider that reports nothing
+ * leaves the whole field absent — usage is never invented.
+ */
+export interface ProviderUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
+/** ---------- Aliases & config ---------- */
 export interface TauConfig {
   provider: string;
   /** Timeout in seconds for executed commands. */

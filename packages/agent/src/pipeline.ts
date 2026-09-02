@@ -6,8 +6,8 @@
  * the returned plan through @tau/engine's runPlan, the only execution channel.
  */
 
-import type { Plan, SkillMeta } from "@tau/core";
-import { planningContext, resolveProvider } from "@tau/ai";
+import type { Plan, ProviderUsage, SkillMeta } from "@tau/core";
+import { normalizeUsage, planningContext, resolveProvider } from "@tau/ai";
 import { registerPluginTools } from "@tau/plugins";
 import { registerCoreTools, registerTools, resetRegistry } from "@tau/tools";
 import { renderSkillCatalog, scanSkills } from "@tau/skills";
@@ -38,6 +38,11 @@ export interface PlannedIntent {
   providerSource: string;
   /** Degraded-but-alive warnings from MCP plugin loading. */
   warnings: string[];
+  /**
+   * Token usage of the planning call when the provider reported it
+   * (v0.4.0 observability). Absent = provider reports nothing.
+   */
+  usage?: ProviderUsage;
 }
 
 /**
@@ -58,6 +63,9 @@ export async function planIntent(
     throw new ProviderUnavailableError(choice.provider.name, choice.provider.unavailableReason?.());
   }
   const plan = await choice.provider.plan(ctx);
+  // Observability (issue #98): read the provider's captured usage right
+  // after the awaited call (sequential per process — see BaseHttpProvider).
+  const usage = normalizeUsage((choice.provider as { lastUsage?: unknown }).lastUsage);
   return {
     intent,
     plan,
@@ -65,6 +73,7 @@ export async function planIntent(
     providerLabel: choice.provider.label,
     providerSource: choice.source,
     warnings,
+    ...(usage ? { usage } : {}),
   };
 }
 

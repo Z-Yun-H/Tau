@@ -5,6 +5,66 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+## 0.4.0 — 2026-09-02
+
+The agent release: Tau stops being a single-round diagnostician and
+becomes a **task agent**. One intent can now span up to five reviewed
+rounds — plan → run → reflect → repeat — with the provider deciding
+after each round whether the goal is done. The toolkit gains its first
+**write primitive** (`file.write`, workspace-contained, dry-run by
+default), the WebUI gains an **agent mode** with a live round timeline
+and per-round approval gates, and the server finally **speaks**: one log
+line per request with the AI's token cost attached. The safety model is
+untouched — every round still passes the same deterministic review, the
+same confirmation gates, and `runPlan()` remains the only execution
+channel.
+
+### Added
+
+- **Multi-round agent loop (`tau goal`).** One intent, up to five reviewed
+  rounds: plan → run → reflect → repeat. After each executed round the
+  provider decides — via a new optional `reflect()` capability (mock and
+  OpenAI-compatible providers ship it; others degrade to a single round
+  with an honest note) — whether the goal is done (with a final answer) or
+  one more plan should run. Every round passes the same deterministic
+  safety review and the same confirmation gates as `tau ask`; a proposed
+  round the reviewer denies ends the goal without executing; round caps
+  (default 3, `--rounds`, hard ceiling 5) guard against runaway loops.
+  Shell steps are now cancellable end-to-end (abort kills the whole
+  process group), plumbing shared with the upcoming WebUI agent mode.
+- **Controlled file writes (`file.write` / `tau file write`).** The first
+  write primitive completes the agent's toolkit: overwrite or append text
+  files, DRY RUN by default (target, sizes, line-level diff stat, result
+  preview), 2 MB cap, binary and directory targets refused, and paths
+  hard-contained to the workspace — writes into OS-managed locations are
+  blocked outright and workspace escapes require interactive confirmation
+  (the safety reviewer re-checks every planned write path independently).
+- **Agent mode for the WebUI.** The composer gains a `plan | agent`
+  switch: agent submits the intent to a new `POST /api/goal/stream` and
+  renders a multi-round goal card — round timeline with live-streamed
+  step output, per-round risk badges, and the final answer. Agent mode is
+  never a blanket pre-approval: any medium+ round (the first one
+  included) pauses the stream inline for an explicit Approve/Refuse
+  decision (10-minute TTL), the Stop button cancels the whole goal
+  mid-shell included, and every round still passes the same
+  deterministic safety review as the plan flow.
+- **Observability baseline.** The WebUI server now logs one line per
+  request to stderr (method, path, status, duration, plus a
+  `tokens=TOTAL(P/C)` note on AI-calling routes when the provider
+  reports usage) — `TAU_WEBUI_QUIET=1` silences it and programmatic
+  starts can inject their own sink. `POST /api/plan` responses carry an
+  additive `usage` field and goal streams annotate every `round_end`
+  with that round's AI token cost: usage the wire always reported but
+  Tau used to drop.
+- **Release pipeline** (`scripts/release.workflow.yml`). Pushing an
+  annotated `vX.Y.Z` tag runs the full gate on the tagged tree, verifies
+  every workspace package.json agrees with the tag, extracts the
+  version's section from this file as the release notes, and publishes
+  the GitHub Release — the publishing half of the release loop, fully
+  automated and human-triggered. Activation is one step: move the file to
+  `.github/workflows/release.yml` (the AI token cannot write workflow
+  paths, so the human maintainer ships it into place).
+
 ## 0.3.0 — 2026-09-02
 
 The UX-and-harness release: the WebUI gains **light & dark themes**, a

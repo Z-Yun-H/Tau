@@ -45,6 +45,33 @@ package and run by the single root vitest config (aliases `@tau/*` → source).
  tui / webui (tau tui, tau web) ──► @tau/agent planIntent() ──► runPlan() ──┘
 ```
 
+## The agent loop (v0.4.0 — multi-round goals)
+
+`runGoal()` (packages/agent/src/loop.ts) is ORCHESTRATION over the same
+single-round pipeline — never a second execution channel:
+
+```
+ intent ──► runGoal()  packages/agent/src/loop.ts
+              round 1: planIntent() ──► reviewPlan() ──► runPlan()   (unchanged)
+              reflect: provider.reflect?(ReflectContext)             (optional capability)
+                 ├─ { done: true, answer }  ──► goal_end ok
+                 └─ { done: false, plan }   ──► reviewPlan() AGAIN
+                       ├─ deny    → goal_end denied (nothing runs)
+                       ├─ review  → awaitApproval() pause | runPlan's own confirm
+                       └─ allow   → runPlan() → loop (cap: default 3, hard 5)
+```
+
+Invariants added on top of the base set:
+
+- Reflection is an OPTIONAL provider capability (so far: mock, openai).
+  Providers without it degrade to one executed round and say so honestly.
+- The loop reuses the FIRST round's planning-context snapshot for every
+  reflect call — a mid-goal registry change can never widen the surface.
+- `cancelled` / `denied` round statuses always end the goal immediately.
+- Cancellation: `RunGoalOptions.signal` flows into runPlan → executor;
+  shells are killed as a process group (`detached` + `kill(-pid)`), so
+  grandchildren (`sleep`, pipelines) cannot outlive a Stop.
+
 ## Invariants (do not break)
 
 1. `runPlan()` is the ONLY path that executes AI-generated steps. Direct CLI

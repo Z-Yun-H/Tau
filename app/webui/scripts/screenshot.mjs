@@ -101,6 +101,24 @@ try {
   await page.screenshot({ path: path.join(OUT_DIR, "settings.png") });
   await page.keyboard.press("Escape");
 
+  // Agent mode (issue #97): the composer's plan|agent switch, the goal card
+  // round timeline with streamed steps, and the final answer — a mock
+  // single-round goal completes end-to-end with no approval pause.
+  await page.getByRole("button", { name: "agent", exact: true }).first().click();
+  await page.fill("textarea", "echo GOAL_COMPLETE: workspace scanned");
+  await page.keyboard.press("Enter");
+  await page.getByText("workspace scanned").first().waitFor({ timeout: 30_000 });
+  await page.waitForTimeout(800); // let the goal settle + markdown render
+  // The Tools-tab lazy load can leave the WINDOW scrolled (scroll anchoring
+  // picks the window when the grid columns are overflow-hidden) — reset the
+  // window first, then snap the stream column to its bottom.
+  await page.evaluate(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+    document.querySelector(".stream-scroll")?.scrollTo({ top: 1e9, behavior: "instant" });
+  });
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: path.join(OUT_DIR, "agent.png") });
+
   // Light ramp pass — a fresh page with colorScheme: "light" exercises the
   // SAME 'system' resolution path the boot script uses (system → light),
   // so the shot doubles as a visual check of the no-flash boot behavior.

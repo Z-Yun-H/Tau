@@ -38,6 +38,12 @@ export interface RunPlanOptions {
   onEvent?: (event: PlanEvent) => void;
   /** Shell override for shell-steps (default: config `shell` → "auto"). */
   shell?: ShellPref;
+  /**
+   * Optional cancellation signal (agent-loop Stop). Checked before every
+   * step; an abort mid-shell kills the child (see executor). The plan then
+   * ends "cancelled" — never silently swallowed. Absent = zero change.
+   */
+  signal?: AbortSignal;
 }
 
 export interface RunPlanResult {
@@ -146,6 +152,19 @@ export async function runPlan(
   // historical spawn(shell:true) behavior byte-identical.
   const shellPref = options.shell ?? loadConfig().shell ?? "auto";
   for (let i = 0; i < plan.steps.length; i++) {
+    // Agent-loop Stop between steps: whatever ran stays ran, whatever didn't
+    // never starts — the plan ends "cancelled" and the caller learns via the
+    // same terminal status it would get from a refused confirmation.
+    if (options.signal?.aborted) {
+      ok = false;
+      outcomes.push({ ok: false, output: "(cancelled by user)", skipped: true, cancelled: true });
+      emit({ type: "step_end", index: i, ok: false, skipped: true });
+      if (!options.skipHistory) {
+        appendHistory(intent, "plan", plan.steps, "cancelled", { provider: options.provider });
+      }
+      emit({ type: "plan_end", status: "cancelled" });
+      return { status: "cancelled", review, outcomes, output: "(cancelled by user)" };
+    }
     const step = plan.steps[i]!;
 
     // Per-step gate even after blanket approval.
@@ -174,6 +193,7 @@ export async function runPlan(
       timeoutSec: options.timeoutSec,
       gate: () => allowed,
       shell: shellPref,
+      signal: options.signal,
       onOutput: (chunk) => emit({ type: "step_output", index: i, chunk }),
     });
     outcomes.push(outcome);
@@ -186,6 +206,16 @@ export async function runPlan(
     });
     if (outcome.output && !outcome.skipped) {
       console.log(outcome.output);
+    }
+    // Mid-shell abort surfaces as outcome.cancelled — same terminal path as
+    // the between-steps check above (status "cancelled", history cancelled).
+    if (outcome.cancelled) {
+      ok = false;
+      if (!options.skipHistory) {
+        appendHistory(intent, "plan", plan.steps, "cancelled", { provider: options.provider });
+      }
+      emit({ type: "plan_end", status: "cancelled" });
+      return { status: "cancelled", review, outcomes, output: "(cancelled by user)" };
     }
     if (!outcome.ok) {
       ok = false;

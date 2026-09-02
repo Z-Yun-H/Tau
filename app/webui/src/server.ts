@@ -13,7 +13,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { reviewPlan, runPlan } from "@tau/engine";
 import { loadConfig, redactConfig, type Plan, type SafetyReview } from "@tau/core";
-import { cachedModels } from "@tau/ai";
+import { cachedModels, formatUsage } from "@tau/ai";
 import {
   ensureCatalog,
   getSessionInfo,
@@ -22,7 +22,9 @@ import {
   planAndReview,
   ProviderUnavailableError,
   readRecentHistory,
+  runGoal,
 } from "@tau/agent";
+import { GoalRegistry } from "./goal.js";
 
 const WEBUI_TIMEOUT_SEC = 120;
 const BODY_CAP_BYTES = 1024 * 1024;
@@ -166,10 +168,38 @@ async function readExecuteRequest(
   };
 }
 
-export function createRequestListener(): http.RequestListener {
+export interface RequestListenerOptions {
+  /**
+   * Request log sink (v0.4.0 observability, issue #98). Default: one line
+   * per request to stderr — `ts method path -> status ms [note]` — disabled
+   * by `TAU_WEBUI_QUIET=1`. Inject a function in tests (or to forward to
+   * your own logger); the server itself never writes to stdout files.
+   */
+  log?: (line: string) => void;
+}
+
+export function createRequestListener(options: RequestListenerOptions = {}): http.RequestListener {
   const staticDir = resolveStaticDir();
+  const goalRegistry = new GoalRegistry();
+  // Injection wins; `TAU_WEBUI_QUIET=1` silences the DEFAULT stderr sink
+  // only (tests inject a collecting logger and stay in control).
+  const defaultQuiet = process.env["TAU_WEBUI_QUIET"] === "1";
+  const log =
+    options.log ??
+    (defaultQuiet ? (): void => {} : (line: string): void => void console.error(line));
+  // Handlers can annotate a response (e.g. token usage of the AI call it
+  // triggered); the finish hook appends the note to the log line.
+  const notes = new WeakMap<http.ServerResponse, string>();
   return async (req, res) => {
+    const startedAt = Date.now();
     const url = new URL(req.url ?? "/", "http://localhost");
+    res.on("finish", () => {
+      const ms = Date.now() - startedAt;
+      const note = notes.get(res);
+      log(
+        `${new Date().toISOString()} ${req.method} ${url.pathname} -> ${res.statusCode} ${ms}ms${note ? ` ${note}` : ""}`,
+      );
+    });
     try {
       // ---- API ----
       if (url.pathname.startsWith("/api/")) {
@@ -209,6 +239,7 @@ export function createRequestListener(): http.RequestListener {
           }
           ensureCatalog();
           const planned = await planAndReview(intent);
+          if (planned.usage) notes.set(res, formatUsage(planned.usage));
           sendJson(res, 200, {
             intent,
             plan: planned.plan,
@@ -216,6 +247,9 @@ export function createRequestListener(): http.RequestListener {
             provider: planned.providerName,
             providerLabel: planned.providerLabel,
             warnings: planned.warnings,
+            // v0.4.0 observability: the planning call's token usage when the
+            // provider reports it (additive — absent changes nothing).
+            ...(planned.usage ? { usage: planned.usage } : {}),
           });
           return;
         }
@@ -319,6 +353,92 @@ export function createRequestListener(): http.RequestListener {
           }
           return;
         }
+        if (req.method === "POST" && url.pathname === "/api/goal/stream") {
+          // Agent mode (issue #97): runGoal over the SAME engine. Every round
+          // is re-reviewed; non-"allow" rounds pause the stream until
+          // /api/goal/approve decides (or the TTL ends the goal cancelled).
+          const body = await readJsonBody(req);
+          const intent = typeof body["intent"] === "string" ? body["intent"].trim() : "";
+          if (!intent) {
+            sendJson(res, 400, { error: "intent (string) is required" });
+            return;
+          }
+          const rawRounds = body["maxRounds"];
+          const maxRounds =
+            typeof rawRounds === "number" && Number.isFinite(rawRounds) && rawRounds >= 1
+              ? rawRounds
+              : undefined;
+          const provider = typeof body["provider"] === "string" ? body["provider"] : undefined;
+          ensureCatalog();
+          const goalId = goalRegistry.createGoalId();
+          const controller = new AbortController();
+          // Client disconnect (Stop button, tab close) cancels the goal —
+          // mid-shell included, via the engine's process-group kill.
+          res.on("close", () => controller.abort());
+          res.writeHead(200, {
+            "content-type": "application/x-ndjson; charset=utf-8",
+            "cache-control": "no-store",
+          });
+          const write = (event: unknown): void => {
+            if (!res.writableEnded) res.write(JSON.stringify(event) + "\n");
+          };
+          write({ type: "goal_registered", goalId });
+          try {
+            const result = await runGoal(intent, {
+              provider,
+              maxRounds,
+              assumeYes: true,
+              allowMediumAutoApprove: true,
+              timeoutSec: WEBUI_TIMEOUT_SEC,
+              autoApproveAll: true,
+              signal: controller.signal,
+              // runGoal's lifecycle + the per-round step_* events mirror
+              // verbatim — additive event types only, shapes never bent.
+              onGoalEvent: (event) => {
+                // Annotate the log line with the latest round's AI cost.
+                if (event.type === "round_end" && event.usage) {
+                  notes.set(res, formatUsage(event.usage));
+                }
+                write(event);
+              },
+              onPlanEvent: (event) => write(event),
+              awaitApproval: (round) =>
+                goalRegistry.awaitApproval(goalId, round, () => {
+                  write({ type: "approval_timeout", round });
+                }),
+            });
+            write({
+              type: "goal_result",
+              status: result.status,
+              rounds: result.rounds.length,
+              ...(result.answer !== undefined ? { answer: result.answer } : {}),
+              ...(result.error !== undefined ? { error: result.error } : {}),
+            });
+          } catch (error) {
+            write({
+              type: "error",
+              error: error instanceof Error ? error.message : String(error),
+            });
+          } finally {
+            res.end();
+          }
+          return;
+        }
+        if (req.method === "POST" && url.pathname === "/api/goal/approve") {
+          const body = await readJsonBody(req);
+          const goalId = typeof body["goalId"] === "string" ? body["goalId"] : "";
+          if (!goalId) {
+            sendJson(res, 400, { error: "goalId (string) is required" });
+            return;
+          }
+          const decided = goalRegistry.approve(goalId, body["approve"] === true);
+          if (!decided) {
+            sendJson(res, 404, { error: `unknown or expired goal: ${goalId}` });
+            return;
+          }
+          sendJson(res, 200, { ok: true });
+          return;
+        }
         sendJson(res, 404, { error: `unknown API route: ${req.method} ${url.pathname}` });
         return;
       }
@@ -356,6 +476,8 @@ export interface StartWebUiOptions {
   port?: number;
   /** Bind address (default 127.0.0.1 — never exposed to the network). */
   host?: string;
+  /** Request log sink — see {@link RequestListenerOptions.log}. */
+  log?: (line: string) => void;
 }
 
 export interface RunningWebUi {
@@ -368,7 +490,9 @@ export interface RunningWebUi {
 export async function startWebUi(options: StartWebUiOptions = {}): Promise<RunningWebUi> {
   const host = options.host ?? "127.0.0.1";
   const requestedPort = options.port ?? 8787;
-  const server = http.createServer(createRequestListener());
+  const server = http.createServer(
+    createRequestListener(options.log === undefined ? {} : { log: options.log }),
+  );
   await new Promise<void>((resolve) => {
     server.listen(requestedPort, host, resolve);
   });

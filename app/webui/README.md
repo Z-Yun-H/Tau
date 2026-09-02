@@ -28,6 +28,22 @@ Chromium with the offline mock provider (regeneration:
 
 ![webui result](./docs/screenshots/result.png)
 
+**agent mode (v0.4.0) — multi-round goal card: live steps, per-round
+approval gates, final answer**
+
+![webui agent](./docs/screenshots/agent.png)
+
+## Observability (v0.4.0)
+
+The server logs **one line per request** to stderr — `ts · method · path →
+status · ms` with a `tokens=TOTAL(P/C)` note on AI-calling routes
+(`/api/plan`, goal rounds) when the provider reports usage. `TAU_WEBUI_QUIET=1`
+silences the default sink; programmatic starts can inject their own via
+`startWebUi({ log })` / `createRequestListener({ log })` (injection always
+wins over the env switch). `POST /api/plan` responses carry an additive
+`usage` field, and goal streams annotate each `round_end` with that round's
+AI cost — usage the wire always reported but Tau used to drop silently.
+
 ## Client stack
 
 - **Vue 3** — a slim shell (`client/App.vue`) over the component
@@ -96,7 +112,10 @@ params — pure data, never the executables), `GET /api/history` (`?limit=`
 optional, default 20, cap 500), `POST /api/plan` (intent → plan +
 deterministic review), `POST /api/execute` (request-as-approval; deny
 → 403, high risk requires `confirmHighRisk`), `POST /api/execute/stream`
-(NDJSON streaming execution).
+(NDJSON streaming execution), `POST /api/goal/stream` (agent mode: multi-round
+`runGoal()` lifecycle as NDJSON — non-"allow" rounds pause on
+`approval_required` until `POST /api/goal/approve` or the 10-minute TTL;
+client disconnect cancels the goal).
 
 ## Dependencies
 
@@ -114,7 +133,7 @@ pnpm --filter @tau/webui build      # client + server builds
 pnpm --filter @tau/webui dev        # vite dev server (:5173, proxies /api → :8787)
 pnpm --filter @tau/webui dev:server # engine API server on :8787 (tsx from source)
 pnpm dev:web                        # same API server from the repo root
-pnpm --filter @tau/webui shots      # regenerate plan.png + result.png
+pnpm --filter @tau/webui shots      # regenerate plan/result/tools/settings/agent PNGs
 ```
 
 No new execution channels: the WebUI is a front door, the engine is

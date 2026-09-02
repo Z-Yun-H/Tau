@@ -23,7 +23,7 @@
  */
 
 import { loadConfig } from "@tau/core";
-import type { AIProvider, ModelInfo, PlanningContext, Plan } from "@tau/core";
+import type { AIProvider, ModelInfo, PlanningContext, Plan, ProviderUsage } from "@tau/core";
 
 /** Subclass contract: identity + the wire-specific plan() + defaults. */
 export interface HttpProviderConfig {
@@ -116,4 +116,14 @@ export abstract class BaseHttpProvider implements AIProvider {
 
   /** Wire-specific plan synthesis — subclasses implement. */
   abstract plan(ctx: PlanningContext): Promise<Plan>;
+
+  /**
+   * Token usage of the MOST RECENT AI call this provider made (plan or
+   * reflect), undefined when the provider reports none. Observability-only
+   * (issue #98): read right after the awaited call — Tau's front doors are
+   * sequential per process, so there is no cross-call ambiguity. Base field
+   * lives here so subclasses share one capture convention; providers that
+   * never capture just leave it undefined.
+   */
+  lastUsage: ProviderUsage | undefined = undefined;
 }

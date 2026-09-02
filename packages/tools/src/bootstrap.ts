@@ -20,6 +20,10 @@ export {
   catalogSummary,
 } from "./registry.js";
 
+// Re-export the write-containment helpers — the engine's safety reviewer
+// layers its path checks on the same definitions the tool enforces.
+export { escapesWorkspace, isSystemWritePath } from "./file.js";
+
 /** Register all built-in core tools. Idempotent: safe to call repeatedly. */
 export function registerCoreTools(): void {
   const tools: ToolDefinition[] = [...fileTools, ...sysTools, ...netTools, ...textTools];

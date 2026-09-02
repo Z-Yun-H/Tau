@@ -10,8 +10,12 @@ passing a deterministic, tested gate that the AI does not control.**
    have accepted it.
 2. **The reviewer is deterministic.** No network, no randomness, no clock.
    Same plan → same verdict. Fully unit-tested, including benign near-misses.
-3. **Dry-run by default.** `file.rename` and `text.replace` — the only
-   first-party mutating tools — preview unless `execute:true` is explicit.
+3. **Dry-run by default.** `file.rename`, `text.replace` and (since 0.4.0)
+   `file.write` — the first-party mutating tools — preview unless
+   `execute:true` is explicit. `file.write` additionally refuses paths
+   outside the workspace and OS-managed locations; the safety reviewer
+   re-checks every planned write path independently (system location →
+   blocked, workspace escape → high).
 4. **No delete primitive.** There is deliberately no `file.delete` tool. The
    AI planner must never have a first-party deletion primitive. Deletion goes
    through shell steps — which are scanned, and which require confirmation.
