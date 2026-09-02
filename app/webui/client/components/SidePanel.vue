@@ -45,12 +45,8 @@ function select(next: Tab): void {
 </script>
 
 <template>
-  <aside class="side-panel tau-panel flex flex-col min-h-0 overflow-hidden">
-    <nav
-      class="tab-nav relative flex border-b border-tau-line flex-none"
-      role="tablist"
-      aria-label="reference panels"
-    >
+  <aside class="side-panel tau-surface rounded-12px flex flex-col min-h-0 overflow-hidden">
+    <nav class="tab-nav relative flex flex-none" role="tablist" aria-label="reference panels">
       <button
         v-for="(t, i) in TABS"
         :key="t"
@@ -74,6 +70,8 @@ function select(next: Tab): void {
         aria-hidden="true"
       />
     </nav>
+
+    <hr class="tau-divider flex-none" />
 
     <div class="tab-body overflow-y-auto flex-1 min-h-0">
       <!-- Skills -->
@@ -180,16 +178,16 @@ function select(next: Tab): void {
   cursor: pointer;
   font-family: var(--font-sans);
   font-size: 12px;
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
   transition: color var(--t-fast) var(--ease);
 }
 
 .tab-btn:hover {
-  color: #9aa5b4; /* tau.muted */
+  color: var(--tau-muted); /* tau.muted */
 }
 
 .tab-btn.on {
-  color: #e6ebf2; /* tau.text */
+  color: var(--tau-text); /* tau.text */
   font-weight: 500;
 }
 
@@ -202,7 +200,7 @@ function select(next: Tab): void {
   bottom: 0;
   left: 0;
   height: 2px;
-  background: #5ec97a; /* tau.ok */
+  background: var(--tau-ok); /* tau.ok */
   transition: transform var(--t-med) var(--ease);
   will-change: transform;
 }
@@ -214,18 +212,18 @@ function select(next: Tab): void {
 .panel-empty {
   margin: 0;
   font-size: 12px;
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
 }
 
 .panel-code {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: #9aa5b4; /* tau.muted */
+  color: var(--tau-muted); /* tau.muted */
 }
 
 .entry {
   padding: 8px 0;
-  border-bottom: 1px solid #1b2230; /* tau.line */
+  border-bottom: 1px solid var(--tau-line); /* tau.line */
 }
 
 .entry:last-child {
@@ -242,21 +240,21 @@ function select(next: Tab): void {
 .entry-name {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: #e6ebf2; /* tau.text */
+  color: var(--tau-text); /* tau.text */
   font-weight: 600;
 }
 
 .entry-meta {
   font-family: var(--font-mono);
   font-size: 10px;
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
 }
 
 .entry-desc {
   margin: 2px 0 0;
   font-family: var(--font-sans);
   font-size: 12px;
-  color: #9aa5b4; /* tau.muted */
+  color: var(--tau-muted); /* tau.muted */
   line-height: 1.5;
 }
 
@@ -271,11 +269,11 @@ function select(next: Tab): void {
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
 }
 
 .group-count {
-  color: #3f4856; /* tau.placeholder — dimmer than the family name */
+  color: var(--tau-placeholder); /* tau.placeholder — dimmer than the family name */
   margin-left: 2px;
 }
 
@@ -287,32 +285,32 @@ function select(next: Tab): void {
   gap: 4px 6px;
   margin: 0 0 10px;
   padding: 6px 8px;
-  border: 1px solid #1b2230; /* tau.line */
+  border: 1px solid var(--tau-line); /* tau.line */
   border-radius: 6px;
-  background: #141a24; /* tau.raised */
+  background: var(--tau-raised); /* tau.raised */
   font-family: var(--font-mono);
   font-size: 11px;
 }
 
 .overview-count {
-  color: #e6ebf2; /* tau.text */
+  color: var(--tau-text); /* tau.text */
   font-weight: 600;
 }
 
 .overview-sep {
-  color: #3f4856; /* tau.placeholder */
+  color: var(--tau-placeholder); /* tau.placeholder */
 }
 
 .overview-read {
-  color: #5ec97a; /* tau.ok — read-only is the safe default */
+  color: var(--tau-ok); /* tau.ok — read-only is the safe default */
 }
 
 .overview-mut {
-  color: #e0a53c; /* tau.warn — mutates needs attention */
+  color: var(--tau-warn); /* tau.warn — mutates needs attention */
 }
 
 .overview-dry {
-  color: #6bb3d9; /* tau.info — dry-run-default is a hint, not a risk */
+  color: var(--tau-info); /* tau.info — dry-run-default is a hint, not a risk */
 }
 
 /* Kind tags — MUT / READ / DRY. Same shape as the StepRow kind tags in the
@@ -331,29 +329,29 @@ function select(next: Tab): void {
 }
 
 .kind-tag.read {
-  color: #6bb3d9; /* tau.info */
-  border-color: rgba(107, 179, 217, 0.3);
-  background: rgba(107, 179, 217, 0.1);
+  color: var(--tau-info); /* tau.info */
+  border-color: var(--tau-info-edge);
+  background: var(--tau-info-soft);
 }
 
 .kind-tag.mut {
-  color: #e0a53c; /* tau.warn */
-  border-color: rgba(224, 165, 60, 0.3);
-  background: rgba(224, 165, 60, 0.1);
+  color: var(--tau-warn); /* tau.warn */
+  border-color: var(--tau-warn-edge);
+  background: var(--tau-warn-soft);
 }
 
 .kind-tag.dry {
-  color: #5c6776; /* tau.faint */
-  border-color: #28303f; /* tau.line-strong */
-  background: #141a24; /* tau.raised */
+  color: var(--tau-faint); /* tau.faint */
+  border-color: var(--tau-line-strong); /* tau.line-strong */
+  background: var(--tau-raised); /* tau.raised */
 }
 
 .mut-text {
-  color: #e0a53c; /* tau.warn */
+  color: var(--tau-warn); /* tau.warn */
 }
 
 .dry-text {
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
 }
 
 .param-list {
@@ -367,19 +365,19 @@ function select(next: Tab): void {
   font-family: var(--font-mono);
   font-size: 10px;
   line-height: 1.6;
-  color: #9aa5b4; /* tau.muted */
-  border: 1px solid #1b2230; /* tau.line */
-  background: #141a24; /* tau.raised */
+  color: var(--tau-muted); /* tau.muted */
+  border: 1px solid var(--tau-line); /* tau.line */
+  background: var(--tau-raised); /* tau.raised */
   border-radius: 4px;
   padding: 0 5px;
 }
 
 .req {
-  color: #e0a53c; /* tau.warn */
+  color: var(--tau-warn); /* tau.warn */
 }
 
 .param-type {
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
   margin-left: 3px;
 }
 
@@ -387,6 +385,6 @@ function select(next: Tab): void {
   margin: 12px 0 0;
   font-family: var(--font-mono);
   font-size: 10px;
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
 }
 </style>

@@ -40,7 +40,7 @@ const argsText = computed(() => (props.step.kind === "tool" ? formatArgs(props.s
 .step-marker {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
   line-height: 1.5;
   user-select: none;
   width: 22px;
@@ -74,33 +74,33 @@ const argsText = computed(() => (props.step.kind === "tool" ? formatArgs(props.s
 }
 
 .kind-tag.tool {
-  color: #6bb3d9; /* tau.info */
-  border-color: rgba(107, 179, 217, 0.3);
-  background: rgba(107, 179, 217, 0.1);
+  color: var(--tau-info); /* tau.info */
+  border-color: var(--tau-info-edge);
+  background: var(--tau-info-soft);
 }
 
 .kind-tag.shell {
-  color: #e0a53c; /* tau.warn */
-  border-color: rgba(224, 165, 60, 0.3);
-  background: rgba(224, 165, 60, 0.1);
+  color: var(--tau-warn); /* tau.warn */
+  border-color: var(--tau-warn-edge);
+  background: var(--tau-warn-soft);
 }
 
 .step-name {
   font-family: var(--font-mono);
   font-size: 13px;
-  color: #e6ebf2; /* tau.text */
+  color: var(--tau-text); /* tau.text */
   font-weight: 500;
   word-break: break-all;
 }
 
 .shell-name {
-  color: #e6ebf2; /* tau.text */
+  color: var(--tau-text); /* tau.text */
 }
 
 .step-args {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: #9aa5b4; /* tau.muted */
+  color: var(--tau-muted); /* tau.muted */
   word-break: break-all;
 }
 
@@ -108,7 +108,7 @@ const argsText = computed(() => (props.step.kind === "tool" ? formatArgs(props.s
   margin: 2px 0 0;
   font-family: var(--font-sans);
   font-size: 12px;
-  color: #9aa5b4; /* tau.muted */
+  color: var(--tau-muted); /* tau.muted */
   line-height: 1.5;
 }
 </style>

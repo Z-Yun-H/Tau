@@ -5,7 +5,7 @@
 [![CI](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml/badge.svg)](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-364%20passing-success)](vitest.config.ts)
+[![Tests](https://img.shields.io/badge/tests-391%20passing-success)](vitest.config.ts)
 [![pnpm](https://img.shields.io/badge/pnpm-monorepo-F69220)](pnpm-workspace.yaml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 
@@ -71,8 +71,9 @@ cd app/cli && pnpm link --global   # 提供 `tau` 命令（若 pnpm 全局 bin �
 </p>
 
 <p align="center">
-  <img alt="webui plan" src="app/webui/docs/screenshots/plan.png" width="49%">
-  <img alt="webui result" src="app/webui/docs/screenshots/result.png" width="49%">
+  <img alt="webui plan（暗色）" src="app/webui/docs/screenshots/plan.png" width="32%">
+  <img alt="webui result（暗色）" src="app/webui/docs/screenshots/result.png" width="32%">
+  <img alt="webui plan（亮色）" src="app/webui/docs/screenshots/plan-light.png" width="32%">
 </p>
 
 ## 快速上手
@@ -238,7 +239,7 @@ API、依赖与开发命令。
 app/
   cli/            @tau/cli    —— bin `tau`：commander 应用 + `tau tui` / `tau web` 桥接
   tui/            @tau/tui    —— bin `tau-tui`：交互式 REPL（markdown 与图片预览：/md、/view）
-  webui/          @tau/webui  —— bin `tau-web`：本地 Web 界面（Vue 3 + UnoCSS 客户端，零依赖 node API）
+  webui/          @tau/webui  —— bin `tau-web`：本地 Web 界面（Vue 3 + UnoCSS 客户端，亮暗双主题 + 只读设置面板，零依赖 node API）
 packages/
   core/           @tau/core    —— 领域类型、配置存储、历史、TAU_HOME 路径
   tools/          @tau/tools   —— 注册表 + file/sys/net/text 工具

@@ -20,8 +20,9 @@ execution — without burying it under chat-theatre. Three principles:
 
 1. **Quiet, not loud.** Like chat.z.ai, the surface is a matte neutral
    with one ornamental accent (chrome) reserved for the brand mark and
-   the primary action. Hierarchy comes from typography and hairlines,
-   never from shadows or gradients on data surfaces.
+   the primary action. Hierarchy comes from typography and **layered
+   surfaces** — soft elevation shadows and gradient edges, never a bare
+   1px hairline drawn on a flat fill (§3, §6).
 2. **Plans are first-class.** A plan is not a chat message — it is a
    contract the user must review. Plan cards get visual weight (left
    rail, numbered steps, verdict badge, Run plan as the chrome primary
@@ -33,78 +34,144 @@ execution — without burying it under chat-theatre. Three principles:
 
 ## 2. Token sources of truth
 
-| Token kind             | Lives in                           | Notes                                                                            |
-| ---------------------- | ---------------------------------- | -------------------------------------------------------------------------------- |
-| Colors                 | `uno.config.ts` `theme.colors.tau` | single source; utilities generated from it                                       |
-| Fonts + motion         | `client/theme.css` CSS vars        | `--font-sans`, `--font-mono`, `--font-serif`, `--t-*`, `--ease`, `--ease-spring` |
-| Spacing / radii / type | inline Uno utilities               | 4px grid; radii 4/6/8/12px; sizes 10–60px                                        |
+| Token kind             | Lives in                           | Notes                                                                                  |
+| ---------------------- | ---------------------------------- | -------------------------------------------------------------------------------------- |
+| Colors (both themes)   | `client/theme.css` CSS vars        | `--tau-*` on `:root` (dark default) + `html[data-theme="light"]` — THE single source   |
+| Color → utility map    | `uno.config.ts` `theme.colors.tau` | every `tau.*` maps to `var(--tau-*)`; class names are theme-independent, never raw hex |
+| Fonts + motion         | `client/theme.css` CSS vars        | `--font-sans`, `--font-mono`, `--font-serif`, `--t-*`, `--ease`                        |
+| Elevation              | `client/theme.css` CSS vars        | `--tau-elev-1/2/3` shadows + `--tau-edge-gradient` + `--tau-backdrop`, tuned per theme |
+| Theme state            | `client/lib/theme.ts`              | three-state preference, `tau-webui-theme-v1` key, boot script twin in `index.html`     |
+| Spacing / radii / type | inline Uno utilities               | 4px grid; radii 4/6/8/12px; sizes 10–60px                                              |
 
-## 3. Color system — "dark, fused, restrained"
+## 3. Color system — two themes, fused, layered
 
-Dark is the default (pinned by tests + the product's terminal lineage).
-A light variant is _not_ shipped in this revision.
+Two full ramps ship: **dark** (the rendering baseline — CSS default on
+`:root`, pinned by tests + the product's terminal lineage) and **light**
+(activated by `html[data-theme="light"]`). Both are tuned to the same
+structure so components never know which theme is active.
 
-### Neutral ramp (dark)
+### Theme switching contract
 
-| Token             | Hex       | Role                                                                       |
-| ----------------- | --------- | -------------------------------------------------------------------------- |
-| `tau.bg`          | `#0B0E13` | page background — the canvas                                               |
-| `tau.panel`       | `#0E1219` | sidebar / cards / composer shell — _fused_ with bg, separated by hairlines |
-| `tau.raised`      | `#141A24` | hover surface, dropdowns, raised controls                                  |
-| `tau.active`      | `#1B2331` | active thread, pressed state, focus-within tint                            |
-| `tau.line`        | `#1B2230` | subtle hairline (card edges, dividers)                                     |
-| `tau.line-strong` | `#28303F` | control borders, focus-adjacent borders                                    |
-| `tau.text`        | `#E6EBF2` | primary text                                                               |
-| `tau.muted`       | `#9AA5B4` | secondary prose, descriptions                                              |
-| `tau.faint`       | `#5C6776` | meta (timestamps, kbd hints, placeholder)                                  |
-| `tau.placeholder` | `#3F4856` | textarea placeholder (deliberately dimmer than `faint`)                    |
+- Preference is three-state: `'light' | 'dark' | 'system'`, persisted in
+  the `tau-webui-theme-v1` localStorage key (**pure addition** — the
+  pinned `tau-webui-threads-v1` key is untouched). `'system'` stores
+  nothing (absence = system) and live-follows `prefers-color-scheme`.
+- A boot script in `index.html` resolves the preference **before first
+  paint** (no wrong-theme flash). Dark needs no attribute; only light
+  adds `data-theme="light"`.
+- The `StatusHeader` button cycles `system → light → dark` (`Alt+T`);
+  state lives in `client/lib/theme.ts` (`useTheme()` singleton).
+- Screenshots pin `colorScheme` per pass (`scripts/screenshot.mjs`) —
+  headless Chromium defaults to light and would flip the dark baseline.
 
-The sidebar is _visually fused_ with the app bg — both sit on
-`tau.panel`/`tau.bg` adjacent tones — and is separated only by a single
-`tau.line` 1px border. This is the chat.z.ai move; it makes the sidebar
-read as a quiet rail, not a competing surface.
+### Neutral ramps — page → panel → raised → active
 
-### Semantic system — risk (unchanged contract)
+Dark (baseline, `:root`):
 
-| Level                      | Token         | Hex       | Meaning                         |
-| -------------------------- | ------------- | --------- | ------------------------------- |
-| `low` / `ok`               | `tau.ok`      | `#5EC97A` | safe, success, the brand accent |
-| `medium` / `warn`          | `tau.warn`    | `#E0A53C` | caution, plugin tools           |
-| `high` / `failed` / `deny` | `tau.danger`  | `#E5534B` | blocked, failed, denied         |
-| `blocked` / `cancelled`    | `tau.blocked` | `#6E7887` | dim gray                        |
+| Token             | Hex       | Role                                                        |
+| ----------------- | --------- | ----------------------------------------------------------- |
+| `tau.bg`          | `#0B0E13` | page background — the canvas                                |
+| `tau.panel`       | `#0E1219` | sidebar / cards / composer shell — layered above the canvas |
+| `tau.raised`      | `#141A24` | hover surface, dropdowns, raised controls                   |
+| `tau.active`      | `#1B2331` | active thread, pressed state, focus-within tint             |
+| `tau.line`        | `#1B2230` | input/control inner lines (small controls only)             |
+| `tau.line-strong` | `#28303F` | control borders, focus-adjacent borders                     |
+| `tau.text`        | `#E6EBF2` | primary text                                                |
+| `tau.muted`       | `#9AA5B4` | secondary prose, descriptions                               |
+| `tau.faint`       | `#5C6776` | meta (timestamps, kbd hints, placeholder)                   |
+| `tau.placeholder` | `#3F4856` | textarea placeholder (deliberately dimmer than `faint`)     |
+
+Light (`html[data-theme="light"]`) — same structure, tuned for AA on a
+bright canvas:
+
+| Token             | Hex       | Role                                  |
+| ----------------- | --------- | ------------------------------------- |
+| `tau.bg`          | `#EEF1F6` | page background                       |
+| `tau.panel`       | `#F7F9FC` | panels / cards — read as raised paper |
+| `tau.raised`      | `#FFFFFF` | hover surface, raised controls        |
+| `tau.active`      | `#E6ECF4` | active thread, pressed state          |
+| `tau.line`        | `#D9E0EA` | input/control inner lines             |
+| `tau.line-strong` | `#BCC7D5` | control borders                       |
+| `tau.text`        | `#1A2230` | primary text                          |
+| `tau.muted`       | `#5A6575` | secondary prose                       |
+| `tau.faint`       | `#8A94A4` | meta                                  |
+| `tau.placeholder` | `#A8B1BF` | textarea placeholder                  |
+
+### Surfaces are LAYERED, not line-drawn
+
+A bare 1px hairline on a flat background is a **design bug** in both
+themes. Every major surface (cards, sidebar dock, composer shell,
+modal) carries the `.tau-surface` / `.tau-surface-raised` /
+`.tau-surface-floating` treatment from `theme.css`:
+
+- **Elevation shadows** — `--tau-elev-1` (resting card), `--tau-elev-2`
+  (composer), `--tau-elev-3` (focused composer, modal). Soft, wide,
+  theme-tuned: dark shadows deepen, light shadows tint (`rgba(16,24,40,…)`)
+  plus a white rim so panels read on the bright canvas.
+- **Gradient edge** — `--tau-edge-gradient` paints the 1px border box
+  via the padding-box/border-box trick: a top-lit fading edge instead
+  of a flat line.
+- **Gradient dividers** — `.tau-divider` (an `<hr>`) or an `::after`
+  fade replaces section separators (header bottom, tab-nav track,
+  sidebar head/footer). `tau.line`/`tau.line-strong` remain for small
+  controls (inputs, buttons, kbd, chips) — controls, not separators.
+
+### Semantic system — risk (two-step, per-theme tuned)
+
+| Level                      | Token         | Dark `#`  | Light `#` | Meaning                         |
+| -------------------------- | ------------- | --------- | --------- | ------------------------------- |
+| `low` / `ok`               | `tau.ok`      | `#5EC97A` | `#1E7A46` | safe, success, the brand accent |
+| `medium` / `warn`          | `tau.warn`    | `#E0A53C` | `#93641A` | caution, plugin tools           |
+| `high` / `failed` / `deny` | `tau.danger`  | `#E5534B` | `#C0342E` | blocked, failed, denied         |
+| `blocked` / `cancelled`    | `tau.blocked` | `#6E7887` | `#5F6A7A` | dim gray                        |
+
+Each semantic color exposes a **two-step system** so themes tune tint
+and border independently (var()-based colors cannot use the
+`/opacity` utility syntax):
+
+- `tau.<name>-soft` — surface tint (~8–11% alpha), e.g. badge fills;
+- `tau.<name>-edge` — control border (~42–45% alpha), e.g. badge rings,
+  primary-button borders, focus-adjacent edges.
+
+Light-theme hues are darker and less saturated than their dark siblings
+(same family) to hold AA contrast on the bright canvas.
 
 Risk colors flow **only** through `RiskBadge.vue`. Never use `tau.ok` on
 a large fill — it doubles as the brand accent (primary buttons, focus
 ring, tab indicator) and must stay scarce.
 
-### Accent — chrome (new, ornamental)
+### Accent — chrome (ornamental, self-colored)
 
-| Token                           | Hex                               | Role                                         |
-| ------------------------------- | --------------------------------- | -------------------------------------------- |
-| `tau.chrome-1` … `tau.chrome-9` | `#191A1D` → `#A8AAB8` → `#191A1D` | 9-stop sweep for the Run plan primary action |
+| Token                           | Hex                               | Role                                           |
+| ------------------------------- | --------------------------------- | ---------------------------------------------- |
+| `tau.chrome-1` … `tau.chrome-9` | `#191A1D` → `#A8AAB8` → `#191A1D` | 9-stop sweep for chrome surfaces (both themes) |
+| `--tau-on-chrome`               | `#F0F2F7` (constant)              | text/icons ON a chrome fill                    |
 
-A single metallic gradient, used in exactly two places, with two
-treatments sized to the surface:
+A single metallic gradient — **self-colored**: identical in both
+themes, like a physical chrome bezel. Three places, three treatments:
 
-1. **The `τ` brand mark** in the header — a vertical metallic sheen
-   (`#d4d6dc → #a8aab8 → #747689`, top to bottom) via
-   `background-clip:text`, with a drop-shadow for depth. The full sweep
-   does not read on a single narrow glyph, so the brand uses a bright
-   vertical gradient + glow on hover instead.
-2. **The `Run plan` button** on the PlanCard — the full 9-stop
-   horizontal chrome sweep (`#191a1d → #a8aab8 → #191a1d`), large enough
-   to show the dark→bright→dark transit clearly. This is the chrome
-   primary action — visually marks "this is the gate control."
+1. **The `τ` brand mark** in the header — a vertical metallic sheen via
+   `background-clip:text` (chrome-5 → chrome-4), with a drop-shadow for
+   depth. The full sweep does not read on a single narrow glyph, so the
+   brand uses a bright vertical gradient + glow on hover instead.
+2. **The `Run plan` button** on the PlanCard (and its sibling
+   `+ new conversation` in the sidebar) — the full 9-stop horizontal
+   chrome sweep as a button FILL. Anything sitting on the fill uses
+   `--tau-on-chrome`, never `tau.text` (which flips dark in the light
+   theme and would vanish on the dark metal).
+3. **The composer focus beam** — the rotating conic border sweeps
+   chrome-5 between ok/info stops (§6.3).
 
-Never on data surfaces, never on hover states (except the brand glow),
-never on borders. This is the _only_ gradient in the system; everything
-else is matte.
+Never on data surfaces, never on hover states (except the brand glow
+and the sweep's own `background-position` shimmer). The chrome sweep
+and the structural edge gradients (§ above) are the ONLY gradients;
+everything else is matte.
 
 ### Provider identity
 
-| Token      | Hex       | Role                                |
-| ---------- | --------- | ----------------------------------- |
-| `tau.info` | `#6BB3D9` | provider name chip, `tool` step tag |
+| Token      | Dark `#`  | Light `#` | Role                                |
+| ---------- | --------- | --------- | ----------------------------------- |
+| `tau.info` | `#6BB3D9` | `#22629E` | provider name chip, `tool` step tag |
 
 ## 4. Typography — two-font system
 
@@ -189,13 +256,14 @@ Three breakpoints, mobile-first.
 
 ### 6.1 StatusHeader — slim top bar (48px)
 
-A single row, `h-12`, fused with the app bg, bottom hairline
-`border-b border-tau-line`. Three zones:
+A single row, `h-12`, fused with the app bg, closed by a **gradient
+divider** (`header::after` — a fading edge, not a bare hairline). Four
+zones:
 
 ```
-[ τ tau ]      [provider chip ▾] [skills·plugins]        [v0.2.0] [~/​.tau]
-   ↑                ↑                ↑                        ↑        ↑
- chrome brand  info accent       meta (md+)              meta     meta (sm+)
+[ τ tau ]      [provider chip ▾] [skills·plugins]        [v0.2.0] [~/.tau] [☾ auto]
+   ↑                ↑                ↑                        ↑        ↑         ↑
+ chrome brand  info accent       meta (md+)              meta     meta (sm+)  theme btn
 ```
 
 - Brand: `τ` in chrome-text (background-clip), `tau` in `tau.text` 18px
@@ -207,25 +275,37 @@ A single row, `h-12`, fused with the app bg, bottom hairline
 - Skills·plugins chip (hidden <640px): mono count.
 - Version chip: mono, `tau.faint`.
 - tauHome chip (hidden <640px): mono, truncated, `tau.faint`.
+- **Theme button** (right end): a quiet ghost control (`tau.raised` bg,
+  `elev-1`, chrome-free) showing the resolved glyph (`☀`/`☾`) + the
+  preference label (`auto`/`light`/`dark`). Click cycles
+  `system → light → dark`; `Alt+T` is the keyboard twin (§8). State
+  lives in `client/lib/theme.ts` — the button is a pure view of it.
 
-### 6.2 SessionSidebar — fused history rail (260px)
+### 6.2 SessionSidebar — layered history rail (260px)
+
+The dock is a `.tau-surface` panel (gradient edge + `elev-1`; rounded
+on lg+, full-bleed in the mobile drawer). Section separators inside it
+are `.tau-divider` gradient `<hr>`s — no bare lines.
 
 ```
-┌────────────────────────────────┐
-│ + new conversation      (chrome│  ← primary action, full width
-├────────────────────────────────┤
-│ find all ts files under sr…    │  ← active thread (tau.active bg,
-│ 3 cards · 5m ago            ✕  │     tau.line-strong border)
-│                                │
-│ ping example.com               │  ← thread row (hover: tau.raised)
-│ 1 card · 1h ago             ✕  │
-│                                │
-│ …                              │
-└────────────────────────────────┘
+╔════════════════════════════════╗
+║ + new conversation      (chrome║  ← primary action, full width
+╟────────────────────────────────╢  ← tau-divider
+║ find all ts files under sr…    ║  ← active thread (tau.active bg,
+║ 3 cards · 5m ago            ✕  ║     tau.line-strong border)
+║                                ║
+║ ping example.com               ║  ← thread row (hover: tau.raised)
+║ 1 card · 1h ago             ✕  ║
+║                                ║
+║ …                              ║
+╟────────────────────────────────╢  ← tau-divider
+║ Alt+N new · Ctrl+K focus       ║  ← footer hints
+╚════════════════════════════════╝
 ```
 
 - Header: `+ new conversation` chrome-primary button, full width, 36px
-  tall. Replaces the old `+ new` corner button.
+  tall; its label uses `--tau-on-chrome` (constant light — see §3).
+  Replaces the old `+ new` corner button.
 - Thread rows: 6px gutter inside the panel, `rounded-8px`, hover
   `tau.raised`, active `tau.active` + `tau.line-strong` border.
 - Each row: title (sans 13px, truncate, single line) + meta (mono 10px
@@ -240,9 +320,11 @@ A single row, `h-12`, fused with the app bg, bottom hairline
 ### 6.3 Composer — the beam (chat.z.ai-inspired)
 
 The composer is the visual focus of the empty conversation. It is a
-single rounded panel (`rounded-12px`, `tau.panel` bg, `tau.line-strong`
-border, soft shadow `0 4px 16px rgba(0,0,0,0.18)` — the _one_ shadow in
-the system, lifted directly from chat.z.ai's composer elevation).
+single rounded panel (`rounded-12px`, `tau.panel` interior) wrapped in
+the **beam** — a 1.5px gradient frame that carries `--tau-elev-2` at
+rest (the elevation is deliberately visible unfocused, so the composer
+anchors the stream) and upgrades to `--tau-elev-3` + the rotating conic
+beam on focus.
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -255,14 +337,16 @@ the system, lifted directly from chat.z.ai's composer elevation).
 ```
 
 - **Beam border on focus**: when the textarea has focus-within, the
-  panel gains a 1px conic-gradient rotating border (the
-  `--beam-angle` `@property` trick from chat.z.ai). The beam uses the
-  chrome sweep at low alpha so it reads as "this is alive" without
-  being loud. Off-focus: plain `tau.line-strong` border.
+  frame's background becomes a 1.5px conic-gradient rotating border (the
+  `--beam-angle` `@property` trick from chat.z.ai; browsers without
+  `@property` get a static conic gradient — same hues, no rotation).
+  The beam sweeps chrome between ok/info stops so it reads as "this is
+  alive" without being loud. At rest the frame is a faint vertical
+  gradient (`tau.faint → tau.line-strong`).
 - **Textarea**: borderless, transparent bg, 14px sans, min-h 44px,
   max-h 160px, auto-grow. Enter sends, Shift+Enter newlines,
   `isComposing` respected (IME).
-- **Toolbar** (`h-10`, top hairline `tau.line`):
+- **Toolbar** (`h-10`, closed by a `tau-divider` gradient `<hr>`):
   - Left: kbd hints (`⌘K focus` · `? shortcuts`) in mono 10px
     `tau.faint`, dotted-underlined when clickable.
   - Right: the **Send button** — a 28×28 square, `rounded-8px`. Disabled
@@ -320,8 +404,10 @@ verdict !== 'deny'`. Label "high risk — run it" in `tau.warn`. The
   id (preserved contract).
 - **Actions**:
   - `Run plan` — chrome primary button, 36px tall, 12px 600 sans, `▶`
-    icon. Disabled when `!runnable` (`verdict === 'deny' || running`).
-    Running state: pulsing green dot replaces the `▶`, label "Running".
+    icon; label and icon use `--tau-on-chrome` (§3 — constant light on
+    the self-colored sweep, readable in BOTH themes). Disabled when
+    `!runnable` (`verdict === 'deny' || running`). Running state:
+    pulsing green dot replaces the `▶`, label "Running".
   - `Discard` — ghost button (transparent bg, `tau.line-strong` border,
     `tau.muted` text, danger-hover). Disabled while running.
 
@@ -449,44 +535,86 @@ dry-run default` mono 10px `tau.faint`.
 
 ### 6.10 ShortcutsModal — the keyboard contract
 
-Overlay (`fixed inset-0 z-50 bg-black/60`), backdrop click closes.
-Panel `tau-panel` `rounded-12px` `max-w-[440px]`. Two-column table:
+Overlay (`fixed inset-0 z-50`, scrim `var(--tau-backdrop)` — theme
+tuned), backdrop click closes. Panel `tau-panel` (→ `.tau-surface`,
+`rounded-12px`, `max-w-[440px]`, floating `elev-3` treatment),
+`tau-enter` fade + rise. Two-column table:
 keycap (mono `tau-kbd`) + action (sans 12.5px `tau.muted`).
 
-| Key           | Action                           |
-| ------------- | -------------------------------- |
-| Enter         | send the intent                  |
-| Shift + Enter | newline in the composer          |
-| Ctrl/⌘ + K    | focus the composer               |
-| ?             | open this panel (composer empty) |
-| Alt + N       | new conversation                 |
-| Alt + S       | toggle the reference rail        |
-| Esc           | close this panel                 |
+| Key           | Action                            |
+| ------------- | --------------------------------- |
+| Enter         | send the intent                   |
+| Shift + Enter | newline in the composer           |
+| Ctrl/⌘ + K    | focus the composer                |
+| ?             | open this panel (composer empty)  |
+| Alt + N       | new conversation                  |
+| Alt + S       | toggle the reference rail         |
+| Alt + T       | cycle theme system → light → dark |
+| Esc           | close this panel                  |
 
 Footer: `the safety gate is untouched: nothing runs until you press Run
 plan` mono 10px `tau.faint`.
 
-### 6.11 RiskBadge — the ONE semantic atom (unchanged)
+### 6.11 RiskBadge — the ONE semantic atom (two-step tokens)
 
 ```ts
 const STYLES: Record<string, string> = {
-  ok: "text-tau-ok border-tau-ok/40 bg-tau-ok/10",
-  low: "text-tau-ok border-tau-ok/40 bg-tau-ok/10",
-  warn: "text-tau-warn border-tau-warn/40 bg-tau-warn/10",
-  medium: "text-tau-warn border-tau-warn/40 bg-tau-warn/10",
-  danger: "text-tau-danger border-tau-danger/40 bg-tau-danger/10",
-  high: "text-tau-danger border-tau-danger/40 bg-tau-danger/10",
-  failed: "text-tau-danger border-tau-danger/40 bg-tau-danger/10",
-  deny: "text-tau-danger border-tau-danger/40 bg-tau-danger/10",
+  ok: "text-tau-ok border-tau-ok-edge bg-tau-ok-soft",
+  low: "text-tau-ok border-tau-ok-edge bg-tau-ok-soft",
+  warn: "text-tau-warn border-tau-warn-edge bg-tau-warn-soft",
+  medium: "text-tau-warn border-tau-warn-edge bg-tau-warn-soft",
+  danger: "text-tau-danger border-tau-danger-edge bg-tau-danger-soft",
+  high: "text-tau-danger border-tau-danger-edge bg-tau-danger-soft",
+  failed: "text-tau-danger border-tau-danger-edge bg-tau-danger-soft",
+  deny: "text-tau-danger border-tau-danger-edge bg-tau-danger-soft",
+  review: "text-tau-info border-tau-info-edge bg-tau-info-soft",
   blocked: "text-tau-blocked border-tau-line-strong bg-tau-raised",
   cancelled: "text-tau-blocked border-tau-line-strong bg-tau-raised",
 };
 ```
 
-Add a `review` mapping (the running sentinel previously fell through to
-`blocked`): `review: text-tau-info border-tau-info/40 bg-tau-info/10`.
-This makes the streaming `streaming…` state in ResultCard read as "in
-flight" rather than "dead".
+The `-soft`/`-edge` two-step tokens (§3) replace ad-hoc `/opacity`
+modifiers — var()-based utility colors cannot use the slash syntax, and
+per-theme tuning of tint vs border belongs to the token layer. The
+`review` mapping (info blue) keeps the streaming `streaming…` state in
+ResultCard reading as "in flight" rather than "dead".
+
+### 6.12 SettingsPanel — the read-only settings surface
+
+One floating modal (`Ctrl/⌘+,`, or the `⚙ settings` button at the
+header's right end; `Esc`/backdrop closes), reusing the ShortcutsModal
+skeleton: `.tau-surface rounded-12px` panel at `max-w-520px`, scrim
+`var(--tau-backdrop)`, `tau-enter` fade + rise. Four sections, separated
+by gradient dividers:
+
+```
+SETTINGS  [read-only]                                    [esc]
+────────────────────────────────────────────────────────────
+PROVIDER      active    Mock (offline demo) via config
+              model     (auto)          · availability chips
+              catalog   N cached · refreshed <relTime>
+RISK POLICY   allowMediumAutoApprove / timeout / shell / aliases
+              "read-only — change with tau config set <key> <value>"
+APPEARANCE    [ system | light | dark ]  ← one state, three views
+SESSIONS      threads N/50 · history N loaded · tau home
+────────────────────────────────────────────────────────────
+provider keys stay masked (sk-***last4) — nothing here can change the config
+```
+
+- **Data source**: a single `GET /api/config` fetched on mount — the
+  redacted effective config (the same `redactConfig` `tau config list`
+  prints), live provider availability, and the active provider's
+  model-catalog cache state. Loading and error states are honest
+  (`loading config…` pulse / `config unavailable — <reason>`).
+- **Read-only by design**: there is NO write path — config changes stay
+  in the CLI (`tau config set …`). The browser never becomes a second
+  way into the safety-relevant configuration; the footer says so.
+- **Appearance picker**: a three-option segmented control (`role=radiogroup`)
+  bound to the SAME `useTheme()` singleton as the header button —
+  `system` active state carries the `tau.ok` accent; both views stay in
+  sync by construction.
+- **Availability chips**: `name ✓` in ok-soft when the provider answers,
+  `name ✕` in faint when not — per-machine truth, not aspiration.
 
 ## 7. Motion spec
 
@@ -509,17 +637,19 @@ flight" rather than "dead".
 - No bounces, no springs, no parallax. The motion language is "fast and
   quiet."
 
-## 8. Keyboard contract (unchanged)
+## 8. Keyboard contract
 
-| Key           | Action                          | Where    |
-| ------------- | ------------------------------- | -------- |
-| Enter         | send the intent                 | Composer |
-| Shift + Enter | newline                         | Composer |
-| Ctrl/⌘ + K    | focus composer                  | global   |
-| ?             | open shortcuts (composer empty) | global   |
-| Alt + N       | new conversation                | global   |
-| Alt + S       | toggle reference rail           | global   |
-| Esc           | close modal / drawer            | global   |
+| Key           | Action                            | Where    |
+| ------------- | --------------------------------- | -------- |
+| Enter         | send the intent                   | Composer |
+| Shift + Enter | newline                           | Composer |
+| Ctrl/⌘ + K    | focus composer                    | global   |
+| ?             | open shortcuts (composer empty)   | global   |
+| Alt + N       | new conversation                  | global   |
+| Alt + S       | toggle reference rail             | global   |
+| Alt + T       | cycle theme system → light → dark | global   |
+| Ctrl/⌘ + ,    | open settings (read-only)         | global   |
+| Esc           | close modal / drawer              | global   |
 
 Adding a shortcut requires updating **three places**: `App.vue`
 keydown, `ShortcutsModal.vue` table, `Composer.vue` hint row. Never
@@ -543,46 +673,56 @@ suite. This redesign touches **client only**. Specifically unchanged:
 
 ## 10. Avoid-AI-cliché rules (preserved + refined)
 
-1. **No gradients** — except the chrome sweep on the brand mark and the
-   `Run plan` primary action. That is the _only_ gradient.
+1. **No decorative gradients** — the chrome sweep (brand mark, chrome
+   buttons) and the STRUCTURAL edge/divider gradients (`--tau-edge-gradient`,
+   `.tau-divider`) are the only ones. No gradient text, no gradient
+   fills on data surfaces.
 2. **No glassmorphism** — no `backdrop-filter` anywhere.
-3. **Shadows** — only the composer's `0 4px 16px rgba(0,0,0,0.18)`.
-   Nothing else gets a shadow.
+3. **Shadows only via elevation tokens** — `--tau-elev-1/2/3`. No
+   ad-hoc `box-shadow` values; if a surface needs depth, it gets a
+   token level (and the light-theme twin comes for free).
 4. **No emoji as UI icons.** Text tags (`TOOL`, `SHELL`, `PLAN`,
-   `RESULT`, `ERROR`) in mono are the iconography. `▶` and `✕` are
-   geometric glyphs, not emoji.
+   `RESULT`, `ERROR`) in mono are the iconography. `▶`, `✕`, `☀`, `☾`
+   are geometric/astronomical glyphs, not emoji.
 5. **Data in mono, prose in sans.** Never the reverse.
 6. **Restraint over decoration.** If an element doesn't carry
    information, delete it.
 7. **Copy is concrete and English.** "high risk — run it", "nothing
    runs before Run plan", "the safety review denied this plan".
+8. **Both themes or nothing.** Any new color goes through a CSS var
+   with BOTH a dark and a light value; any new surface gets the
+   layered treatment, never a bare hairline. Verify against
+   `docs/screenshots/plan.png` (dark) and `plan-light.png` (light).
 
 ## 11. File ownership map
 
-| File                                   | Owns                                                                                 |
-| -------------------------------------- | ------------------------------------------------------------------------------------ |
-| `uno.config.ts`                        | color tokens, font-family tokens, shortcuts (the util-generating layer)              |
-| `client/theme.css`                     | base layer: body, fonts vars, motion vars, scrollbar, kbd, markdown prose, keyframes |
-| `client/App.vue`                       | shell: header + 3-col grid + drawer + modal + global keymap + autoscroll             |
-| `client/components/StatusHeader.vue`   | top bar                                                                              |
-| `client/components/SessionSidebar.vue` | history rail                                                                         |
-| `client/components/Composer.vue`       | the beam + toolbar + send                                                            |
-| `client/components/PlanCard.vue`       | review surface + chrome Run plan                                                     |
-| `client/components/StepRow.vue`        | numbered step rail                                                                   |
-| `client/components/ResultCard.vue`     | streaming outcome                                                                    |
-| `client/components/ErrorCard.vue`      | failed plan                                                                          |
-| `client/components/EmptyState.vue`     | serif hero + contract                                                                |
-| `client/components/SidePanel.vue`      | skills/history/tools rail                                                            |
-| `client/components/ShortcutsModal.vue` | keyboard contract overlay                                                            |
-| `client/components/RiskBadge.vue`      | the ONE semantic atom                                                                |
-| `client/composables/session.ts`        | status/skills/tools/history (module singleton)                                       |
-| `client/composables/plan-flow.ts`      | threads + cards state machine (localStorage-persisted)                               |
-| `client/lib/api.ts`                    | typed HTTP client (no `@tau/*` runtime import)                                       |
-| `client/lib/stream.ts`                 | DOM-free NDJSON splitter (unit-tested)                                               |
-| `client/lib/format.ts`                 | args/time/tool-family formatters                                                     |
-| `client/lib/highlight.ts`              | shiki progressive upgrade (silent no-op)                                             |
-| `DESIGN.md` (this file)                | the spec                                                                             |
-| `SKILL.md`                             | the checklist (contract layer)                                                       |
+| File                                   | Owns                                                                                             |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `client/theme.css`                     | `--tau-*` color vars for BOTH themes, elevation/edge vars, surface classes, dividers, base layer |
+| `uno.config.ts`                        | `tau.*` → `var(--tau-*)` mapping + font/utility shortcuts (no raw hex)                           |
+| `client/App.vue`                       | shell: header + 3-col grid + drawer + modal + global keymap (incl. Alt+T) + autoscroll           |
+| `client/components/StatusHeader.vue`   | top bar + theme cycle button                                                                     |
+| `client/components/SessionSidebar.vue` | history rail (`.tau-surface` dock)                                                               |
+| `client/components/Composer.vue`       | the beam + toolbar + send                                                                        |
+| `client/components/PlanCard.vue`       | review surface + chrome Run plan (`--tau-on-chrome` label)                                       |
+| `client/components/StepRow.vue`        | numbered step rail                                                                               |
+| `client/components/ResultCard.vue`     | streaming outcome                                                                                |
+| `client/components/ErrorCard.vue`      | failed plan                                                                                      |
+| `client/components/EmptyState.vue`     | serif hero + contract                                                                            |
+| `client/components/SidePanel.vue`      | skills/history/tools rail                                                                        |
+| `client/components/ShortcutsModal.vue` | keyboard contract overlay                                                                        |
+| `client/components/SettingsPanel.vue`  | read-only settings surface (`GET /api/config` view + theme picker)                               |
+| `client/components/RiskBadge.vue`      | the ONE semantic atom                                                                            |
+| `client/composables/session.ts`        | status/skills/tools/history (module singleton)                                                   |
+| `client/composables/plan-flow.ts`      | threads + cards state machine (localStorage-persisted)                                           |
+| `client/lib/api.ts`                    | typed HTTP client (no `@tau/*` runtime import)                                                   |
+| `client/lib/stream.ts`                 | DOM-free NDJSON splitter (unit-tested)                                                           |
+| `client/lib/format.ts`                 | args/time/tool-family formatters                                                                 |
+| `client/lib/highlight.ts`              | shiki progressive upgrade (silent no-op)                                                         |
+| `client/lib/theme.ts`                  | three-state theme preference, `tau-webui-theme-v1` persistence, `useTheme()` singleton           |
+| `scripts/screenshot.mjs`               | real-server screenshot rig (dark pinned + light pass, 4 PNGs)                                    |
+| `DESIGN.md` (this file)                | the spec                                                                                         |
+| `SKILL.md`                             | the checklist (contract layer)                                                                   |
 
 ## 12. Verification checklist
 

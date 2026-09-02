@@ -9,6 +9,27 @@
       content="Tau web UI — intent in, reviewed plan out, nothing runs without you."
     />
     <title>tau web</title>
+    <script>
+      /*
+       * Theme boot — resolves the stored preference ('light'|'dark'|'system',
+       * default 'system') against prefers-color-scheme and sets data-theme
+       * BEFORE first paint, so neither theme flashes the wrong ramp. Dark is
+       * the CSS default (:root in theme.css); only light needs the attribute.
+       * The persisted key lives beside the threads key (additive contract —
+       * existing keys untouched).
+       */
+      (function () {
+        try {
+          var pref = localStorage.getItem("tau-webui-theme-v1") || "system";
+          var dark =
+            pref === "dark" ||
+            (pref === "system" && !window.matchMedia("(prefers-color-scheme: light)").matches);
+          if (!dark) document.documentElement.setAttribute("data-theme", "light");
+        } catch (e) {
+          /* private-mode localStorage denial: keep the dark default */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>

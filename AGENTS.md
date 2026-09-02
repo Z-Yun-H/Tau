@@ -73,6 +73,8 @@ independent execution paths.)
 8. **Log each working day to `changelog/`**: append a per-day file
    `changelog/YYYY-MM-DD.md` (summary, type, Issue/PR refs, impact scope);
    `CHANGELOG.md` stays the release-level summary distilled from it.
+   Spec v2 (daily batch layer + Keep-a-Changelog release layer + the
+   distillation rules): AGENTS/collaboration.md §8.
 9. **Compound requests get decomposed, not squeezed.** A single request
    spanning multiple change types or subsystems MUST be split into
    independent, individually reviewable units — one Issue per unit, one PR

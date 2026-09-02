@@ -1,6 +1,6 @@
 {
   "name": "@tau/markdown",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Shared markdown rendering for Tau front doors — ANSI output for the TUI, escape-first HTML for the WebUI (parser: marked)",
   "license": "MIT",
   "author": "Z-Yun-H",

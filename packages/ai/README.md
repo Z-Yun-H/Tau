@@ -24,7 +24,13 @@ Everything is exported from the package barrel (`src/index.ts`):
   overrides `listModels()` to keep its test-pinned error format and keeps its
   own SSE-streaming wire client in `plan()`. `ZaiProvider` routes through the
   optional `z-ai-web-dev-sdk` peer. The shared `chatJSON` helper lives in
-  `src/providers/http.ts`.
+  `src/providers/http.ts`: non-2xx and network failures surface as a typed
+  `ProviderHttpError` (status, ≤300-char body slice, retryable verdict);
+  transient failures (429/500/502/503/504, connection errors) retry with
+  bounded exponential backoff + jitter honoring a numeric `Retry-After`
+  (capped at 10 s) — other 4xx and timeout aborts never retry. The timeout
+  budget applies per attempt; error messages keep the test-pinned
+  `HTTP <status>` prefix.
 - **Model catalog** (`src/models.ts`) — `refreshProviderModels()`,
   `cachedModels()`, `resolveModel()`, `isCatalogStale()`, `MODELS_TTL_MS`
   (24 h cache; providers implement optional `listModels()`)

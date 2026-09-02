@@ -72,7 +72,7 @@ const statusLevel = computed(() =>
 </script>
 
 <template>
-  <article ref="rootEl" class="tau-card result-enter">
+  <article ref="rootEl" class="tau-card tau-surface result-enter">
     <div class="card-eyebrow">
       <span class="eyebrow-label">result</span>
       <span class="intent-text" :title="card.intent">{{ card.intent }}</span>
@@ -128,11 +128,11 @@ const statusLevel = computed(() =>
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
 }
 
 .intent-text {
-  color: #9aa5b4; /* tau.muted */
+  color: var(--tau-muted); /* tau.muted */
   font-size: 12px;
   min-width: 0;
   overflow: hidden;
@@ -144,20 +144,20 @@ const statusLevel = computed(() =>
 .tally {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
 }
 
 .streaming {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: #5ec97a; /* tau.ok */
+  color: var(--tau-ok); /* tau.ok */
   animation: tau-pulse 1.1s ease-in-out infinite;
 }
 
 .view-toggle {
   display: inline-flex;
   align-items: center;
-  border: 1px solid #1b2230; /* tau.line */
+  border: 1px solid var(--tau-line); /* tau.line */
   border-radius: 6px;
   overflow: hidden;
   flex: none;
@@ -166,7 +166,7 @@ const statusLevel = computed(() =>
 .view-toggle button {
   background: transparent;
   border: 0;
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
   font-family: var(--font-mono);
   font-size: 10px;
   padding: 2px 8px;
@@ -177,14 +177,14 @@ const statusLevel = computed(() =>
 }
 
 .view-toggle button.on {
-  color: #5ec97a; /* tau.ok */
-  background: rgba(94, 201, 122, 0.1);
+  color: var(--tau-ok); /* tau.ok */
+  background: var(--tau-ok-soft);
 }
 
 .text-btn {
   background: transparent;
   border: 0;
-  color: #5c6776; /* tau.faint */
+  color: var(--tau-faint); /* tau.faint */
   font-family: var(--font-mono);
   font-size: 10px;
   padding: 2px 4px;
@@ -193,19 +193,19 @@ const statusLevel = computed(() =>
 }
 
 .text-btn:hover {
-  color: #9aa5b4; /* tau.muted */
+  color: var(--tau-muted); /* tau.muted */
 }
 
 .out {
   margin: 10px 0 0;
   padding: 10px 12px;
-  background: #0b0e13; /* tau.bg */
-  border: 1px solid #1b2230; /* tau.line */
+  background: var(--tau-bg); /* tau.bg */
+  border: 1px solid var(--tau-line); /* tau.line */
   border-radius: 8px;
   font-family: var(--font-mono);
   font-size: 12px;
   line-height: 1.5;
-  color: #9aa5b4; /* tau.muted */
+  color: var(--tau-muted); /* tau.muted */
   white-space: pre-wrap;
   word-break: break-word;
   max-height: 15rem;

@@ -4,3 +4,4 @@
  * here (or skill/plugin tools registered into the same registry).
  */
 export * from "./bootstrap.js";
+export * from "./schema.js";

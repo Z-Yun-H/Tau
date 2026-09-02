@@ -41,6 +41,38 @@ export interface StatusPayload {
   plugins: number;
 }
 
+/** One provider entry of the redacted config (all fields display-only). */
+export interface RedactedProviderEntry {
+  host?: string;
+  baseUrl?: string;
+  /** Masked ("sk-***last4") — the server never sends plaintext keys. */
+  apiKey?: string;
+  model?: string;
+  timeoutMs?: number;
+  availableModels?: unknown;
+  modelsRefreshedAt?: string;
+  [field: string]: unknown;
+}
+
+/** Mirror of the server's `GET /api/config` payload (all of it read-only). */
+export interface ConfigPayload {
+  version: string;
+  tauHome: string;
+  /** The effective config exactly as `tau config list` prints it — redacted. */
+  config: {
+    provider: string;
+    timeout: number;
+    allowMediumAutoApprove: boolean;
+    shell: string;
+    aliases: Record<string, string>;
+    plugins: string[];
+    providers: Record<string, RedactedProviderEntry>;
+  };
+  provider: { name: string; label: string; source: string; model: string };
+  providers: { name: string; available: boolean }[];
+  modelCatalog: { count: number; refreshedAt?: string };
+}
+
 export interface SkillSummary {
   name: string;
   description: string;

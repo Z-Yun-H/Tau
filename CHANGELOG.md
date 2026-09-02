@@ -5,8 +5,73 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+## 0.3.0 — 2026-09-02
+
+The UX-and-harness release: the WebUI gains **light & dark themes**, a
+**read-only settings panel**, and fully **layered surfaces** (no bare
+hairlines), while the tool layer ships **OpenAI-compatible
+function-calling schema export** and **production-grade HTTP retry** for
+providers. The changelog discipline itself was restructured into a
+two-layer spec (daily task log + this release layer). All contracts are
+unchanged: the plan schema, the deterministic safety gate, the NDJSON
+stream, and every test-pinned API surface behave exactly as 0.2.x —
+upgrade is a version bump with no migration.
+
+### Added
+
+- **Read-only settings panel for the WebUI.** `Ctrl/⌘+,` (or the new
+  header `⚙ settings` button) opens a modal showing the effective
+  configuration: the active provider and model, per-provider availability
+  chips, the model-catalog cache state, the risk policy (with a
+  `tau config set` hint), the theme picker (same state as the header
+  cycle button), and local session stats. Served by a new additive
+  `GET /api/config` that returns the exact `redactConfig` output
+  `tau config list` prints — provider keys are masked `sk-***last4` and
+  server tests pin that no plaintext key can ever leave the server. The
+  panel is deliberately view-only: config changes stay in the CLI, so
+  the browser never becomes a second write path into the safety
+  configuration.
+- **Light & dark themes for the WebUI.** The interface now ships two full
+  color ramps — dark (the rendering baseline) and a light theme tuned for
+  AA contrast — switched from a new header button or `Alt+T`, with a
+  three-state preference (`light` / `dark` / `system`) that defaults to
+  following the OS scheme, persists in the new `tau-webui-theme-v1`
+  localStorage key (all existing keys untouched), and resolves before
+  first paint so neither theme flashes. Risk colors and elevation shadows
+  are re-tuned per theme; 6 new unit tests pin the resolver and the
+  persistence cycle, and a new `plan-light.png` screenshot is regenerated
+  alongside the dark set.
+- **Function-calling schema export for the tool layer.** `@tau/tools` now
+  renders the whole registry as OpenAI-compatible `tools` entries
+  (`functionTools()`), so any OpenAI-compatible backend can bind Tau's tools
+  natively via the function-calling wire format instead of parsing the text
+  catalog. Parameter specs map to strict JSON Schema (`string[]` → typed
+  arrays, defaults surfaced in descriptions, `additionalProperties: false`),
+  dotted tool names map to the wire-safe function-name grammar
+  (`file.find` → `file__find`, reversible), and risk / mutates / dry-run
+  tags ride in each function description. Exporting a schema never bypasses
+  the deterministic safety reviewer. The text catalog and its plan contract
+  are byte-identical to 0.2.x.
+- **Production-grade provider HTTP hardening.** The shared `chatJSON` helper
+  now returns typed `ProviderHttpError`s (status, truncated body, retryable
+  verdict) and retries transient failures — 429/500/502/503/504 and
+  connection errors — with bounded exponential backoff + jitter, honoring a
+  numeric `Retry-After` header (capped at 10 s). Non-transient 4xx and
+  timeout aborts never retry. Worst-case wall time stays bounded:
+  `(retries + 1) × timeoutMs` plus capped backoff. 17 new tests pin the
+  retry semantics, the JSON Schema mapping, and the name grammar.
+
 ### Changed
 
+- **Layered surfaces replace bare hairlines across the WebUI.** Cards, the
+  session sidebar, composer, header and modal now sit on elevation tokens
+  (`--tau-elev-1/2/3`) with gradient edges and `.tau-divider` section
+  separators instead of 1px lines drawn on flat fills, and every semantic
+  color exposes `-soft`/`-edge` two-step tokens so themes tune tint and
+  border independently. Chrome-filled buttons (Run plan, + new
+  conversation) label themselves with a constant `--tau-on-chrome` tone so
+  they stay readable in the light theme. Utility class names, the DOM
+  snapshots, and all server/API contracts are unchanged.
 - **AI provider + agent tool catalog + UI display refactor.** Three coupled
   changes per `AGENTS/ai-integration.md`: (1) `BaseHttpProvider`
   (`packages/ai/src/providers/base.ts`) — shared scaffolding for

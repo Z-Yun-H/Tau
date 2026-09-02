@@ -60,9 +60,14 @@ const browser = await chromium.launch({
   args: ["--no-sandbox"],
 });
 try {
+  // Pin colorScheme: "dark" for the dark pass — headless Chromium defaults
+  // to "light", and the theme boot script resolves 'system' via
+  // prefers-color-scheme, so the unpinned dark screenshots would come out
+  // light. Dark is the product's rendering baseline (DESIGN.md §3).
   const page = await browser.newPage({
     viewport: { width: 1440, height: 900 },
     deviceScaleFactor: 2,
+    colorScheme: "dark",
   });
   await page.goto(ui.url, { waitUntil: "networkidle" });
   await page.waitForSelector("textarea", { timeout: 15_000 });
@@ -88,6 +93,32 @@ try {
   await page.getByRole("tab", { name: "Tools" }).first().click();
   await page.waitForTimeout(400); // let the lazy tool list load + render
   await page.screenshot({ path: path.join(OUT_DIR, "tools.png") });
+
+  // Settings panel (Ctrl+,) — the read-only config view (Issue #86).
+  await page.keyboard.press("Control+,");
+  await page.waitForSelector('[role="dialog"][aria-label="settings"]', { timeout: 10_000 });
+  await page.waitForTimeout(500); // let the /api/config fetch settle
+  await page.screenshot({ path: path.join(OUT_DIR, "settings.png") });
+  await page.keyboard.press("Escape");
+
+  // Light ramp pass — a fresh page with colorScheme: "light" exercises the
+  // SAME 'system' resolution path the boot script uses (system → light),
+  // so the shot doubles as a visual check of the no-flash boot behavior.
+  // Alt+N starts a clean thread so the card state mirrors plan.png.
+  const light = await browser.newPage({
+    viewport: { width: 1440, height: 900 },
+    deviceScaleFactor: 2,
+    colorScheme: "light",
+  });
+  await light.goto(ui.url, { waitUntil: "networkidle" });
+  await light.waitForSelector("textarea", { timeout: 15_000 });
+  await light.keyboard.press("Alt+n");
+  await light.fill("textarea", "find all *.md files");
+  await light.keyboard.press("Enter");
+  await light.getByText("Run plan").first().waitFor({ timeout: 20_000 });
+  await light.waitForTimeout(600); // let shiki/code styling settle
+  await light.screenshot({ path: path.join(OUT_DIR, "plan-light.png") });
+  await light.close();
 
   console.log(`screenshots written to ${OUT_DIR}`);
 } finally {

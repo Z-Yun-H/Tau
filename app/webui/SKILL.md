@@ -34,15 +34,20 @@ these rules are normative.
 
 | Token kind                   | Lives in                           | Notes                                                                                       |
 | ---------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------- |
-| Colors                       | `uno.config.ts` `theme.colors.tau` | single source; utilities generated from it                                                  |
+| Colors (both themes)         | `client/theme.css` CSS vars        | `--tau-*` on `:root` (dark default) + `html[data-theme="light"]` — the single source        |
+| Color → utility map          | `uno.config.ts` `theme.colors.tau` | every `tau.*` maps to `var(--tau-*)`; class names are theme-independent, never raw hex      |
 | Fonts + motion               | `client/theme.css` CSS vars        | `--font-sans`, `--font-mono`, `--font-serif`, `--t-fast/med/slow`, `--ease`, `--beam-angle` |
+| Elevation                    | `client/theme.css` CSS vars        | `--tau-elev-1/2/3`, `--tau-edge-gradient`, `--tau-backdrop` — tuned per theme               |
+| Theme state                  | `client/lib/theme.ts`              | `'light'                                                                                    | 'dark' | 'system'`persisted in`tau-webui-theme-v1`; boot script twin in index.html |
 | Spacing / radii / type sizes | inline Uno utilities               | 4px grid; radii 4/6/8/12px; sizes 10–28px                                                   |
 
-Neutral ramp (dark, fused): `bg` (page) → `panel` (surface) → `raised`
-(hover) → `active`. Hairlines: `line` (subtle), `line-strong` (controls).
+Neutral ramps (dark + light, same structure): `bg` (page) → `panel`
+(surface) → `raised` (hover) → `active`. `line` / `line-strong` are for
+small CONTROLS only (inputs, buttons, chips, kbd) — section separators
+and surface outlines use `.tau-surface*` + `.tau-divider` instead; a
+bare 1px hairline on a flat fill is a design bug in BOTH themes.
 Text: `text` (primary), `muted` (secondary), `faint` (meta),
-`placeholder` (textarea). Sidebar is _fused_ with the app bg — separated
-only by a 1px hairline, not a tonal jump.
+`placeholder` (textarea).
 
 ## The ONE semantic color system: risk
 
@@ -134,13 +139,20 @@ chords like Ctrl+T/W/N).
 
 - `StatusHeader` — slim 48px top bar; `τ` brand mark in chrome text;
   provider chip (info accent); skills/plugins count chip (md+); version
-  - tauHome chips. Fused with bg, bottom hairline.
-- `SessionSidebar` — fused history rail; `+ new conversation` chrome
-  primary action full-width at top; thread rows (active = tau.active);
+  - tauHome chips; theme cycle button (☀/☾ + `auto`/`light`/`dark`,
+    Alt+T). Closed by a gradient divider (`::after`), not a hairline.
+- `SessionSidebar` — layered history rail (`.tau-surface` dock +
+  `.tau-divider` separators); `+ new conversation` chrome primary
+  action full-width at top; thread rows (active = tau.active);
   two-step inline delete (arm, then confirm — no `window.confirm`);
   drawer on narrow screens; footer kbd hint.
 - `ShortcutsModal` — the keyboard contract overlay (Esc/backdrop
   closes).
+- `SettingsPanel` — read-only settings modal (`Ctrl/⌘+,` or the header
+  `⚙ settings` button): provider/availability/model-catalog, risk policy
+  (+ `tau config` hint), theme picker (same `useTheme()` state as the
+  header button), local session stats. Data from `GET /api/config` —
+  the redacted effective config; NO write path by design.
 - `EmptyState` — serif headline ("What can Tau do for you?") + contract
   prose + pipeline mono + kbd hints.
 - `RiskBadge` — the only place a risk level becomes color.
@@ -209,29 +221,40 @@ NDJSON event field names: `type`, `index`, `step`, `chunk`, `ok`,
 `exitCode`, `skipped`, `status`, `output`, `outcomes`, `error`. The
 `result` event is authoritative — it overwrites the incremental view.
 403 as plain JSON (not NDJSON) for deny / high-risk-without-confirm.
+`GET /api/config` is read-only: the `config` field is exactly
+`redactConfig(loadConfig())` (keys masked `sk-***last4`, never plaintext;
+same output as `tau config list`), and no method other than GET exists on
+the path — config changes stay in the CLI.
 `/api/tools` body must never contain the literal `"run"`.
 
-localStorage: key `tau-webui-threads-v1`, `MAX_THREADS = 50`,
-`TITLE_CAP = 42`. Screenshot selectors: `textarea`, `"Run plan"` button
-text, `"file.find in"` output prefix.
+localStorage: keys `tau-webui-threads-v1` (threads, pinned) and
+`tau-webui-theme-v1` (`'light'|'dark'|'system'`, additive) —
+`MAX_THREADS = 50`, `TITLE_CAP = 42`. Screenshot selectors: `textarea`,
+`"Run plan"` button text, `"file.find in"` output prefix.
 
 ## Checklist for touching the WebUI
 
-- [ ] New color? → `uno.config.ts` theme + DESIGN.md + this skill
-      updated together
+- [ ] New color? → a `--tau-*` var with BOTH a dark and a light value in
+      `theme.css` (mapped in `uno.config.ts`) + DESIGN.md + this skill
+      updated together. No raw hex in components.
 - [ ] New risk-bearing element? → via `RiskBadge`, no ad-hoc colors
-- [ ] New gradient? → **stop** — only the chrome sweep is allowed, and
-      only on the brand mark + Run plan. Justify or remove.
-- [ ] New shadow? → **stop** — only the composer's soft elevation is
+- [ ] New gradient? → **stop** — only the chrome sweep (brand mark +
+      chrome buttons) and the structural edge/divider gradients are
       allowed. Justify or remove.
+- [ ] New shadow? → **stop** — only the `--tau-elev-1/2/3` tokens.
+      Justify or remove.
+- [ ] New separator/outline? → `.tau-surface*` / `.tau-divider` — a
+      bare 1px hairline on a flat fill is a design bug
 - [ ] New animation? → uses `--t-*`/`--ease` tokens; respects
       reduced-motion
+- [ ] Theme change? → verify BOTH themes (dark + light screenshots),
+      the `Alt+T` cycle, and the no-flash boot behavior
 - [ ] Layout change? → verify all three breakpoints (build, run
       `tau web`, check ≥1024 / 640–1023 / <640)
 - [ ] `pnpm --filter @tau/webui build` clean (zero unmatched-utility
       warnings)?
-- [ ] `pnpm test app/webui` green (4 files, 25 tests — byte-level
-      snapshots preserved)?
+- [ ] `pnpm test app/webui` green (5 files — byte-level snapshots
+      preserved)?
 - [ ] Server payload changed? → `lib/api.ts` types + server tests
       updated
 - [ ] `Run plan` button text and `file.find in` output prefix

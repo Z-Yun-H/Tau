@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { tauHome } from "@tau/core";
+import { configPath, loadConfig, maskSecret, redactConfig, tauHome } from "@tau/core";
 import { startWebUi } from "../src/server.js";
 import type { RunningWebUi } from "../src/server.js";
 
@@ -140,5 +140,42 @@ describe("plan + execute gate", () => {
 
   it("404s unknown API routes", async () => {
     expect((await post("/api/nope", {})).status).toBe(404);
+  });
+});
+
+describe("GET /api/config", () => {
+  it("returns the redacted effective config — never a plaintext key", async () => {
+    // A realistic secret in the sandbox config must never leave the server.
+    fs.mkdirSync(tauHome(), { recursive: true });
+    fs.writeFileSync(
+      configPath(),
+      JSON.stringify({
+        provider: "mock",
+        providers: { openai: { apiKey: "sk-super-secret-1234", model: "gpt-x" } },
+      }),
+    );
+    const res = await get("/api/config");
+    expect(res.status).toBe(200);
+    const body = JSON.parse(res.body);
+    // Field-consistency contract: the same redaction the CLI prints.
+    expect(body.config).toEqual(redactConfig(loadConfig()));
+    expect(body.config.providers.openai.apiKey).toBe(maskSecret("sk-super-secret-1234"));
+    // The plaintext must not appear anywhere in the response body.
+    expect(res.body).not.toContain("sk-super-secret-1234");
+  });
+
+  it("exposes provider, availability, and model-catalog cache state", async () => {
+    const res = await get("/api/config");
+    expect(res.status).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.provider.name).toBe("mock");
+    expect(Array.isArray(body.providers)).toBe(true);
+    expect(body.providers.some((p: { name: string }) => p.name === "mock")).toBe(true);
+    expect(typeof body.modelCatalog.count).toBe("number");
+    expect(body.tauHome).toBe(tauHome());
+  });
+
+  it("is a read-only surface — other methods 404", async () => {
+    expect((await post("/api/config", { provider: "mock" })).status).toBe(404);
   });
 });
