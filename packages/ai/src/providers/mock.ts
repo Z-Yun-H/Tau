@@ -15,6 +15,7 @@ import type {
   ModelInfo,
   Plan,
   PlanningContext,
+  ProviderUsage,
   ReflectContext,
 } from "@tau/core";
 
@@ -26,6 +27,23 @@ import type {
 export class MockProvider implements AIProvider {
   readonly name = "mock";
   readonly label = "Mock (offline demo)";
+
+  /**
+   * Synthetic token usage for the observability baseline (issue #98) —
+   * deterministic (length-derived) so tests can assert the plumbing end to
+   * end without a network. Updated by plan() and reflect().
+   */
+  lastUsage: ProviderUsage | undefined = undefined;
+
+  private recordUsage(seed: string, reply: string): void {
+    const promptTokens = 40 + seed.length;
+    const completionTokens = 20 + reply.length;
+    this.lastUsage = {
+      promptTokens,
+      completionTokens,
+      totalTokens: promptTokens + completionTokens,
+    };
+  }
 
   async isAvailable(): Promise<boolean> {
     return true;
@@ -46,10 +64,12 @@ export class MockProvider implements AIProvider {
     // Keyword scoring over the real tool catalog keeps the demo honest.
     if (/find|查找|搜索文件|找.*文件|glob/.test(intent)) {
       const pattern = intent.match(/(\*[\w.*-]*|\*\*)/)?.[1] ?? "*.ts";
+      const explanation = isChinese
+        ? `在当前目录下递归查找匹配 ${pattern} 的文件`
+        : `Recursively find files matching ${pattern} under the current directory`;
+      this.recordUsage(ctx.intent, explanation);
       return {
-        explanation: isChinese
-          ? `在当前目录下递归查找匹配 ${pattern} 的文件`
-          : `Recursively find files matching ${pattern} under the current directory`,
+        explanation,
         steps: [
           {
             kind: "tool",
@@ -111,6 +131,7 @@ export class MockProvider implements AIProvider {
     const note = isChinese
       ? `离线 mock 无法理解「${ctx.intent}」。配置真实 AI Provider 后重试：tau config set provider openai`
       : `Offline mock could not map "${ctx.intent}". Configure a real provider: tau config set provider openai`;
+    this.recordUsage(ctx.intent, note);
     return {
       explanation: note,
       steps: [
@@ -139,15 +160,20 @@ export class MockProvider implements AIProvider {
   async reflect(ctx: ReflectContext): Promise<AgentDecision> {
     const last = ctx.rounds[ctx.rounds.length - 1];
     if (!last) {
-      return { done: true, answer: "No executed rounds to reflect on." };
+      const empty = "No executed rounds to reflect on.";
+      this.recordUsage("reflect", empty);
+      return { done: true, answer: empty };
     }
     const joined = last.outputs.join("\n");
     const marker = joined.match(/GOAL_COMPLETE[:\s]*(.*)/)?.[1]?.trim();
 
     if (last.status === "ok" && marker !== undefined) {
-      return { done: true, answer: marker || "Goal complete." };
+      const answer = marker || "Goal complete.";
+      this.recordUsage("reflect", answer);
+      return { done: true, answer };
     }
     if (last.status !== "ok") {
+      this.recordUsage("reflect", "mock repair");
       return {
         done: false,
         plan: {
@@ -164,6 +190,7 @@ export class MockProvider implements AIProvider {
         note: "mock repair",
       };
     }
+    this.recordUsage("reflect", "mock continue");
     return {
       done: false,
       plan: {

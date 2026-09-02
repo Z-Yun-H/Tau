@@ -63,6 +63,12 @@ export interface ChatJSONOptions {
   retries?: number;
   /** Injected sleep for tests; defaults to a global-timer promise. */
   sleep?: (ms: number) => Promise<void>;
+  /**
+   * Observability hook (v0.4.0): called with the response's `usage` object
+   * when the reply is OK JSON carrying one. Callers normalize via
+   * `normalizeUsage` — this layer stays shape-agnostic.
+   */
+  onUsage?: (usage: unknown) => void;
 }
 
 /**
@@ -112,7 +118,25 @@ export async function chatJSON(
         body: JSON.stringify(body),
         signal: controller.signal,
       });
-      if (res.ok) return await res.text();
+      if (res.ok) {
+        const text = await res.text();
+        if (options.onUsage) {
+          try {
+            const parsed = JSON.parse(text) as { usage?: unknown };
+            if (
+              parsed &&
+              typeof parsed === "object" &&
+              parsed.usage !== null &&
+              typeof parsed.usage === "object"
+            ) {
+              options.onUsage(parsed.usage);
+            }
+          } catch {
+            // Non-JSON reply — no usage to report, the text still returns.
+          }
+        }
+        return text;
+      }
       const detail = (await res.text().catch(() => "")).slice(0, ERROR_BODY_SLICE);
       if (RETRYABLE_STATUS.has(res.status) && attempt < retries) {
         // Bounded backoff honoring the server's Retry-After when present.

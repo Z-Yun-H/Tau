@@ -22,12 +22,13 @@ import type {
   AgentDecision,
   Plan,
   PlanEvent,
+  ProviderUsage,
   ReflectContext,
   RoundFeedback,
   SafetyReview,
 } from "@tau/core";
 import { loadConfig } from "@tau/core";
-import { planningContext, resolveProvider, truncateForFeedback } from "@tau/ai";
+import { normalizeUsage, planningContext, resolveProvider, truncateForFeedback } from "@tau/ai";
 import { renderSkillCatalog, scanSkills } from "@tau/skills";
 import { reviewPlan, runPlan, type RunPlanOptions, type StepOutcome } from "@tau/engine";
 import { planIntent, ProviderUnavailableError } from "./pipeline.js";
@@ -50,7 +51,7 @@ export type GoalEvent =
       /** "plan" = first round, "reflect" = continuation proposed by the AI. */
       origin: "plan" | "reflect";
     }
-  | { type: "round_end"; round: number; status: RoundFeedback["status"] }
+  | { type: "round_end"; round: number; status: RoundFeedback["status"]; usage?: ProviderUsage }
   | { type: "approval_required"; round: number; plan: Plan; review: SafetyReview }
   | {
       type: "goal_end";
@@ -132,7 +133,11 @@ export async function runGoal(intent: string, options: RunGoalOptions): Promise<
   const ctxBase = planningContext(intent, skillCatalog);
 
   /** Execute one round end-to-end and record its feedback. */
-  const executeRound = async (round: number, plan: Plan): Promise<RoundFeedback["status"]> => {
+  const executeRound = async (
+    round: number,
+    plan: Plan,
+    usage: ProviderUsage | undefined,
+  ): Promise<RoundFeedback["status"]> => {
     const runOptions: RunPlanOptions = {
       provider: choice.provider.name,
       assumeYes: options.assumeYes,
@@ -151,7 +156,7 @@ export async function runGoal(intent: string, options: RunGoalOptions): Promise<
       status: result.status,
       outputs: feedbackOutputs(result.outcomes),
     });
-    emit({ type: "round_end", round, status: result.status });
+    emit({ type: "round_end", round, status: result.status, ...(usage ? { usage } : {}) });
     return result.status;
   };
 
@@ -173,7 +178,7 @@ export async function runGoal(intent: string, options: RunGoalOptions): Promise<
       }
     }
     let round = 1;
-    let lastStatus = await executeRound(1, planned.plan);
+    let lastStatus = await executeRound(1, planned.plan, planned.usage);
 
     // ---- Rounds 2..n: reflection-driven continuation. ----
     while (
@@ -192,6 +197,9 @@ export async function runGoal(intent: string, options: RunGoalOptions): Promise<
         emit({ type: "goal_end", status: "failed", error: `reflection failed: ${message}` });
         return { status: "failed", rounds, error: `reflection failed: ${message}` };
       }
+      // The reflect call's own token cost (when reported) is the AI-side
+      // price of producing the NEXT round — attach it to that round_end.
+      const roundUsage = normalizeUsage((choice.provider as { lastUsage?: unknown }).lastUsage);
 
       if (decision.done) {
         emit({ type: "goal_end", status: "ok", answer: decision.answer });
@@ -218,7 +226,7 @@ export async function runGoal(intent: string, options: RunGoalOptions): Promise<
           return { status: "cancelled", rounds };
         }
       }
-      lastStatus = await executeRound(round, decision.plan);
+      lastStatus = await executeRound(round, decision.plan, roundUsage);
     }
 
     // ---- Terminal folding. ----

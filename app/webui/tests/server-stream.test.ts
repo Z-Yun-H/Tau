@@ -19,7 +19,10 @@ let ui: RunningWebUi;
 
 beforeEach(async () => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "tau-stream-"));
+  process.env["TAU_WEBUI_QUIET"] = "1";
   process.env.TAU_HOME = path.join(tmp, "home");
+  // Silence the v0.4.0 request log for clean test output (unit 4 tests
+  // assert the logger separately with an injected sink).
   fs.mkdirSync(tauHome(), { recursive: true });
   // tool steps resolve relative to cwd — run against the sandbox dir
   process.chdir(tmp);
@@ -32,6 +35,7 @@ beforeEach(async () => {
 afterEach(async () => {
   await ui.close();
   process.chdir(ORIGINAL_CWD);
+  delete process.env["TAU_WEBUI_QUIET"];
   delete process.env.TAU_HOME;
   fs.rmSync(tmp, { recursive: true, force: true });
 });
