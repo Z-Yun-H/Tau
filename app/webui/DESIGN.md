@@ -431,12 +431,20 @@ keys navigate (preserved `role=tablist` contract).
   origin (mono 10px `tau.faint`) + description (sans 12px `tau.muted`).
 - **History**: `RiskBadge(status, status)` + kind + relTime (title=
   absTime) + truncated input.
-- **Tools**: grouped by family prefix (uppercase mono 10px `tau.faint`
-  header), each tool = name + `RiskBadge(risk)` + owner (if not
-  `core`) + description + param chips (`name[*]type`, `*` =
-  required in `tau.warn`).
-- Footer: `* required · risk is intrinsic to the tool` mono 10px
-  `tau.faint`.
+- **Tools** (main-info-first layout):
+  - **Catalog overview row** at the top: `N tools · N read · N mutates · N dry-run`
+    in a `tau.raised` pill (`rounded-6px`), counts color-coded (`tau.ok` for
+    read, `tau.warn` for mutates, `tau.info` for dry-run). The user sees the
+    catalog shape at a glance.
+  - **Family groups** with count headers: `FILE (6)`, `SYS (6)`, `NET (4)`,
+    `TEXT (4)` — uppercase mono 10px `tau.faint`, count in `tau.placeholder`.
+  - **Each tool**: name (mono 12px 600 `tau.text`) + `RiskBadge(risk)` +
+    kind tag (`READ` info-tinted / `MUT` warn-tinted, matching the StepRow
+    kind-tag visual language) + optional `DRY` tag (`tau.faint`) for
+    dry-run-default tools + owner (if not `core`) + description + param
+    chips (`name[*]type`, `*` = required in `tau.warn`).
+  - Footer: `* required · risk is intrinsic to the tool · MUT mutates · DRY
+dry-run default` mono 10px `tau.faint`.
 - Lazy loads tools on first Tools-tab visit (preserved contract).
 
 ### 6.10 ShortcutsModal — the keyboard contract

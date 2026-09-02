@@ -6,9 +6,9 @@
  */
 
 import { createRequire } from "node:module";
-import { loadConfig } from "@tau/core";
 import { buildSystemPrompt, validatePlanResponse } from "../prompt.js";
-import type { AIProvider, ModelInfo, Plan, PlanningContext } from "@tau/core";
+import { BaseHttpProvider } from "./base.js";
+import type { ModelInfo, Plan, PlanningContext } from "@tau/core";
 // Type-only imports from the optional @deepseek-ai/dsh-llm package: the
 // compiler erases them, so they are safe even when the package is absent at
 // runtime. Runtime access goes exclusively through the dynamic loader below.
@@ -653,41 +653,28 @@ function harnessFailureMessage(failure: LlmFailure): string {
 }
 
 /** DeepSeek planning provider over the official streaming wire format. */
-export class DeepSeekProvider implements AIProvider {
+export class DeepSeekProvider extends BaseHttpProvider {
   readonly name = "deepseek";
   readonly label = "DeepSeek";
 
-  /** Config key (`tau provider set-key deepseek`) wins; env var is the fallback. */
-  apiKey(): string | undefined {
-    const fromConfig = loadConfig().providers["deepseek"]?.["apiKey"];
-    if (typeof fromConfig === "string" && fromConfig.trim().length > 0) return fromConfig;
-    return process.env.DEEPSEEK_API_KEY;
-  }
-
-  async isAvailable(): Promise<boolean> {
-    return Boolean(this.apiKey());
-  }
-
-  unavailableReason(): string {
-    return (
-      "Missing DeepSeek API key — run `tau provider set-key deepseek <key>` " +
-      "or set the DEEPSEEK_API_KEY environment variable."
-    );
-  }
-
-  private baseUrl(): string {
-    return String(loadConfig().providers["deepseek"]?.["baseUrl"] ?? DEFAULT_BASE_URL).replace(
-      /\/$/,
-      "",
-    );
-  }
+  protected readonly config = {
+    name: "deepseek",
+    label: "DeepSeek",
+    envKey: "DEEPSEEK_API_KEY",
+    defaultBaseUrl: DEFAULT_BASE_URL,
+    defaultTimeoutMs: DEFAULT_TIMEOUT_MS,
+  };
 
   /**
    * Live model discovery: GET {baseUrl}/models (OpenAI-compatible shape,
    * documented in DeepSeek's "List Models" endpoint). Auth/network failures
    * throw — the model-catalog service owns caching and degradation.
+   *
+   * Overrides the base `listModels()` to use DeepSeek's official error
+   * formatter (`apiErrorMessage`) so the test-pinned error shape stays
+   * byte-identical (`/DeepSeek API error 401.*auth failed/`).
    */
-  async listModels(): Promise<ModelInfo[]> {
+  override async listModels(): Promise<ModelInfo[]> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 15_000);
     timer.unref?.();
@@ -710,12 +697,6 @@ export class DeepSeekProvider implements AIProvider {
     } finally {
       clearTimeout(timer);
     }
-  }
-
-  private timeoutMs(): number {
-    const raw = loadConfig().providers["deepseek"]?.["timeoutMs"];
-    const value = Number(raw);
-    return Number.isFinite(value) && value > 0 ? value : DEFAULT_TIMEOUT_MS;
   }
 
   async plan(ctx: PlanningContext): Promise<Plan> {

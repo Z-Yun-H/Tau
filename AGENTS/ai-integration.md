@@ -75,30 +75,51 @@ mock provider + tests + this file + README example.
 - Injects the REAL tool catalog (renderToolCatalog) and skill catalog — the
   planner can only propose tools that actually exist, and the reviewer
   independently enforces that. Keep both sides in sync.
+- The catalog is **grouped by family** (`## file (6)`, `## sys (6)`, …) with
+  a per-tool tag line that includes `risk`, `mutates` (when the tool mutates
+  state), and `dry-run-default` (when the tool defaults to a preview). The
+  planner can scope its attention by family and prefer read-only + dry-run
+  tools first.
+- A one-line `CATALOG SUMMARY: N tools across M families (X read / Y mutates)`
+  precedes the catalog so the model knows the catalog shape at a glance.
 - The catalog also includes MCP plugin tools: `app/cli/src/ask.ts` calls
   `registerPluginTools()` BEFORE building the planning context, so
   `plugin.<name>.<tool>` entries are first-class planner targets (and the
   reviewer grades them via their intrinsic `medium` risk). Plugin failures
   degrade to warnings and shrink the catalog, never break the run.
-- Explicit rules: prefer tools over shell, prefer dry-run first, no invented
-  tool names, ≤10 steps, JSON only.
+- Explicit rules: prefer tools over shell, prefer read-only + dry-run first,
+  no invented tool names, ≤10 steps, JSON only.
 - Keep the prompt deterministic for a given catalog (no timestamps, no
   randomness) so tests can assert on it.
 
 ## Adding a provider — checklist
 
-1. `packages/ai/src/providers/<name>.ts` implementing AIProvider (look at
-   openai.ts for the HTTP pattern — it uses the shared `chatJSON` helper in
-   `providers/http.ts`; ollama.ts for local-server availability probing;
-   deepseek.ts for an SSE-streaming provider that keeps its own wire client).
-   The mock provider lives in `providers/mock.ts` and hosts NO shared utility
-   — keep it self-contained so the offline demo never depends on (or
-   accidentally exports) code used by real backends.
+1. `packages/ai/src/providers/<name>.ts` implementing AIProvider. The pattern
+   depends on the backend's wire shape:
+   - **OpenAI-compatible HTTP + key auth + GET /models discovery** — extend
+     `BaseHttpProvider` in `providers/base.ts` (it owns apiKey resolution,
+     baseUrl/timeout defaults, isAvailable, unavailableReason, listModels).
+     Subclasses supply a `config` object (env key, default baseUrl/timeout)
+     and implement `plan()`. See `openai.ts` (thin subclass) and
+     `deepseek.ts` (subclass that overrides `listModels()` to keep its
+     test-pinned error format).
+   - **Local-server probe (no key)** — see `ollama.ts` (implements
+     `AIProvider` directly; `isAvailable()` pings the local server).
+   - **SSE-streaming with a custom wire client** — see `deepseek.ts` (keeps
+     its own SSE client in `plan()`; only the shared scaffolding inherits
+     from `BaseHttpProvider`).
+   - **Optional SDK peer** — see `zai.ts` (dynamic `import("z-ai-web-dev-sdk")`,
+     graceful unavailable + reason when absent).
+   - The mock provider lives in `providers/mock.ts` and hosts NO shared
+     utility — keep it self-contained so the offline demo never depends on
+     (or accidentally exports) code used by real backends. The shared
+     `chatJSON` helper lives in `providers/http.ts`.
 2. Register in `registry.ts`; add config defaults in `store.ts`.
 3. `isAvailable()` must be CHEAP and never prompt; `unavailableReason()`
    explains exactly what to install/export.
 4. Tests: request shaping + response parsing with a mocked `chatJSON`/fetch.
-   Never hit real endpoints in CI.
+   Never hit real endpoints in CI. `BaseHttpProvider` behavior is covered
+   through its concrete subclasses (see `tests/base-provider.test.ts`).
 5. Update README (both languages) provider table + `tau config list` output
    if it changes.
 

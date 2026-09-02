@@ -155,7 +155,13 @@ chords like Ctrl+T/W/N).
   streaming.
 - `ErrorCard` — intent + message + the two concrete ways out.
 - `SidePanel` — Skills / History / Tools tabs; sliding `tau.ok`
-  indicator; keyboard arrows; `role=tablist`.
+  indicator; keyboard arrows; `role=tablist`. The Tools tab leads with a
+  catalog overview row (`N tools · N read · N mutates · N dry-run`), family
+  groups with counts, and per-tool `READ`/`MUT`/`DRY` kind tags so the user
+  sees the catalog shape at a glance (main info first). The `mutates` /
+  `dryRunDefault` fields flow from `ToolDefinition` → `listToolSummaries()` →
+  `/api/tools` → client `ToolSummary` → `groupTools()` → SidePanel; the
+  `/api/tools` body still never contains `"run"` (test-pinned).
 - `Composer` — the beam: rounded panel + soft shadow + rotating conic
   beam border on focus-within; auto-growing textarea; Enter/Shift+Enter
   semantics; hint row with live shortcuts; chrome Send button (disabled

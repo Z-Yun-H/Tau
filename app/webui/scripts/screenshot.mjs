@@ -82,6 +82,13 @@ try {
   await page.waitForTimeout(600);
   await page.screenshot({ path: path.join(OUT_DIR, "result.png") });
 
+  // Switch the reference rail to the Tools tab so the catalog overview +
+  // mutation/dry-run tags are captured too (AGENTS/collaboration.md §11:
+  // app-layer changes require screenshot regeneration).
+  await page.getByRole("tab", { name: "Tools" }).first().click();
+  await page.waitForTimeout(400); // let the lazy tool list load + render
+  await page.screenshot({ path: path.join(OUT_DIR, "tools.png") });
+
   console.log(`screenshots written to ${OUT_DIR}`);
 } finally {
   await browser.close();

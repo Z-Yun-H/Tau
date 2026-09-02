@@ -7,6 +7,33 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Changed
 
+- **AI provider + agent tool catalog + UI display refactor.** Three coupled
+  changes per `AGENTS/ai-integration.md`: (1) `BaseHttpProvider`
+  (`packages/ai/src/providers/base.ts`) — shared scaffolding for
+  OpenAI-compatible HTTP + key-auth providers (apiKey resolution, baseUrl/
+  timeout defaults, isAvailable, unavailableReason, listModels).
+  `OpenAIProvider` becomes a thin subclass; `DeepSeekProvider` inherits the
+  scaffolding but overrides `listModels()` to keep its test-pinned
+  `DeepSeek API error 401.*auth failed` error format. `OllamaProvider`
+  (local-probe), `MockProvider` (self-contained), `ZaiProvider` (SDK peer)
+  unchanged. (2) Tool catalog enrichment — `renderToolCatalog()` output
+  groups tools by family (`## file (6)`) with per-tool `risk` / `mutates` /
+  `dry-run-default` tags; new `catalogSummary()` one-liner
+  (`N tools across M families (X read / Y mutates)`); `buildSystemPrompt()`
+  embeds the summary + a new "prefer READ-ONLY tools first" rule.
+  `ToolDefinition` gains optional `mutates` / `dryRunDefault` fields
+  (backward-compatible); `file.rename` and `text.replace` tagged as
+  `mutates + dryRunDefault`. (3) WebUI `SidePanel.vue` Tools tab leads with
+  a catalog overview row (`N tools · N read · N mutates · N dry-run`),
+  family-group headers with counts, and per-tool `READ`/`MUT`/`DRY` kind
+  tags so the user sees the catalog shape at a glance. New `tools.png`
+  screenshot. All test-pinned contracts preserved byte-for-byte: plan
+  schema, safety review, HTTP API paths/fields (only new fields added to
+  `/api/tools`, never `"run"`), NDJSON event names/order, 403-as-JSON,
+  localStorage key, `Run plan` text, `file.find in` prefix, DeepSeek
+  `listModels` error format. 18 new tests (base-provider 10 + catalog 8);
+  full suite 364/364 green.
+
 - **WebUI full frontend redesign — chat.z.ai-inspired.** All 11 components in
   `app/webui/client/` rewritten against a new unified design spec
   ([`app/webui/DESIGN.md`](./app/webui/DESIGN.md)). Visual language: dark fused

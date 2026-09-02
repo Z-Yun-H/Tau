@@ -44,14 +44,58 @@ export function resetRegistry(): void {
 
 /** Render the registry as compact text for the AI planner prompt. */
 export function renderToolCatalog(): string {
-  return allTools()
-    .map((tool) => {
+  const tools = allTools();
+  if (tools.length === 0) return "(no tools registered)";
+
+  // Group by family (dotted prefix) so the planner can scope its attention.
+  // Skill-owned tools (e.g. "git-helper.status") cluster under their skill
+  // name; core tools cluster under "file" / "sys" / "net" / "text".
+  const groups = new Map<string, ToolDefinition[]>();
+  for (const tool of tools) {
+    const dot = tool.name.indexOf(".");
+    const family = dot === -1 ? "other" : tool.name.slice(0, dot);
+    const arr = groups.get(family);
+    if (arr) arr.push(tool);
+    else groups.set(family, [tool]);
+  }
+
+  const blocks: string[] = [];
+  for (const [family, familyTools] of groups) {
+    blocks.push(`## ${family} (${familyTools.length})`);
+    for (const tool of familyTools) {
       const params = tool.params
         .map((p) => `${p.name}${p.required ? "" : "?"}:${p.type}${p.required ? "" : "=opt"}`)
         .join(", ");
-      return `- ${tool.name} [risk:${tool.risk}] ${tool.description}\n  params: (${params || "none"})`;
-    })
-    .join("\n");
+      // Mutation/dry-run tags help the planner prefer read-only + dry-run
+      // first (AGENTS/ai-integration.md "prefer DRY-RUN modes" rule).
+      const tags: string[] = [`risk:${tool.risk}`];
+      if (tool.mutates) tags.push("mutates");
+      if (tool.dryRunDefault) tags.push("dry-run-default");
+      blocks.push(
+        `- ${tool.name} [${tags.join(", ")}] ${tool.description}\n  params: (${params || "none"})`,
+      );
+    }
+  }
+  return blocks.join("\n");
+}
+
+/**
+ * One-line catalog summary for the system prompt: tool/family counts + a
+ * read/mut split so the planner knows the catalog shape at a glance.
+ */
+export function catalogSummary(): string {
+  const tools = allTools();
+  if (tools.length === 0) return "0 tools";
+  const families = new Set<string>();
+  let mut = 0;
+  let reads = 0;
+  for (const tool of tools) {
+    const dot = tool.name.indexOf(".");
+    if (dot !== -1) families.add(tool.name.slice(0, dot));
+    if (tool.mutates) mut++;
+    else reads++;
+  }
+  return `${tools.length} tools across ${families.size} families (${reads} read / ${mut} mutates)`;
 }
 
 /** Extract a string param with type coercion and defaults. */

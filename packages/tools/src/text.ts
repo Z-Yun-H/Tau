@@ -227,6 +227,8 @@ export const textTools: ToolDefinition[] = [
       "Regex replace across files. Dry-run by default; set execute=true to write changes",
     risk: "medium",
     owner: "core",
+    mutates: true,
+    dryRunDefault: true,
     params: [
       { name: "find", type: "string", description: "Regex to find", required: true },
       { name: "replace", type: "string", description: "Replacement", required: true },

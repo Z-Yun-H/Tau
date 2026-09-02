@@ -64,6 +64,10 @@ export interface ToolSummary {
   /** "core" for built-ins, else the owning skill name. */
   owner: string;
   params: ToolParamInfo[];
+  /** True when the tool mutates state (filesystem, file contents, system). Defaults false. */
+  mutates: boolean;
+  /** True when the tool defaults to a dry-run preview unless execute:true. Defaults false. */
+  dryRunDefault: boolean;
 }
 
 /** Everything a UI status view needs, in one async snapshot. */
@@ -139,6 +143,8 @@ export function listToolSummaries(): ToolSummary[] {
       description: param.description,
       required: param.required,
     })),
+    mutates: tool.mutates === true,
+    dryRunDefault: tool.dryRunDefault === true,
   }));
 }
 

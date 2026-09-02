@@ -13,16 +13,23 @@ Everything is exported from the package barrel (`src/index.ts`):
 - **Bootstrap** (`src/bootstrap.ts`) — `registerCoreTools()` registers every
   built-in tool family exactly once at import-call time (idempotent)
 - **Registry** (`src/registry.ts`) — `registerTools()`, `getTool()`,
-  `allTools()`, `resetRegistry()`, `renderToolCatalog()`
-- **Tool families** — `fileTools` (read/list/find/stat/tree/rename),
-  `sysTools` (info/disk/proc/datetime/which/env — `env` is medium risk
-  because environment values may hold secrets), `netTools` (fetch with SSRF
-  guard/ip/ping/port), `textTools` (count/search/replace/hash)
+  `allTools()`, `resetRegistry()`, `renderToolCatalog()` (groups tools by
+  family with `## family (N)` headers + per-tool `risk` / `mutates` /
+  `dry-run-default` tags), `catalogSummary()` (one-line
+  `N tools across M families (X read / Y mutates)` for the system prompt)
+- **Tool families** — `fileTools` (read/list/find/stat/tree/rename —
+  `rename` is `mutates + dryRunDefault`), `sysTools` (info/disk/proc/
+  datetime/which/env — `env` is medium risk because environment values may
+  hold secrets), `netTools` (fetch with SSRF guard/ip/ping/port),
+  `textTools` (count/search/replace/hash — `replace` is
+  `mutates + dryRunDefault`)
 
 Tool behavior contract: pure functions over `ToolDefinition` with typed
-`ToolParamSpec` parameters; `net.fetch` refuses private/loopback/link-local
-targets; `net.ping` rejects shell metacharacters; `file.find`/`file.tree`
-prune `node_modules`.
+`ToolParamSpec` parameters; the optional `mutates` / `dryRunDefault` flags
+on `ToolDefinition` surface in the catalog so the planner can prefer
+read-only + dry-run tools first (AGENTS/ai-integration.md rule 4-5).
+`net.fetch` refuses private/loopback/link-local targets; `net.ping` rejects
+shell metacharacters; `file.find`/`file.tree` prune `node_modules`.
 
 ## Dependencies
 
