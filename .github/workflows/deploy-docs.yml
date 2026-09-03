@@ -1,0 +1,81 @@
+name: Deploy docs site
+
+# Branch-based Pages publishing — the bilingual VitePress site (docs/,
+# @tau/docs) is built with base /Tau/ and force-pushed to the gh-pages
+# branch, which GitHub Pages serves as the project site
+# https://z-yun-h.github.io/Tau/.
+#
+# Why branch publish and not the official deploy-pages action: the
+# GITHUB_TOKEN cannot CREATE a Pages site (POST /repos/{owner}/{repo}/pages
+# → "Resource not accessible by integration" on a never-enabled repo), so
+# the original Actions-mode workflow failed on every run. The site came
+# online on 2026-09-03 via GitHub's legacy branch auto-publish (first push
+# to gh-pages), which leaves Pages in build_type=legacy — a mode
+# deploy-pages cannot drive. Branch publishing needs only contents:write,
+# no Pages API and no OIDC. One orphan commit per deploy keeps the branch
+# at a single commit. (Switching to Actions-mode deployment later requires
+# a one-time owner action — Settings → Pages → Source: GitHub Actions —
+# and restoring the deploy-pages workflow from git history.)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/**"
+      - ".github/workflows/deploy-docs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: docs-publish
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: build + publish to gh-pages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm version comes from package.json "packageManager" (pnpm@12.2.1)
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Build docs (project-site base /Tau/)
+        run: pnpm docs:build
+        env:
+          DOCS_BASE: /Tau/
+
+      # Fail before publishing if either locale or the Jekyll skip marker
+      # is missing from the build output.
+      - name: Smoke-check the build
+        run: |
+          test -f docs/.vitepress/dist/index.html
+          test -f docs/.vitepress/dist/en/index.html
+          test -f docs/.vitepress/dist/.nojekyll
+
+      - name: Publish to the gh-pages branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd docs/.vitepress/dist
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git add -A
+          git commit -qm "deploy: docs site @ ${GITHUB_SHA}" \
+            -m "Built from ${GITHUB_REPOSITORY}@${GITHUB_SHA} (docs/, @tau/docs — VitePress, zh + en). Base /Tau/. Orphan snapshot: one commit per deploy." \
+            -m "AI-Generated: This commit is AI-generated (Super Z / GLM pipeline).
+AI-agent: Super Z (GLM)"
+  git push -qf origin gh-pages

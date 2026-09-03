@@ -104,7 +104,17 @@ export function getConfigValue(key: string): unknown {
 }
 
 /** Per-provider fields settable through `tau config set providers.<name>.<field>`. */
-export const PROVIDER_FIELDS = ["apiKey", "baseUrl", "host", "model", "timeoutMs"] as const;
+export const PROVIDER_FIELDS = [
+  "apiKey",
+  "baseUrl",
+  "host",
+  "model",
+  "timeoutMs",
+  // v0.5.0 streaming/thinking capability toggles (provider-specific):
+  "think", // ollama — request thinking from thinking-capable local models
+  "thinking", // anthropic — extended thinking on/off
+  "thinkingBudget", // anthropic/gemini — thinking token budget
+] as const;
 
 /** Merge a patch into one provider entry and persist (model cache, apiKey, ...). */
 export function updateProviderEntry(provider: string, patch: Record<string, unknown>): TauConfig {

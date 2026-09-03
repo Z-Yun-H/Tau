@@ -1,24 +1,22 @@
-# Skill Authoring Guide
+# Skills
 
-A Tau skill is a directory with one `SKILL.md` file. That's it — no build
-step, no code required (helper scripts are optional and never auto-executed).
+Skills are Tau's lightweight extension mechanism: a skill is a directory with one `SKILL.md` file. That's it — no build step, no code required (helper scripts are optional and never auto-executed). The file injects structured context and **declarative commands** into the AI's prompt.
 
 > **Contributing to Tau itself?** For AI agents, the executable authoring
-> workflow is the tool-layer skill [`packages/skills/SKILL.md`](../packages/skills/SKILL.md),
-> and the normative rules are [`AGENTS/skills.md`](../AGENTS/skills.md).
-> This guide covers the user-facing (product) side; the repo-side placement
-> model for SKILL.md files — root / tool / product — is defined in
-> `AGENTS/skills.md`.
+> workflow is the tool-layer skill `packages/skills/SKILL.md`, and the
+> normative rules are in `AGENTS/skills.md`. This guide covers the
+> user-facing (product) side; for the repo-side placement model — root /
+> tool / product layers — see [authoring skills](/en/reference/skill-authoring).
 
-## Where skills live
+## Three scopes
 
-| Scope     | Location                                      | Wins when              |
-| --------- | --------------------------------------------- | ---------------------- |
-| bundled   | `packages/skills/bundled/` (in the Tau repo)  | base                   |
-| user      | `$TAU_HOME/skills/` (default `~/.tau/skills`) | same name as bundled   |
-| workspace | `./skills/` or `./.tau/skills/`               | same name as the above |
+| Scope     | Location                                              | Source             |
+| --------- | ----------------------------------------------------- | ------------------ |
+| bundled   | `packages/skills/bundled/` inside the package         | ships with the CLI |
+| user      | `$TAU_HOME/skills/<name>/` (default `~/.tau/skills/`) | installed by you   |
+| workspace | `./skills/` or `./.tau/skills/` in your project       | follows your repo  |
 
-Scaffold one instantly: `tau skill new my-skill "What it does"`.
+`tau skill list` shows all scopes. Scaffold one instantly: `tau skill new my-skill "What it does"`.
 
 ## The frontmatter contract
 
@@ -61,7 +59,7 @@ Each command is registered at startup as a tool named `<skill>.<command>`
 # tau my-skill grep "TODO"  -> grep -rn TODO .
 ```
 
-Note the single braces. Docker-style `{{.Names}}` templates are safe because
+Note the single braces. Docker-style <code v-pre>{{.Names}}</code> templates are safe because
 Tau only substitutes `{args}`.
 
 ## Validation rules (enforced by `tau skill validate`)
@@ -109,3 +107,11 @@ Skills are just directories — commit them to your repo's `skills/` folder
 get them on clone. To propose a skill for Tau's bundled set, open a PR
 against `packages/skills/bundled/` in the Tau repo and include the output of
 `tau skill validate <name>`.
+
+## Skills vs plugins (MCP)
+
+Declarative commands, prompt injection, zero code → **skill**. A real external tool server (separate process, custom protocol implementation) → [plugin](/en/guide/plugins). Skills are document-level extensions; plugins are process-level extensions.
+
+## Writing skills for the repo
+
+To author skills for Tau's own development workflow (or to understand the three-layer SKILL.md model in this repo), see [authoring skills](/en/reference/skill-authoring).

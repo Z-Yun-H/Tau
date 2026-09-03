@@ -7,11 +7,11 @@
  * The execute gate mirrors the server contract: deny verdicts can't run,
  * high-risk plans require the card-local explicit checkbox (per-card state —
  * the old global `#confirm-high-risk` ID collided across concurrent plans).
- * Nothing here bypasses the pipeline: plan comes from /api/plan, execution
- * from /api/execute — the same runPlan() channel the CLI uses.
+ * Nothing here bypasses the pipeline: plan comes from /api/plan/stream, execution
+ * from /api/execute/stream — the same runPlan() channel the CLI uses.
  */
 import { computed, reactive, ref, watch } from "vue";
-import { postJson, type PlanResponse } from "../lib/api.js";
+import { postJson, type PlanResponse, type PlanStep } from "../lib/api.js";
 import { postNdjson, type StreamEvent } from "../lib/stream.js";
 import { useSession } from "./session.js";
 
@@ -34,6 +34,14 @@ export interface PlanCardState {
   running: boolean;
   /** Card-local explicit confirmation for high-risk execution. */
   confirmHighRisk: boolean;
+  /** v0.5.0: provider reasoning accumulated from /api/plan/stream deltas. */
+  thinking: string;
+  /** Wall-clock time the planning turn took (thinking-panel summary). */
+  thinkingMs: number;
+  /** True while the /api/plan/stream NDJSON stream is still delivering. */
+  streaming: boolean;
+  /** Token usage of the planning call, when the provider reports it. */
+  usage?: { inputTokens?: number; outputTokens?: number; totalTokens?: number };
 }
 
 export interface ResultCardState {
@@ -62,6 +70,8 @@ export interface GoalStepState {
   running: boolean;
   ok?: boolean;
   skipped?: boolean;
+  /** v0.5.0: the raw step — tool steps render as a structured ToolCallCard. */
+  step?: PlanStep;
 }
 
 /** One round of a goal: plan + review + live steps + terminal status. */
@@ -75,6 +85,9 @@ export interface GoalRoundState {
   /** True while the stream is paused on /api/goal/approve for this round. */
   approvalPending: boolean;
   approvalTimedOut?: boolean;
+  /** v0.5.0: provider reasoning captured while this round was planned. */
+  thinking: string;
+  thinkingMs?: number;
 }
 
 /** Agent-mode card: a multi-round goal over /api/goal/stream (issue #97). */
@@ -91,6 +104,14 @@ export interface GoalCardState {
   error?: string;
   /** True while the NDJSON stream is still delivering events. */
   streaming: boolean;
+  /**
+   * v0.5.0 live-thinking rail: round-think deltas arrive BEFORE their
+   * round_plan (planning precedes its own completion), so they buffer here
+   * and collapse into round.thinking when the round_plan event lands.
+   */
+  liveThinking: string;
+  liveThinkingRound: number;
+  liveThinkingStartedAt: number;
 }
 
 export type CardState =
@@ -156,6 +177,8 @@ function threadTitle(cards: CardState[]): string {
  * Post-load migration: a goal that was `running` when the tab closed can
  * never resume — its stream is gone. Mark those honestly instead of
  * rendering a zombie spinner forever (threads persist across reloads).
+ * Same honesty for plan cards caught mid-stream (v0.5.0): a plan whose
+ * terminal event never arrived is dropped — an empty plan can never run.
  */
 function settleOrphanGoals(threads: Thread[]): void {
   for (const thread of threads) {
@@ -170,6 +193,11 @@ function settleOrphanGoals(threads: Thread[]): void {
         }
       }
     }
+    const before = thread.cards.length;
+    thread.cards = thread.cards.filter(
+      (card) => !(card.type === "plan" && card.streaming === true),
+    );
+    if (thread.cards.length !== before) thread.updatedAt = now();
   }
 }
 
@@ -249,6 +277,16 @@ export function usePlanFlow() {
     return threads.value.find((t) => t.cards.includes(card));
   }
 
+  /**
+   * v0.5.0 (issue #110): planning streams over /api/plan/stream — the plan
+   * card appears immediately, provider thinking accumulates live in the
+   * card's ThinkingPanel, and ONE terminal `plan` event carries the
+   * authoritative reviewed plan (same shape as POST /api/plan). The text
+   * deltas are deliberately NOT rendered: the plan is strict JSON and the
+   * structured terminal event is the single source of truth. Failure paths
+   * keep the error-card contract; a card whose stream died mid-flight is
+   * dropped by the post-load migration on the next reload.
+   */
   function submitIntent(intent: string): void {
     const thread = currentThread.value;
     if (!thread) return;
@@ -256,27 +294,54 @@ export function usePlanFlow() {
     thread.title = threadTitle(thread.cards);
     touch(thread);
     planning.value = true;
+    // reactive() so post-push mutations (thinking growth, the terminal plan
+    // event) go through the proxy — raw-object writes bypass reactivity.
+    const card = reactive({
+      type: "plan",
+      id: nextId++,
+      intent,
+      plan: { explanation: "", steps: [] },
+      review: { verdict: "allow", overallRisk: "low", issues: [] },
+      provider: "",
+      providerLabel: "",
+      warnings: [],
+      running: false,
+      confirmHighRisk: false,
+      thinking: "",
+      thinkingMs: 0,
+      streaming: true,
+    }) as PlanCardState;
+    thread.cards.push(card);
+    const startedAt = Date.now();
     void (async () => {
       try {
-        const data = await postJson<PlanResponse>("/api/plan", { intent });
-        // reactive() so post-push mutations (card.running during execute)
-        // go through the proxy — raw-object writes bypass reactivity and
-        // leave dependent computeds cached at their stale value.
-        thread.cards.push(
-          reactive({
-            type: "plan",
-            id: nextId++,
-            intent: data.intent,
-            plan: data.plan,
-            review: data.review ?? { verdict: "allow", overallRisk: "low", issues: [] },
-            provider: data.provider,
-            providerLabel: data.providerLabel,
-            warnings: data.warnings ?? [],
-            running: false,
-            confirmHighRisk: false,
-          }) as PlanCardState,
-        );
+        await postNdjson("/api/plan/stream", { intent }, (event: StreamEvent) => {
+          const type = event["type"];
+          if (type === "reasoning_delta" && typeof event["text"] === "string") {
+            card.thinking += event["text"];
+          } else if (type === "usage" && typeof event["usage"] === "object") {
+            card.usage = event["usage"] as PlanCardState["usage"];
+          } else if (type === "plan") {
+            card.plan = event["plan"] as PlanCardState["plan"];
+            card.review = (event["review"] as PlanCardState["review"]) ?? card.review;
+            card.provider = (event["provider"] as string) ?? "";
+            card.providerLabel = (event["providerLabel"] as string) ?? "";
+            card.warnings = (event["warnings"] as string[]) ?? [];
+            if (typeof event["usage"] === "object") {
+              card.usage = event["usage"] as PlanCardState["usage"];
+            }
+          } else if (type === "error") {
+            throw new Error(`stream error: ${String(event["error"] ?? "unknown")}`);
+          }
+        });
+        // A stream that ended without a terminal plan event is a failure —
+        // the card must not linger as an empty shell.
+        if (!card.plan.steps?.length && card.review.verdict !== "deny") {
+          throw new Error("plan stream ended without a plan");
+        }
       } catch (error) {
+        const owner = ownerOf(card);
+        if (owner) owner.cards = owner.cards.filter((c) => c !== card);
         thread.cards.push({
           type: "error",
           id: nextId++,
@@ -284,8 +349,11 @@ export function usePlanFlow() {
           message: (error as Error).message,
         });
       } finally {
+        card.streaming = false;
+        card.thinkingMs = Date.now() - startedAt;
         planning.value = false;
         touch(thread);
+        void refreshHistory();
       }
     })();
   }
@@ -418,6 +486,9 @@ export function usePlanFlow() {
       rounds: [],
       status: "running",
       streaming: true,
+      liveThinking: "",
+      liveThinkingRound: 0,
+      liveThinkingStartedAt: 0,
     }) as GoalCardState;
     thread.cards.push(card);
 
@@ -441,24 +512,48 @@ export function usePlanFlow() {
               if (typeof event["provider"] === "string" && !card.provider) {
                 card.provider = event["provider"];
               }
+            } else if (type === "round_thinking_delta" && typeof event["text"] === "string") {
+              // v0.5.0: provider reasoning arrives BEFORE its round_plan —
+              // buffer per round; the round_plan handler collapses it into
+              // the round's own ThinkingPanel.
+              const round = typeof event["round"] === "number" ? event["round"] : 0;
+              if (round !== card.liveThinkingRound) {
+                card.liveThinkingRound = round;
+                card.liveThinking = "";
+                card.liveThinkingStartedAt = Date.now();
+              }
+              card.liveThinking += event["text"];
             } else if (type === "round_plan") {
+              const roundNo =
+                typeof event["round"] === "number" ? event["round"] : card.rounds.length + 1;
+              const thinkingMs =
+                card.liveThinkingRound === roundNo && card.liveThinkingStartedAt > 0
+                  ? Date.now() - card.liveThinkingStartedAt
+                  : 0;
               const round: GoalRoundState = {
-                round: typeof event["round"] === "number" ? event["round"] : card.rounds.length + 1,
+                round: roundNo,
                 origin: event["origin"] === "reflect" ? "reflect" : "plan",
                 plan: event["plan"] as PlanResponse["plan"] | undefined,
                 review: event["review"] as PlanResponse["review"] | undefined,
                 steps: [],
                 approvalPending: false,
+                thinking: card.liveThinkingRound === roundNo ? card.liveThinking : "",
+                ...(thinkingMs > 0 ? { thinkingMs } : {}),
               };
               card.rounds.push(round);
               currentRound = round;
+              card.liveThinking = "";
+              card.liveThinkingRound = 0;
+              card.liveThinkingStartedAt = 0;
             } else if (type === "step_start" && currentRound) {
+              const rawStep = (event["step"] ?? {}) as PlanStep;
               currentRound.steps.push({
                 index:
                   typeof event["index"] === "number" ? event["index"] : currentRound.steps.length,
-                label: stepLabel((event["step"] ?? {}) as Record<string, string>),
+                label: stepLabel(rawStep),
                 output: "",
                 running: true,
+                step: rawStep,
               });
             } else if (type === "step_output" && typeof event["chunk"] === "string") {
               const step = lastStep();

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { registerCoreTools, getTool } from "../src/index.js";
+import { registerCoreTools, getTool, languageForFile } from "../src/index.js";
 
 let tmp = "";
 
@@ -81,6 +81,62 @@ describe("file.read", () => {
     );
     fs.writeFileSync("blob.bin", Buffer.from([0x7f, 0x00, 0x01]));
     await expect(getTool("file.read")!.run({ path: "blob.bin" })).rejects.toThrow(/binary/i);
+  });
+
+  it("reports path and detected language in the structured result", async () => {
+    fs.writeFileSync("app.ts", "export {};\n");
+    const result = await getTool("file.read")!.run({ path: "app.ts" });
+    const data = result.data as { path: string; language: string; totalLines: number };
+    expect(data.path).toBe("app.ts");
+    expect(data.language).toBe("typescript");
+    expect(data.totalLines).toBe(2);
+  });
+
+  it("falls back to language text for unknown extensions", async () => {
+    fs.writeFileSync("data.weird", "x\n");
+    const result = await getTool("file.read")!.run({ path: "data.weird" });
+    expect((result.data as { language: string }).language).toBe("text");
+  });
+});
+
+describe("languageForFile", () => {
+  it("maps common extensions to shiki language ids", () => {
+    expect(languageForFile("a.ts")).toBe("typescript");
+    expect(languageForFile("Component.tsx")).toBe("typescript");
+    expect(languageForFile("script.mjs")).toBe("javascript");
+    expect(languageForFile("pkg.json")).toBe("json");
+    expect(languageForFile("main.py")).toBe("python");
+    expect(languageForFile("config.yml")).toBe("yaml");
+    expect(languageForFile("README.md")).toBe("markdown");
+    expect(languageForFile("index.html")).toBe("html");
+    expect(languageForFile("style.css")).toBe("css");
+    expect(languageForFile("run.sh")).toBe("bash");
+    expect(languageForFile("main.go")).toBe("go");
+    expect(languageForFile("lib.rs")).toBe("rust");
+    expect(languageForFile("App.java")).toBe("java");
+    expect(languageForFile("mem.c")).toBe("c");
+    expect(languageForFile("mem.cpp")).toBe("cpp");
+    expect(languageForFile("query.sql")).toBe("sql");
+    expect(languageForFile("Cargo.toml")).toBe("toml");
+  });
+
+  it("recognizes special filenames case-insensitively", () => {
+    expect(languageForFile("Dockerfile")).toBe("dockerfile");
+    expect(languageForFile("dockerfile")).toBe("dockerfile");
+    expect(languageForFile("Makefile")).toBe("makefile");
+    expect(languageForFile("Gemfile")).toBe("ruby");
+  });
+
+  it("uses the last extension for multi-dot names", () => {
+    expect(languageForFile("file.test.ts")).toBe("typescript");
+    expect(languageForFile("archive.tar.gz")).toBe("text");
+  });
+
+  it("returns text for extension-less files, dotfiles and unknown extensions", () => {
+    expect(languageForFile("LICENSE")).toBe("text");
+    expect(languageForFile(".gitignore")).toBe("text");
+    expect(languageForFile("data.weird")).toBe("text");
+    expect(languageForFile("nested/dir/app.vue")).toBe("vue");
   });
 });
 

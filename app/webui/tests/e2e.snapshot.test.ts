@@ -110,4 +110,44 @@ describe("WebUI e2e — real HTTP snapshots", () => {
     expect(lines.at(-1)).toContain('"type":"result"');
     expect(lines.join("\n")).toMatchSnapshot();
   });
+
+  it("POST /api/plan/stream snapshots the streaming planning lifecycle", async () => {
+    // The mock provider's planStream is deterministic: canned reasoning
+    // chunks, the plan JSON in text deltas, then usage, then ONE terminal
+    // reviewed plan event — this snapshot pins that client-visible contract.
+    const res = await fetch(new URL("/api/plan/stream", ui.url), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ intent: "find all *.md files" }),
+    });
+    expect(res.headers.get("content-type")).toContain("application/x-ndjson");
+    const text = normalize(await res.text());
+    const lines = text.trim().split("\n");
+    for (const line of lines) expect(() => JSON.parse(line)).not.toThrow();
+    const types = lines.map((line) => (JSON.parse(line) as { type: string }).type);
+    expect(types[0]).toBe("reasoning_delta");
+    expect(types).toContain("text_delta");
+    expect(types).toContain("usage");
+    expect(types.at(-1)).toBe("plan");
+    expect(text).toMatchSnapshot();
+  });
+
+  it("POST /api/goal/stream snapshots round thinking relay to goal_result", async () => {
+    // Fallback echo intent → one round whose planning streams
+    // round_thinking_delta/round_text_delta, then the executed round, then
+    // reflection sees the GOAL_COMPLETE marker and the goal ends done.
+    const res = await fetch(new URL("/api/goal/stream", ui.url), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ intent: "echo GOAL_COMPLETE:workspace scanned" }),
+    });
+    expect(res.headers.get("content-type")).toContain("application/x-ndjson");
+    const text = normalize(await res.text()).replaceAll(/"goalId":"[^"]*"/g, '"goalId":"<goalId>"');
+    const lines = text.trim().split("\n");
+    for (const line of lines) expect(() => JSON.parse(line)).not.toThrow();
+    expect(lines.some((line) => line.includes('"type":"round_thinking_delta"'))).toBe(true);
+    expect(lines.at(-1)).toContain('"type":"goal_result"');
+    expect(lines.at(-1)).toContain('"status":"ok"');
+    expect(text).toMatchSnapshot();
+  });
 });

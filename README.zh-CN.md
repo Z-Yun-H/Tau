@@ -40,7 +40,7 @@ tau file find "*.ts"                    # 也可以直接用工具
 
 | 命令族         | 能力                                                                                                                                                         |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `tau ask`      | 自然语言 → Provider 计划 → 安全审查 → 确认 UI → 执行 → 历史                                                                                                  |
+| `tau ask`      | 自然语言 → Provider 计划 → 安全审查 → 确认 UI → 执行 → 历史（v0.5.0：WebUI 规划时实时展示 AI 思考）                                                          |
 | `tau goal`     | 多轮 Agent 循环：计划 → 执行 → 反思 → 循环（轮数上限、每轮安全审查、确认门完全一致）                                                                         |
 | `tau file`     | glob 查找（自动跳过 node_modules）、目录树、stat、行号读取（offset/limit）、单目录清单、正则批量重命名（默认 dry-run）、文本写入（工作区收容，默认 dry-run） |
 | `tau sys`      | 系统/CPU/内存信息、磁盘用量、CPU 排行进程、日期时间（本地/ISO/epoch/时区）、which、环境变量查询（单名，medium 风险）                                         |
@@ -131,12 +131,16 @@ pwsh，POSIX 行为保持不变）。
 | Provider       | 依赖                    | 配置                                                                                                                                                        |
 | -------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `mock`（默认） | 无                      | 离线可用，关键词匹配的演示计划                                                                                                                              |
-| `ollama`       | 本地 ollama             | `ollama serve`，模型见 `providers.ollama.model`                                                                                                             |
-| `openai`       | `OPENAI_API_KEY`        | 任意 OpenAI 兼容端点：`providers.openai.baseUrl`                                                                                                            |
+| `ollama`       | 本地 ollama             | `ollama serve`，模型见 `providers.ollama.model`（`providers.ollama.think: true` 可向支持的模型请求思考）                                                    |
+| `openai`       | `OPENAI_API_KEY`        | 任意 OpenAI 兼容端点：`providers.openai.baseUrl` —— 流式规划感知 `reasoning_content`（经 OpenAI 端点暴露思考的 DeepSeek-R1/GLM 等）                         |
 | `deepseek`     | `DEEPSEEK_API_KEY`      | DeepSeek Harness 适配器（`@deepseek-ai/dsh-llm`）：官方流式 wire 协议、`LlmAdapter` + `StreamChunk` 流协议；model/baseUrl/timeoutMs 见 `providers.deepseek` |
 | `zai`          | 可选 `z-ai-web-dev-sdk` | 未安装时优雅提示 unavailable + 修复方法                                                                                                                     |
+| `anthropic`    | `ANTHROPIC_API_KEY`     | Claude Messages API：流式、`/v1/models` 发现、经 `providers.anthropic.thinking` 开启扩展思考（可选 `thinkingBudget`）                                       |
+| `gemini`       | `GOOGLE_API_KEY`        | Google Gemini REST：JSON 模式（`responseMimeType`），2.5 系 thought 增量即思考，可选 `providers.gemini.thinkingBudget`                                      |
 
-选择优先级：`--provider` 参数 > `TAU_PROVIDER` 环境变量 > `config.provider`。
+所有真实 provider 均支持流式（`planStream`）：思考增量与计划文本分离送达、
+在 WebUI 中实时呈现，`validatePlanResponse` 门禁依旧权威。选择优先级：
+`--provider` 参数 > `TAU_PROVIDER` 环境变量 > `config.provider`。
 未知值 → 安全回落到 `mock`。
 
 API key 解析顺序为 **配置文件（`providers.<name>.apiKey`）→ 环境变量**：
@@ -260,6 +264,7 @@ SKILL.md          根级开发工具技能路由         changelog/  每日 AI �
 
 ## 文档
 
+- **[文档站](docs/)** —— 双语 VitePress 站点（默认中文，英文在 `/en/`），每个功能一篇；`pnpm docs:dev` 本地浏览，`pnpm docs:build` 构建
 - [架构详解](docs/architecture.md) —— 流水线图、不变量、如何添加工具/Provider
 - [安全模型](docs/safety.md) —— 黑白名单、风险语义、为什么没有删除工具
 - [技能编写](docs/skills-authoring.md) —— frontmatter 契约、示例、校验规则

@@ -15,6 +15,7 @@ import type {
   ModelInfo,
   Plan,
   PlanningContext,
+  ProviderStreamHandler,
   ProviderUsage,
   ReflectContext,
 } from "@tau/core";
@@ -127,6 +128,24 @@ export class MockProvider implements AIProvider {
       };
     }
 
+    // Read a file — exercises the file.read viewer surface (webui file
+    // viewer, tool language metadata) with zero network. The first
+    // filename-looking token wins ("read readme.md" → readme.md).
+    if (/read|查看|读取|打开|open|cat\b/.test(intent)) {
+      const target = intent.match(/((?:[\w.-]+\/)*[\w.-]+\.[A-Za-z0-9]+)/)?.[1] ?? "README.md";
+      const explanation = isChinese
+        ? `查看文件 ${target} 的内容`
+        : `Show the contents of ${target}`;
+      this.recordUsage(ctx.intent, explanation);
+      return {
+        explanation,
+        steps: [
+          { kind: "tool", tool: "file.read", args: { path: target }, reason: "read keyword" },
+        ],
+        selfAssessedRisk: "low",
+      };
+    }
+
     // Fallback: harmless echo, showing the strict-JSON contract works.
     const note = isChinese
       ? `离线 mock 无法理解「${ctx.intent}」。配置真实 AI Provider 后重试：tau config set provider openai`
@@ -143,6 +162,59 @@ export class MockProvider implements AIProvider {
       ],
       selfAssessedRisk: "low",
     };
+  }
+
+  /**
+   * Streaming plan (v0.5.0) — deterministic, zero-network. Emits a canned
+   * reasoning trace (the offline demo of the thinking panel), then the
+   * strict-JSON plan document in small text deltas, then the usage event,
+   * and resolves to EXACTLY what plan() returns. Same input → same event
+   * sequence, so tests and screenshots stay reproducible.
+   */
+  async planStream(ctx: PlanningContext, onEvent?: ProviderStreamHandler): Promise<Plan> {
+    const plan = await this.plan(ctx);
+    const isChinese = /[\u4e00-\u9fff]/.test(ctx.intent);
+    const reasoning = isChinese
+      ? `离线 mock 思考轨迹（确定性）：\n1. 将意图与内置关键词表匹配："${ctx.intent}"\n2. 选择匹配的只读工具方案\n3. 产出严格 JSON 计划文档`
+      : `Deterministic offline reasoning (mock):\n1. Match the intent against the bundled keyword table: "${ctx.intent}"\n2. Pick the matching read-only tool plan\n3. Emit the strict-JSON plan document`;
+    for (const piece of chunkText(reasoning, 24)) {
+      onEvent?.({ type: "reasoning_delta", text: piece });
+    }
+    for (const piece of chunkText(JSON.stringify(plan, null, 2), 48)) {
+      onEvent?.({ type: "text_delta", text: piece });
+    }
+    if (this.lastUsage) onEvent?.({ type: "usage", usage: this.lastUsage });
+    return plan;
+  }
+
+  /**
+   * Streaming reflection (v0.5.0) — deterministic canned reasoning + the
+   * decision document, resolving to exactly what reflect() returns. Keeps
+   * agent-mode thinking demos reproducible offline.
+   */
+  async reflectStream(
+    ctx: ReflectContext,
+    onEvent?: ProviderStreamHandler,
+  ): Promise<AgentDecision> {
+    const decision = await this.reflect(ctx);
+    const reasoning =
+      "Deterministic offline reflection (mock): review executed rounds, decide done vs one more round.";
+    for (const piece of chunkText(reasoning, 24)) {
+      onEvent?.({ type: "reasoning_delta", text: piece });
+    }
+    const document = decision.done
+      ? JSON.stringify({ done: true, answer: decision.answer })
+      : JSON.stringify({
+          done: false,
+          explanation: decision.plan.explanation,
+          steps: decision.plan.steps,
+          note: decision.note,
+        });
+    for (const piece of chunkText(document, 48)) {
+      onEvent?.({ type: "text_delta", text: piece });
+    }
+    if (this.lastUsage) onEvent?.({ type: "usage", usage: this.lastUsage });
+    return decision;
   }
 
   /**
@@ -208,4 +280,17 @@ export class MockProvider implements AIProvider {
       note: "mock continue",
     };
   }
+}
+
+/**
+ * Split text into deterministic fixed-size chunks (no shared utility — the
+ * mock stays self-contained by construction). The final chunk may be
+ * shorter; empty input yields no chunks.
+ */
+function chunkText(text: string, size: number): string[] {
+  const chunks: string[] = [];
+  for (let i = 0; i < text.length; i += size) {
+    chunks.push(text.slice(i, i + size));
+  }
+  return chunks;
 }

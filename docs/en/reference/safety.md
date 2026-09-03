@@ -1,7 +1,6 @@
-# The Tau Safety Model
+# Safety model
 
-Tau's core promise: **no AI-generated action reaches your machine without
-passing a deterministic, tested gate that the AI does not control.**
+Tau's core promise: **no AI-generated action reaches your machine without passing a deterministic, tested gate that the AI does not control.** The design compresses to one sentence: **the AI proposes, rules review, the human decides.** Every mechanism is deterministic code — there is no "the AI thinks it's fine" anywhere.
 
 ## Principles
 
@@ -24,6 +23,16 @@ passing a deterministic, tested gate that the AI does not control.**
    human keystroke. Blocked is unreachable by anyone.
 6. **Everything is recorded.** Every run — direct, planned, denied,
    cancelled — lands in `$TAU_HOME/history.jsonl`.
+
+## Three gates
+
+1. **Plan validation** — provider output must be strict JSON (zod schema, `additionalProperties: false`); loose output (code fences, extra fields) is rejected outright.
+2. **Deterministic review** — `reviewPlan()` grades the plan by rules: allow / review / deny, with itemized issues. The reviewer independently re-checks every write path, forming defense in depth with the tool's own checks.
+3. **Execution confirmation** — deny never runs; high-risk demands explicit confirmation (CLI interactive, WebUI card-local checkbox); medium writes default to dry-run and need `execute: true`; in agent mode medium+ rounds pause inline for approval — **there is never a blanket pre-approval**.
+
+## One execution channel
+
+`runPlan()` is the only execution channel, and it reviews **again** inside. Every front door (CLI/TUI/WebUI), every mode (ask/goal), every provider converges here. There is no "provider runs a command directly" path.
 
 ## Risk levels
 
@@ -83,6 +92,18 @@ look-alike that must NOT match (over-blocking is treated as a bug too).
 - Declarative commands declare their `risk`; the reviewer trusts exactly that
   declaration — nothing more.
 - Skills are data: no code from a skill directory is ever executed implicitly.
+
+## Plugin tools
+
+External MCP tools are graded **medium unconditionally** — third-party code with first-party reach can never silently auto-execute, whatever it declares. See [plugins](/en/guide/plugins) for the full security model.
+
+## Streaming never weakens safety (v0.5.0)
+
+Streaming changes when text arrives, not how it is handled: a streamed plan still passes the same `validatePlanResponse()` and `reviewPlan()`; refusals happen before the stream starts (plain JSON errors). There is no "streaming bypasses the review" shape.
+
+## Observability
+
+One structured log line per request (including AI token cost); the WebUI settings panel shows only redacted config — API keys never appear in plaintext in logs or the browser.
 
 ## Non-goals
 

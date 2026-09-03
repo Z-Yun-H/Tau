@@ -1,0 +1,95 @@
+---
+name: tau-docs
+version: 0.1.0
+description: Documentation-site construction and development for Tau — VitePress workspace at docs/ with zh (default) + en locales. Use when adding/updating docs pages, changing nav/sidebar, or syncing docs content with product features.
+author: Tau maintainers
+tags: [docs, vitepress, tau, workflow]
+risk: low
+---
+
+# tau-docs — documentation site workflow
+
+The docs site is a **private workspace member** (`docs/`, package
+`@tau/docs`) — content, never runtime data; the CLI never reads from
+it. Normative placement: the directory governance table in
+[AGENTS/architecture.md](../../../AGENTS/architecture.md).
+
+## Commands
+
+| Task                          | Command             |
+| ----------------------------- | ------------------- |
+| Local dev server (hot reload) | `pnpm docs:dev`     |
+| Production build              | `pnpm docs:build`   |
+| Preview the production build  | `pnpm docs:preview` |
+
+**Deployment is automatic**: `.github/workflows/deploy-docs.yml` builds
+the site (base `/Tau/` via `DOCS_BASE`) and publishes it to the
+`gh-pages` branch — GitHub Pages serves it as the project site
+https://z-yun-h.github.io/Tau/. Deploys fire on pushes to `main` that
+touch `docs/**`, or manually via `workflow_dispatch` — no manual deploy
+step exists. `DOCS_BASE` overrides the base for other hosts. The publish
+model is branch-based (one orphan commit per deploy, `contents:write`
+only): the repo's `GITHUB_TOKEN` cannot create or drive an Actions-mode
+Pages site, so the deploy-pages flow was replaced (details in the
+workflow header).
+
+Build output goes to `docs/.vitepress/dist/` (gitignored). The docs
+build is NOT part of the `pnpm build` gate — run `pnpm docs:build` explicitly
+when you touched the site.
+
+## Layout
+
+```
+docs/
+  .vitepress/config.mts   nav + sidebar + locales (zh root, en under /en/)
+  index.md                zh home (hero + features)
+  guide/                  zh guides — one page per user-facing surface
+  reference/              zh reference — one page per architecture concern
+  en/                     en mirror: en/index.md, en/guide/, en/reference/
+```
+
+## The content-decomposition contract (issue #111)
+
+Docs pages decompose from the PROJECT'S FEATURE MAP, not from the repo
+tree. The stable mapping:
+
+| Product surface     | Guide page (zh / en identical names) |
+| ------------------- | ------------------------------------ |
+| first run & install | `guide/getting-started.md`           |
+| `tau ask`           | `guide/ask.md`                       |
+| `tau goal`          | `guide/goal.md`                      |
+| built-in tools      | `guide/tools.md`                     |
+| providers           | `guide/providers.md`                 |
+| skills              | `guide/skills.md`                    |
+| plugins (MCP)       | `guide/plugins.md`                   |
+| WebUI               | `guide/webui.md`                     |
+| TUI                 | `guide/tui.md`                       |
+| config              | `guide/config.md`                    |
+
+Reference pages (architecture / safety / provider-dev / skill-authoring)
+mirror the normative deep dives in `AGENTS/*.md` — the docs site is the
+user-facing narrative; AGENTS stays the normative rulebook. **Same rule
+defined in two places is a bug**: the site narrates and links, AGENTS
+norms.
+
+## Rules
+
+1. **Every zh page has an en mirror** with the same filename under `en/`.
+   A one-sided page is an incomplete change; ship both or neither.
+2. **Nav/sidebar lives in `config.mts`** — adding a page means adding its
+   sidebar entry for BOTH locales in the same change.
+3. **Feature changes update docs in the same PR** (same contract as the
+   READMEs): new capability → new section on the mapped guide page; new
+   CLI flag → the page for that command.
+4. **Language**: zh pages are 简体中文, en pages are English — never mix
+   within a page. Code blocks stay code.
+5. **No invented facts**: document what the code does (verify against
+   source/AGENTS before writing); numbers (caps, defaults) must match the
+   implementation.
+
+## Checklist before finishing
+
+- [ ] `pnpm docs:build` passes (both locales, dead links fail the build)
+- [ ] zh + en pages both exist and are linked in both sidebars
+- [ ] facts verified against the implementation (defaults, caps, flags)
+- [ ] AGENTS/*.md remains the normative source — the site narrates, not re-specifies

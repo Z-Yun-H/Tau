@@ -189,7 +189,7 @@ export interface PlanningContext {
 
 /** Provider interface. Implement this to add a new AI backend. */
 export interface AIProvider {
-  /** Registry key, e.g. "mock" | "ollama" | "openai" | "deepseek" | "zai". */
+  /** Registry key, e.g. "mock" | "ollama" | "openai" | "deepseek" | "zai" | "anthropic" | "gemini". */
   readonly name: string;
   /** Human-readable label used in CLI output. */
   readonly label: string;
@@ -217,7 +217,50 @@ export interface AIProvider {
    * itself.
    */
   reflect?(ctx: ReflectContext): Promise<AgentDecision>;
+  /**
+   * Optional streaming variant of {@link plan} (v0.5.0): emits
+   * {@link ProviderStreamEvent}s as the reply is generated (reasoning/text
+   * deltas, usage) and resolves to the SAME zod-validated Plan the
+   * non-streaming plan() produces — streaming never weakens the plan
+   * contract (validatePlanResponse runs on the assembled text). Absent =
+   * front doors fall back to plan() with zero behavior change.
+   * Implemented by: mock, openai, deepseek, ollama, anthropic, gemini;
+   * zai degrades to a single-shot emission (SDK is non-streaming).
+   */
+  planStream?(ctx: PlanningContext, onEvent?: ProviderStreamHandler): Promise<Plan>;
+  /**
+   * Optional streaming twin of {@link reflect} (v0.5.0): same contract and
+   * the same validated {@link AgentDecision}, with reasoning/text deltas
+   * relayed through the observer while the reflection turn generates.
+   * Absent = the agent loop calls the buffered reflect() (zero behavior
+   * change). Implemented by: mock, openai, anthropic, gemini; providers
+   * without reflect() at all omit both.
+   */
+  reflectStream?(ctx: ReflectContext, onEvent?: ProviderStreamHandler): Promise<AgentDecision>;
 }
+
+/** ---------- Provider streaming (v0.5.0) ---------- */
+
+/**
+ * One incremental event from a provider's generative turn (v0.5.0 streaming
+ * planning). Provider-agnostic by construction — every wire shape (OpenAI
+ * SSE, Anthropic Messages SSE, Gemini streamGenerateContent, Ollama NDJSON)
+ * folds into these three event kinds:
+ * - `reasoning_delta`: a chunk of the model's thinking trace (DeepSeek
+ *   `reasoning_content`, Anthropic `thinking_delta`, Gemini `thought`
+ *   parts, Ollama `thinking`) — never part of the plan text itself.
+ * - `text_delta`: a chunk of the user-visible reply text (for Tau that is
+ *   the strict-JSON plan document).
+ * - `usage`: normalized token usage for the call (same shape as
+ *   {@link ProviderUsage}; best-effort, absent when the wire reports none).
+ */
+export type ProviderStreamEvent =
+  | { type: "reasoning_delta"; text: string }
+  | { type: "text_delta"; text: string }
+  | { type: "usage"; usage: ProviderUsage };
+
+/** Observer of a provider's streaming turn (front doors relay these verbatim). */
+export type ProviderStreamHandler = (event: ProviderStreamEvent) => void;
 
 /** ---------- Agent loop (multi-round reflection) ---------- */
 

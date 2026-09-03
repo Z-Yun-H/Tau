@@ -33,13 +33,51 @@ export function normalizeUsage(raw: unknown): ProviderUsage | undefined {
   // OpenAI-compatible wire shape.
   const prompt = asCount(record["prompt_tokens"]);
   const completion = asCount(record["completion_tokens"]);
-  if (prompt === undefined && completion === undefined) return undefined;
-  const total = asCount(record["total_tokens"]) ?? (prompt ?? 0) + (completion ?? 0);
-  return {
-    promptTokens: prompt ?? 0,
-    completionTokens: completion ?? 0,
-    totalTokens: total,
-  };
+  if (prompt !== undefined || completion !== undefined) {
+    const total = asCount(record["total_tokens"]) ?? (prompt ?? 0) + (completion ?? 0);
+    return {
+      promptTokens: prompt ?? 0,
+      completionTokens: completion ?? 0,
+      totalTokens: total,
+    };
+  }
+
+  // DeepSeek harness TokenUsage (dsh-llm StreamChunk `{type:"usage"}`).
+  const inputTokens = asCount(record["inputTokens"]);
+  const outputTokens = asCount(record["outputTokens"]);
+  if (inputTokens !== undefined || outputTokens !== undefined) {
+    const total = asCount(record["totalTokens"]) ?? (inputTokens ?? 0) + (outputTokens ?? 0);
+    return {
+      promptTokens: inputTokens ?? 0,
+      completionTokens: outputTokens ?? 0,
+      totalTokens: total,
+    };
+  }
+
+  // Google Gemini usageMetadata (streamGenerateContent / generateContent).
+  const promptGemini = asCount(record["promptTokenCount"]);
+  const completionGemini = asCount(record["candidatesTokenCount"]);
+  if (promptGemini !== undefined || completionGemini !== undefined) {
+    const total =
+      asCount(record["totalTokenCount"]) ?? (promptGemini ?? 0) + (completionGemini ?? 0);
+    return {
+      promptTokens: promptGemini ?? 0,
+      completionTokens: completionGemini ?? 0,
+      totalTokens: total,
+    };
+  }
+
+  // Ollama /api/chat final frame (count fields only on done=true).
+  const promptOllama = asCount(record["prompt_eval_count"]);
+  const completionOllama = asCount(record["eval_count"]);
+  if (promptOllama !== undefined || completionOllama !== undefined) {
+    return {
+      promptTokens: promptOllama ?? 0,
+      completionTokens: completionOllama ?? 0,
+      totalTokens: (promptOllama ?? 0) + (completionOllama ?? 0),
+    };
+  }
+  return undefined;
 }
 
 /** Compact log form: `tokens=123(100/23)`; empty string when absent. */
