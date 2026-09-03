@@ -131,12 +131,16 @@ pwsh，POSIX 行为保持不变）。
 | Provider       | 依赖                    | 配置                                                                                                                                                        |
 | -------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `mock`（默认） | 无                      | 离线可用，关键词匹配的演示计划                                                                                                                              |
-| `ollama`       | 本地 ollama             | `ollama serve`，模型见 `providers.ollama.model`                                                                                                             |
-| `openai`       | `OPENAI_API_KEY`        | 任意 OpenAI 兼容端点：`providers.openai.baseUrl`                                                                                                            |
+| `ollama`       | 本地 ollama             | `ollama serve`，模型见 `providers.ollama.model`（`providers.ollama.think: true` 可向支持的模型请求思考）                                                    |
+| `openai`       | `OPENAI_API_KEY`        | 任意 OpenAI 兼容端点：`providers.openai.baseUrl` —— 流式规划感知 `reasoning_content`（经 OpenAI 端点暴露思考的 DeepSeek-R1/GLM 等）                         |
 | `deepseek`     | `DEEPSEEK_API_KEY`      | DeepSeek Harness 适配器（`@deepseek-ai/dsh-llm`）：官方流式 wire 协议、`LlmAdapter` + `StreamChunk` 流协议；model/baseUrl/timeoutMs 见 `providers.deepseek` |
 | `zai`          | 可选 `z-ai-web-dev-sdk` | 未安装时优雅提示 unavailable + 修复方法                                                                                                                     |
+| `anthropic`    | `ANTHROPIC_API_KEY`     | Claude Messages API：流式、`/v1/models` 发现、经 `providers.anthropic.thinking` 开启扩展思考（可选 `thinkingBudget`）                                       |
+| `gemini`       | `GOOGLE_API_KEY`        | Google Gemini REST：JSON 模式（`responseMimeType`），2.5 系 thought 增量即思考，可选 `providers.gemini.thinkingBudget`                                      |
 
-选择优先级：`--provider` 参数 > `TAU_PROVIDER` 环境变量 > `config.provider`。
+所有真实 provider 均支持流式（`planStream`）：思考增量与计划文本分离送达、
+在 WebUI 中实时呈现，`validatePlanResponse` 门禁依旧权威。选择优先级：
+`--provider` 参数 > `TAU_PROVIDER` 环境变量 > `config.provider`。
 未知值 → 安全回落到 `mock`。
 
 API key 解析顺序为 **配置文件（`providers.<name>.apiKey`）→ 环境变量**：

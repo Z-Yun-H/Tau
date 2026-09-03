@@ -1,12 +1,15 @@
 /**
  * AI provider registry — idempotent provider registration plus lookup.
- * Registers the five built-ins (mock | ollama | openai | deepseek | zai) and
+ * Registers the seven built-ins
+ * (mock | ollama | openai | deepseek | zai | anthropic | gemini) and
  * resolves the active provider from --provider / config.provider.
  */
 
 import { loadConfig } from "@tau/core";
 import type { AIProvider, ProviderChoice } from "@tau/core";
+import { AnthropicProvider } from "./providers/anthropic.js";
 import { DeepSeekProvider } from "./providers/deepseek.js";
+import { GeminiProvider } from "./providers/gemini.js";
 import { MockProvider } from "./providers/mock.js";
 import { OllamaProvider } from "./providers/ollama.js";
 import { OpenAIProvider } from "./providers/openai.js";
@@ -56,11 +59,13 @@ export function resolveProvider(flag?: string): ProviderChoice {
 // registerProviderBuiltins is the test/reset idiom).
 registerProviderBuiltins();
 
-/** (Re-)register the five built-ins — the inverse of resetProviders. */
+/** (Re-)register the seven built-ins — the inverse of resetProviders. */
 export function registerProviderBuiltins(): void {
   registerProvider(new MockProvider());
   registerProvider(new OllamaProvider());
   registerProvider(new OpenAIProvider());
   registerProvider(new DeepSeekProvider());
   registerProvider(new ZaiProvider());
+  registerProvider(new AnthropicProvider());
+  registerProvider(new GeminiProvider());
 }

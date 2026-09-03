@@ -5,6 +5,34 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+### Added
+
+- **Two new AI providers: `anthropic` and `gemini`.** Tau now plans with
+  Claude (Messages API: streaming, `/v1/models` discovery, optional extended
+  thinking via `providers.anthropic.thinking` + `thinkingBudget`) and Google
+  Gemini (Generative Language REST: JSON mode via `responseMimeType`,
+  2.5-series thought deltas surfaced as thinking, optional
+  `providers.gemini.thinkingBudget`). Both are pure `fetch` — zero new
+  dependencies, same config/key conventions as the existing providers.
+
+- **Streaming planning (`planStream`) across every provider.** All real
+  providers can now stream their planning turn: reasoning/thinking deltas
+  (DeepSeek `reasoning_content`, Anthropic `thinking_delta`, Gemini thought
+  parts, Ollama `thinking`) travel separately from the plan text, token
+  usage is reported, and the returned plan passes the exact same strict-JSON
+  validation as before. `providers.ollama.think: true` requests thinking
+  from thinking-capable local models; the offline mock streams a
+  deterministic reasoning trace so the whole pipeline is demonstrable (and
+  screenshotable) without a network.
+
+### Changed
+
+- `normalizeUsage` now understands the DeepSeek harness, Gemini, and Ollama
+  usage wire shapes in addition to the OpenAI shape, so token accounting
+  works uniformly across all seven providers; provider config accepts the
+  new thinking toggles (`think`, `thinking`, `thinkingBudget`) via
+  `tau config set providers.<name>.<field>`.
+
 ## 0.4.0 — 2026-09-02
 
 The agent release: Tau stops being a single-round diagnostician and
