@@ -34,6 +34,83 @@ export function isProbablyBinary(buffer: Buffer): boolean {
   return false;
 }
 
+/**
+ * Extension → language id map shared with the WebUI file viewer (shiki).
+ * Keys are lowercase extensions; values are shiki-compatible language ids.
+ * Deliberately modest: unknown extensions fall back to "text", which shiki
+ * renders as plain text — a wrong guess is worse than no highlighting.
+ */
+const EXTENSION_LANGUAGES: Record<string, string> = {
+  ts: "typescript",
+  tsx: "typescript",
+  mts: "typescript",
+  cts: "typescript",
+  js: "javascript",
+  jsx: "javascript",
+  mjs: "javascript",
+  cjs: "javascript",
+  json: "json",
+  jsonc: "json",
+  py: "python",
+  rb: "ruby",
+  php: "php",
+  rs: "rust",
+  go: "go",
+  java: "java",
+  kt: "kotlin",
+  swift: "swift",
+  cs: "csharp",
+  sql: "sql",
+  c: "c",
+  h: "c",
+  cpp: "cpp",
+  cc: "cpp",
+  cxx: "cpp",
+  hpp: "cpp",
+  yaml: "yaml",
+  yml: "yaml",
+  toml: "toml",
+  ini: "ini",
+  xml: "xml",
+  html: "html",
+  htm: "html",
+  css: "css",
+  scss: "scss",
+  less: "less",
+  md: "markdown",
+  markdown: "markdown",
+  sh: "bash",
+  bash: "bash",
+  zsh: "bash",
+  vue: "vue",
+  svelte: "svelte",
+};
+
+/** Whole-basename (not extension) language detection, lowercase keys. */
+const EXACT_NAME_LANGUAGES: Record<string, string> = {
+  dockerfile: "dockerfile",
+  containerfile: "dockerfile",
+  makefile: "makefile",
+  gemfile: "ruby",
+  rakefile: "ruby",
+};
+
+/**
+ * Best-effort language id for a file name (shiki-compatible), for syntax
+ * -highlighted viewers: file.read reports it in its structured result and
+ * the WebUI file viewer picks a highlighter with it (issue #110). The last
+ * extension wins ("archive.tar.gz" → "gz" → text); dotfiles like
+ * .gitignore have no extension; anything unknown is plain "text".
+ */
+export function languageForFile(name: string): string {
+  const base = path.basename(name).toLowerCase();
+  const exact = EXACT_NAME_LANGUAGES[base];
+  if (exact !== undefined) return exact;
+  const dot = base.lastIndexOf(".");
+  if (dot <= 0) return "text"; // no extension, or a dotfile like .gitignore
+  return EXTENSION_LANGUAGES[base.slice(dot + 1)] ?? "text";
+}
+
 async function findTool(args: Record<string, unknown>): Promise<ToolResult> {
   const cwd = process.cwd();
   const root = resolveInside(cwd, strArg(args, "path", ".") ?? ".");
@@ -198,6 +275,8 @@ async function readTool(args: Record<string, unknown>): Promise<ToolResult> {
   const truncated = offset - 1 + slice.length < total;
   const head = `file.read ${targetArg} — lines ${offset}-${offset - 1 + slice.length} of ${total}${truncated ? " (truncated, raise limit or offset)" : ""}`;
   return textResult([head, ...numbered].join("\n"), {
+    path: targetArg,
+    language: languageForFile(targetArg),
     offset,
     returned: slice.length,
     totalLines: total,
@@ -472,7 +551,7 @@ export const fileTools: ToolDefinition[] = [
   {
     name: "file.read",
     description:
-      "Read a text file with line numbers (offset/limit, refuses binaries and files over 2MB)",
+      "Read a text file with line numbers (offset/limit, refuses binaries and files over 2MB); the structured result reports the detected language for highlighted viewers",
     risk: "low",
     owner: "core",
     params: [
