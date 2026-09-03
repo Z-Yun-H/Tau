@@ -285,6 +285,9 @@ importers:
       '@tau/markdown':
         specifier: workspace:*
         version: link:../../packages/markdown
+      '@tau/tools':
+        specifier: workspace:*
+        version: link:../../packages/tools
       '@vueuse/core':
         specifier: 'catalog:'
         version: 14.4.0(vue@3.5.42(typescript@7.0.2))

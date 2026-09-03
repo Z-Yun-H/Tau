@@ -43,6 +43,7 @@
     "@tau/core": "workspace:*",
     "@tau/engine": "workspace:*",
     "@tau/markdown": "workspace:*",
+    "@tau/tools": "workspace:*",
     "@vueuse/core": "catalog:",
     "shiki": "catalog:"
   }

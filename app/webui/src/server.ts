@@ -4,7 +4,10 @@
  * execution. Binds to 127.0.0.1 by default; nothing is ever executed by a
  * status/plan request alone. POST /api/execute re-reviews the plan inside
  * runPlan, refuses deny verdicts, and demands explicit confirmation for
- * high-risk plans — mirroring the CLI's gate, just over HTTP.
+ * high-risk plans — mirroring the CLI's gate, just over HTTP. The streaming
+ * routes (/api/plan/stream, /api/execute/stream, /api/goal/stream) relay
+ * provider thinking and step output as NDJSON; every refusal happens before
+ * the stream starts, as plain JSON.
  */
 
 import fs from "node:fs";
@@ -20,6 +23,7 @@ import {
   listSkillSummaries,
   listToolSummaries,
   planAndReview,
+  planAndReviewStream,
   ProviderUnavailableError,
   readRecentHistory,
   runGoal,
@@ -253,6 +257,75 @@ export function createRequestListener(options: RequestListenerOptions = {}): htt
           });
           return;
         }
+        if (req.method === "POST" && url.pathname === "/api/plan/stream") {
+          // Streaming planning (v0.5.0, issue #110): provider thinking/text
+          // deltas relay as NDJSON while the plan generates, then ONE
+          // terminal `plan` event carries the authoritative reviewed plan —
+          // the same planAndReview contract as POST /api/plan, streamed.
+          // Refusals happen BEFORE the stream starts (plain JSON, never a
+          // half-open stream): 400 missing intent, 503 provider unavailable.
+          const body = await readJsonBody(req);
+          const intent = typeof body["intent"] === "string" ? body["intent"].trim() : "";
+          if (!intent) {
+            sendJson(res, 400, { error: "intent (string) is required" });
+            return;
+          }
+          const provider = typeof body["provider"] === "string" ? body["provider"] : undefined;
+          ensureCatalog();
+          // Lazy stream start: headers go out with the first event. Errors
+          // raised before any delta (unavailable provider, catalog failure)
+          // therefore still answer as plain JSON, mirroring /api/plan.
+          let streaming = false;
+          const startStream = (): void => {
+            if (streaming) return;
+            streaming = true;
+            res.writeHead(200, {
+              "content-type": "application/x-ndjson; charset=utf-8",
+              "cache-control": "no-store",
+            });
+          };
+          const write = (event: unknown): void => {
+            if (!res.writableEnded) res.write(JSON.stringify(event) + "\n");
+          };
+          try {
+            const planned = await planAndReviewStream(intent, { provider }, (event) => {
+              startStream();
+              if (event.type === "usage") write({ type: "usage", usage: event.usage });
+              else write(event); // reasoning_delta / text_delta verbatim
+            });
+            if (planned.usage) notes.set(res, formatUsage(planned.usage));
+            startStream();
+            write({
+              type: "plan",
+              intent,
+              plan: planned.plan,
+              review: planned.review,
+              provider: planned.providerName,
+              providerLabel: planned.providerLabel,
+              warnings: planned.warnings,
+              ...(planned.usage ? { usage: planned.usage } : {}),
+            });
+          } catch (error) {
+            if (!streaming) {
+              // Stream never started — plain JSON error contract.
+              if (error instanceof ProviderUnavailableError) {
+                sendJson(res, 503, { error: error.message });
+              } else {
+                sendJson(res, 500, {
+                  error: error instanceof Error ? error.message : String(error),
+                });
+              }
+              return;
+            }
+            write({
+              type: "error",
+              error: error instanceof Error ? error.message : String(error),
+            });
+          } finally {
+            if (streaming) res.end();
+          }
+          return;
+        }
         if (req.method === "POST" && url.pathname === "/api/execute") {
           const parsed = await readExecuteRequest(req);
           if (typeof parsed === "string") {
@@ -402,6 +475,19 @@ export function createRequestListener(options: RequestListenerOptions = {}): htt
                 write(event);
               },
               onPlanEvent: (event) => write(event),
+              // Provider thinking relay (v0.5.0, issue #110): per-round
+              // reasoning/text deltas as round-tagged events so the client
+              // can show WHAT the AI was thinking while each round planned.
+              // usage stays on round_end (already relayed) — not duplicated.
+              onPlanStream: (event, round) => {
+                if (event.type === "usage") return;
+                write({
+                  type:
+                    event.type === "reasoning_delta" ? "round_thinking_delta" : "round_text_delta",
+                  round,
+                  text: event.text,
+                });
+              },
               awaitApproval: (round) =>
                 goalRegistry.awaitApproval(goalId, round, () => {
                   write({ type: "approval_timeout", round });
