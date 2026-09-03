@@ -56,7 +56,12 @@ jobs:
         env:
           DOCS_BASE: /Tau/
 
+      # enablement: true — the workflow's own GITHUB_TOKEN (pages: write)
+      # turns Pages on with build_type=workflow on the first run, so no
+      # manual Settings → Pages step is ever needed.
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
