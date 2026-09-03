@@ -144,6 +144,10 @@ export async function executeStep(
     }
     try {
       const result: ToolResult = await tool.run(step.args ?? {});
+      // Tool output is not streamed by the tool itself (unlike shell pipes)
+      // — surface the full text as ONE output chunk so streaming consumers
+      // (WebUI tool call cards / file viewer) see what the CLI prints.
+      if (result.text) options.onOutput?.(result.text);
       return { ok: true, output: result.text, exitCode: 0 };
     } catch (error) {
       return {

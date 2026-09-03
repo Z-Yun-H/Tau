@@ -27,7 +27,7 @@ Missing optional capabilities fall back automatically: no `planStream` → buffe
 3. **Register** in `registerProviderBuiltins()` (`packages/ai/src/registry.ts`).
 4. **Config** in `packages/core/src/config/store.ts`: `DEFAULT_CONFIG.providers` entry (**never a model default**), new fields into the `PROVIDER_FIELDS` whitelist.
 5. **Tests**: see `anthropic-provider.test.ts` / `gemini-provider.test.ts` — wire assertions (auth headers, request bodies), parsing, stream event sequences, error paths.
-6. **Docs**: both READMEs' provider table, `packages/ai/README.md`, the capability matrix in `AGENTS/ai-integration.md`, the docs-site [providers page](/en/guide/providers).
+6. **Docs**: both READMEs' provider table, `packages/ai/README.md`, the capability matrix in `AGENTS/ai-integration.md`, the docs site [providers page](/en/guide/providers).
 
 ## Hard rules
 

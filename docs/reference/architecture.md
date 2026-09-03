@@ -33,4 +33,4 @@ app/
 
 ## 目录治理
 
-仓库对"什么放哪里"有规范性约束（见 `AGENTS/architecture.md` 的 directory governance 表）：AI 行为文档在根部 `AGENTS*`；跨切面的开发技能在 `.claude/skills/`；单包技能挨着它治理的代码；随 CLI 发布的技能是产品内容（运行时数据），在 `packages/skills/bundled/`；文档站是独立私有工作区 `docs-site/`。
+仓库对"什么放哪里"有规范性约束（见 `AGENTS/architecture.md` 的 directory governance 表）：AI 行为文档在根部 `AGENTS*`；跨切面的开发技能在 `.claude/skills/`；单包技能挨着它治理的代码；随 CLI 发布的技能是产品内容（运行时数据），在 `packages/skills/bundled/`；文档站即仓库根的 `docs/` 目录（工作区 `@tau/docs`，私有）。

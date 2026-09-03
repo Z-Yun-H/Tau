@@ -48,8 +48,18 @@ const ORIGINAL_CWD = process.cwd();
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "tau-webui-shots-"));
 process.env.TAU_HOME = path.join(tmp, "home");
 fs.mkdirSync(process.env.TAU_HOME, { recursive: true });
-// The planned file.find runs against this working directory.
-fs.writeFileSync(path.join(tmp, "readme.md"), "# demo workspace\n\nfor the screenshots\n");
+// The planned file.find runs against this working directory; the readme
+// doubles as the agent-mode file.read fixture — its GOAL_COMPLETE marker
+// lets the mock conclude the goal after ONE round (deterministic shots).
+const README = [
+  "# demo workspace",
+  "",
+  "for the screenshots",
+  "",
+  "GOAL_COMPLETE: file viewer ready",
+  "",
+].join("\n");
+fs.writeFileSync(path.join(tmp, "readme.md"), README);
 fs.mkdirSync(path.join(tmp, "docs"));
 fs.writeFileSync(path.join(tmp, "docs", "notes.md"), "- note one\n- note two\n");
 process.chdir(tmp);
@@ -80,6 +90,13 @@ try {
 
   fs.mkdirSync(OUT_DIR, { recursive: true });
   await page.screenshot({ path: path.join(OUT_DIR, "plan.png") });
+
+  // Expanded thinking panel (v0.5.0): the provider reasoning one click
+  // away — pulsing header becomes a one-line summary when done; open it.
+  await page.locator(".think-head").first().click();
+  await page.locator(".think-body").first().waitFor({ timeout: 5_000 });
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: path.join(OUT_DIR, "thinking.png") });
 
   await page.getByText("Run plan").first().click();
   // The streaming result card carries the file.find output.
@@ -118,6 +135,24 @@ try {
   });
   await page.waitForTimeout(300);
   await page.screenshot({ path: path.join(OUT_DIR, "agent.png") });
+
+  // Agent file.read viewer (v0.5.0): a goal whose round plans file.read —
+  // the round shows the per-round thinking panel plus the structured tool
+  // call card with the shiki-highlighted file viewer. The readme's
+  // GOAL_COMPLETE marker makes the mock conclude after this one round.
+  await page.keyboard.press("Alt+n");
+  await page.fill("textarea", "read readme.md");
+  await page.keyboard.press("Enter");
+  await page.locator(".file-viewer").first().waitFor({ timeout: 30_000 });
+  await page.locator(".viewer-body").first().waitFor({ timeout: 15_000 });
+  await page.getByText("file viewer ready").first().waitFor({ timeout: 30_000 });
+  await page.waitForTimeout(600); // shiki + markdown settle
+  await page.evaluate(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+    document.querySelector(".stream-scroll")?.scrollTo({ top: 1e9, behavior: "instant" });
+  });
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: path.join(OUT_DIR, "file-viewer.png") });
 
   // Light ramp pass — a fresh page with colorScheme: "light" exercises the
   // SAME 'system' resolution path the boot script uses (system → light),

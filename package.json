@@ -48,9 +48,9 @@
     "test:cov": "vitest run --coverage",
     "dev:tui": "tsx --conditions=development app/tui/src/index.ts",
     "dev:web": "tsx --conditions=development app/webui/src/index.ts",
-    "docs:dev": "pnpm --filter @tau/docs-site dev",
-    "docs:build": "pnpm --filter @tau/docs-site build",
-    "docs:preview": "pnpm --filter @tau/docs-site preview"
+    "docs:dev": "pnpm --filter @tau/docs dev",
+    "docs:build": "pnpm --filter @tau/docs build",
+    "docs:preview": "pnpm --filter @tau/docs preview"
   },
   "devDependencies": {
     "@types/node": "catalog:",

@@ -43,6 +43,15 @@ describe("MockProvider", () => {
     expect(plan.steps[0]?.args?.["host"]).toBe("example.com");
   });
 
+  it("maps read intent to file.read with path extraction", async () => {
+    const plan = await provider.plan(ctx("read docs/notes.md"));
+    expect(plan.steps[0]?.tool).toBe("file.read");
+    expect(plan.steps[0]?.args?.["path"]).toBe("docs/notes.md");
+    const zh = await provider.plan(ctx("查看 readme.md"));
+    expect(zh.steps[0]?.tool).toBe("file.read");
+    expect(zh.steps[0]?.args?.["path"]).toBe("readme.md");
+  });
+
   it("falls back to a harmless echo for unknown intents", async () => {
     const plan = await provider.plan(ctx("something completely different"));
     expect(plan.steps[0]?.kind).toBe("shell");

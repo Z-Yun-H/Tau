@@ -66,17 +66,22 @@ and `runPlan()` remains the only execution channel.
   reports, parity-tested across the node and browser copies). Refusals
   stay plain JSON before any stream starts; every gate is untouched.
 
-- **A documentation site, decomposed from the feature map.** New private
-  workspace `docs-site/` builds a bilingual VitePress site (zh default,
-  en mirror under `/en/`): one guide page per user-facing surface
-  (getting started, ask, goal, tools, providers, skills, plugins, WebUI,
-  TUI, config) and one reference page per architecture concern
-  (architecture, safety, adding a provider, authoring skills). Root
-  scripts `docs:dev` / `docs:build` / `docs:preview`; a new L1 skill
-  (`.claude/skills/tau-docs`) owns the authoring workflow and the
-  zh/en mirror contract; the root skill router and the directory
-  governance table register it. The site is pure content — never runtime
-  data, and its build stays outside the `pnpm build` gate.
+- **A documentation site, decomposed from the feature map — one `docs/`
+  directory, no duplication.** The private workspace `docs/` (package
+  `@tau/docs`) builds a bilingual VitePress site (zh default, en mirror
+  under `/en/`): one guide page per user-facing surface (getting started,
+  ask, goal, tools, providers, skills, plugins, WebUI, TUI, config) and
+  one reference page per architecture concern (architecture, safety,
+  adding a provider, authoring skills). The legacy root-level deep dives
+  (`docs/architecture.md`, `docs/safety.md`, `docs/plugins.md`,
+  `docs/skills-authoring.md`) are merged INTO the site's `en/` pages —
+  the deep-dive substance survives verbatim, updated for v0.5.0 — so
+  there is exactly one docs location, not two. Root scripts `docs:dev` /
+  `docs:build` / `docs:preview`; a new L1 skill (`.claude/skills/tau-docs`)
+  owns the authoring workflow and the zh/en mirror contract; the root
+  skill router and the directory governance table register it. The site
+  is pure content — never runtime data, and its build stays outside the
+  `pnpm build` gate.
 
 ### Changed
 
@@ -85,6 +90,34 @@ and `runPlan()` remains the only execution channel.
   works uniformly across all seven providers; provider config accepts the
   new thinking toggles (`think`, `thinking`, `thinkingBudget`) via
   `tau config set providers.<name>.<field>`.
+
+- Tool steps now stream their output like shell steps do: `executeStep`
+  relays a tool's full result text as one `step_output` chunk (CLI/TUI
+  unaffected — they never consumed `step_output`; the WebUI plan flow
+  still gets its authoritative output from the terminal `result` event).
+  This is what feeds the goal-card tool call cards and the `file.read`
+  viewer — previously those rendered with empty output for tool steps.
+
+- The offline mock provider maps read intents (`read readme.md`,
+  `查看 docs/notes.md`) to a `file.read` plan, so the file viewer and the
+  thinking surfaces are fully demonstrable offline.
+
+### Review hardening
+
+- **Browser-level DOM snapshot suite** (`app/webui/tests/client-snapshot.test.ts`):
+  the REAL built client in headless Chromium against the REAL server —
+  pinned snapshots for the plan card (thinking collapsed), the expanded
+  thinking panel, the streamed result card, and the agent goal card with
+  per-round thinking plus the `file.read` viewer; volatile fields
+  (sandbox paths, wall-clock seconds, ISO stamps) are normalized. Skips
+  automatically where no Chromium exists (e.g. the CI runner).
+- **Streaming endpoint snapshots**: `POST /api/plan/stream` (full
+  reasoning → text → usage → terminal plan lifecycle) and
+  `POST /api/goal/stream` (round thinking relay to `goal_result`) are now
+  file-snapshotted like the rest of the e2e suite.
+- **Regenerated run screenshots** incl. two new views: `thinking.png`
+  (expanded panel) and `file-viewer.png` (agent `file.read` viewer) —
+  every PNG now reflects the v0.5.0 UI.
 
 ## 0.4.0 — 2026-09-02
 

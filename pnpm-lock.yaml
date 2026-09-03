@@ -317,7 +317,7 @@ importers:
         specifier: 'catalog:'
         version: 3.5.42(typescript@7.0.2)
 
-  docs-site:
+  docs:
     devDependencies:
       vitepress:
         specifier: 'catalog:'

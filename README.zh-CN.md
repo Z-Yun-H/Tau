@@ -264,7 +264,7 @@ SKILL.md          根级开发工具技能路由         changelog/  每日 AI �
 
 ## 文档
 
-- **[文档站](docs-site/)** —— 双语 VitePress 站点（默认中文，英文在 `/en/`），每个功能一篇；`pnpm docs:dev` 本地浏览，`pnpm docs:build` 构建
+- **[文档站](docs/)** —— 双语 VitePress 站点（默认中文，英文在 `/en/`），每个功能一篇；`pnpm docs:dev` 本地浏览，`pnpm docs:build` 构建
 - [架构详解](docs/architecture.md) —— 流水线图、不变量、如何添加工具/Provider
 - [安全模型](docs/safety.md) —— 黑白名单、风险语义、为什么没有删除工具
 - [技能编写](docs/skills-authoring.md) —— frontmatter 契约、示例、校验规则

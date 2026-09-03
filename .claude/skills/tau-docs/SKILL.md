@@ -1,7 +1,7 @@
 ---
 name: tau-docs
 version: 0.1.0
-description: Documentation-site construction and development for Tau — VitePress workspace at docs-site/ with zh (default) + en locales. Use when adding/updating docs pages, changing nav/sidebar, or syncing docs content with product features.
+description: Documentation-site construction and development for Tau — VitePress workspace at docs/ with zh (default) + en locales. Use when adding/updating docs pages, changing nav/sidebar, or syncing docs content with product features.
 author: Tau maintainers
 tags: [docs, vitepress, tau, workflow]
 risk: low
@@ -9,8 +9,8 @@ risk: low
 
 # tau-docs — documentation site workflow
 
-The docs site is a **private workspace member** (`docs-site/`, package
-`@tau/docs-site`) — content, never runtime data; the CLI never reads from
+The docs site is a **private workspace member** (`docs/`, package
+`@tau/docs`) — content, never runtime data; the CLI never reads from
 it. Normative placement: the directory governance table in
 [AGENTS/architecture.md](../../../AGENTS/architecture.md).
 
@@ -22,14 +22,14 @@ it. Normative placement: the directory governance table in
 | Production build              | `pnpm docs:build`   |
 | Preview the production build  | `pnpm docs:preview` |
 
-Build output goes to `docs-site/.vitepress/dist/` (gitignored). The docs
+Build output goes to `docs/.vitepress/dist/` (gitignored). The docs
 build is NOT part of the `pnpm build` gate — run `pnpm docs:build` explicitly
 when you touched the site.
 
 ## Layout
 
 ```
-docs-site/
+docs/
   .vitepress/config.mts   nav + sidebar + locales (zh root, en under /en/)
   index.md                zh home (hero + features)
   guide/                  zh guides — one page per user-facing surface
