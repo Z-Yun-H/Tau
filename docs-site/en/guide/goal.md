@@ -22,7 +22,7 @@ Round history in the prompt is capped (last 3 verbatim, older rounds summarized 
 
 ## Streaming thinking (v0.5.0)
 
-In the WebUI agent mode, each round's planning thinking streams live: planning thinking and reflection thinking are tagged to their own rounds' collapsible panels. The CLI can consume round-tagged thinking deltas through the goal stream events.
+In the WebUI agent mode, each round's planning thinking streams live: planning thinking and reflection thinking are tagged to their own rounds' collapsible panels. Library integrations can consume round-tagged thinking deltas through `runGoal`'s `onPlanStream` observer.
 
 ## Providers without reflection
 
