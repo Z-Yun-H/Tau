@@ -19,7 +19,10 @@
  *
  * Subclasses override `plan()` (wire-specific) and may override
  * `listModels()` when the discovery endpoint differs (ollama hits
- * `/api/tags` with a `{ models: [{ name }] }` shape).
+ * `/api/tags`, anthropic `/models?limit=100`, gemini `/models?pageSize=100`).
+ * Streaming providers share the wire folding in `../chat-stream.ts`
+ * (v0.5.0); `planStream()` relays reasoning/text/usage events and resolves
+ * to the same validated Plan as `plan()`.
  */
 
 import { loadConfig } from "@tau/core";

@@ -6,16 +6,24 @@
  * The shared HTTP scaffolding (apiKey/baseUrl/timeout/listModels/isAvailable)
  * lives in `./base.ts` `BaseHttpProvider`. This subclass owns the
  * OpenAI chat-completions wire shape (request body + response parsing) and
- * serves BOTH capabilities that need it: `plan()` (first round) and the
+ * serves THREE capabilities that need it: `plan()` (first round, buffered),
+ * `planStream()` (streaming, reasoning-aware — v0.5.0) and the
  * inherited-from-here `reflect()` (agent loop continuation rounds).
  */
 
 import { buildSystemPrompt, validatePlanResponse } from "../prompt.js";
 import { buildReflectPrompt, validateReflectResponse } from "../reflect.js";
 import { normalizeUsage } from "../usage.js";
+import { consumeOpenAiCompatibleStream } from "../chat-stream.js";
 import { chatJSON } from "./http.js";
 import { BaseHttpProvider } from "./base.js";
-import type { AgentDecision, Plan, PlanningContext, ReflectContext } from "@tau/core";
+import type {
+  AgentDecision,
+  Plan,
+  PlanningContext,
+  ProviderStreamHandler,
+  ReflectContext,
+} from "@tau/core";
 
 /** OpenAI-compatible providers (OpenAI, DeepSeek, Moonshot, vLLM, ...). */
 export class OpenAIProvider extends BaseHttpProvider {
@@ -71,6 +79,61 @@ export class OpenAIProvider extends BaseHttpProvider {
 
   async plan(ctx: PlanningContext): Promise<Plan> {
     return validatePlanResponse(await this.chatCompletion(buildSystemPrompt(ctx), ctx.intent));
+  }
+
+  /**
+   * Streaming plan (v0.5.0): same request shape as chatCompletion with
+   * `stream: true` + `stream_options.include_usage`; `reasoning_content`
+   * deltas (thinking models served over OpenAI-compatible endpoints) relay
+   * as reasoning events and never mix into the plan text. The assembled
+   * text passes the SAME validatePlanResponse gate — streaming never
+   * weakens the plan contract.
+   */
+  async planStream(ctx: PlanningContext, onEvent?: ProviderStreamHandler): Promise<Plan> {
+    const { resolveModel } = await import("../models.js");
+    const { model } = await resolveModel(this.name);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), this.timeoutMs());
+    timer.unref?.();
+    try {
+      const doFetch = globalThis.fetch;
+      const response = await doFetch(`${this.baseUrl()}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${this.apiKey() ?? ""}`,
+          accept: "text/event-stream",
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0,
+          response_format: { type: "json_object" },
+          stream: true,
+          stream_options: { include_usage: true },
+          messages: [
+            { role: "system", content: buildSystemPrompt(ctx) },
+            { role: "user", content: ctx.intent },
+          ],
+        }),
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        const detail = (await response.text().catch(() => "")).slice(0, 300);
+        throw new Error(`HTTP ${response.status} from provider: ${detail}`);
+      }
+      if (!response.body) {
+        throw new Error("provider returned no response body");
+      }
+      const text = await consumeOpenAiCompatibleStream(response.body, onEvent);
+      return validatePlanResponse(text);
+    } catch (error) {
+      if (controller.signal.aborted) {
+        throw new Error(`provider request timed out after ${Math.round(this.timeoutMs() / 1000)}s`);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   /** Agent-loop continuation: same wire path, reflection prompt + schema. */

@@ -139,12 +139,17 @@ intent ──► provider.plan() ──► validatePlanResponse() ──► revi
 | Provider         | Needs                       | Setup                                                                                                                                                                      |
 | ---------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `mock` (default) | nothing                     | works offline, keyword-matched demo plans                                                                                                                                  |
-| `ollama`         | local ollama                | `ollama serve`, config: `providers.ollama.model`                                                                                                                           |
-| `openai`         | `OPENAI_API_KEY`            | any OpenAI-compatible base URL via `providers.openai.baseUrl`                                                                                                              |
+| `ollama`         | local ollama                | `ollama serve`, config: `providers.ollama.model` (+ `providers.ollama.think: true` requests thinking where the model supports it)                                          |
+| `openai`         | `OPENAI_API_KEY`            | any OpenAI-compatible base URL via `providers.openai.baseUrl` — streaming planner aware of `reasoning_content` (DeepSeek-R1/GLM-style thinking over OpenAI endpoints)      |
 | `deepseek`       | `DEEPSEEK_API_KEY`          | DeepSeek Harness adapter (`@deepseek-ai/dsh-llm`): official streaming wire format, `LlmAdapter` + `StreamChunk` protocol; model/baseUrl/timeoutMs via `providers.deepseek` |
 | `zai`            | optional `z-ai-web-dev-sdk` | graceful "unavailable + how to fix" when missing                                                                                                                           |
+| `anthropic`      | `ANTHROPIC_API_KEY`         | Claude Messages API: streaming, `/v1/models` discovery, extended thinking via `providers.anthropic.thinking` (+ optional `thinkingBudget`)                                 |
+| `gemini`         | `GOOGLE_API_KEY`            | Google Gemini REST: JSON mode (`responseMimeType`), 2.5-series thought deltas as thinking, optional `providers.gemini.thinkingBudget`                                      |
 
-Selection precedence: `--provider` flag > `TAU_PROVIDER` env > `config.provider`.
+All real providers stream (`planStream`): thinking deltas arrive separately
+from plan text and are surfaced in the WebUI while the same
+`validatePlanResponse` gate stays authoritative. Selection precedence:
+`--provider` flag > `TAU_PROVIDER` env > `config.provider`.
 Unknown → safe fallback to `mock`.
 
 API keys resolve in the order **config (`providers.<name>.apiKey`) → environment

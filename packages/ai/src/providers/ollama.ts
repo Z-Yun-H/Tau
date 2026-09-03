@@ -6,8 +6,15 @@
 
 import { loadConfig } from "@tau/core";
 import { buildSystemPrompt, validatePlanResponse } from "../prompt.js";
+import { consumeOllamaStream } from "../chat-stream.js";
 import { chatJSON } from "./http.js";
-import type { AIProvider, ModelInfo, Plan, PlanningContext } from "@tau/core";
+import type {
+  AIProvider,
+  ModelInfo,
+  Plan,
+  PlanningContext,
+  ProviderStreamHandler,
+} from "@tau/core";
 
 /** Ollama (local models). Available when the local server responds. */
 export class OllamaProvider implements AIProvider {
@@ -69,6 +76,7 @@ export class OllamaProvider implements AIProvider {
       model,
       stream: false,
       format: "json",
+      ...this.thinkFragment(),
       messages: [
         { role: "system", content: buildSystemPrompt(ctx) },
         { role: "user", content: ctx.intent },
@@ -77,5 +85,59 @@ export class OllamaProvider implements AIProvider {
     const raw = await chatJSON(`${this.host()}/api/chat`, {}, body);
     const content = (JSON.parse(raw) as { message?: { content?: string } }).message?.content ?? "";
     return validatePlanResponse(content);
+  }
+
+  /**
+   * Streaming plan (v0.5.0): /api/chat with `stream: true` answers NDJSON
+   * frames — content deltas (and `thinking` deltas when the model thinks)
+   * relay through the shared consumer; the terminal frame's token counts
+   * relay as usage. `providers.ollama.think: true` requests thinking
+   * explicitly (supported models only; the plain JSON format is kept).
+   */
+  async planStream(ctx: PlanningContext, onEvent?: ProviderStreamHandler): Promise<Plan> {
+    const { resolveModel } = await import("../models.js");
+    const { model } = await resolveModel(this.name);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 120_000);
+    timer.unref?.();
+    try {
+      const doFetch = globalThis.fetch;
+      const response = await doFetch(`${this.host()}/api/chat`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          model,
+          stream: true,
+          format: "json",
+          ...this.thinkFragment(),
+          messages: [
+            { role: "system", content: buildSystemPrompt(ctx) },
+            { role: "user", content: ctx.intent },
+          ],
+        }),
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        const detail = (await response.text().catch(() => "")).slice(0, 300);
+        throw new Error(`HTTP ${response.status} from provider: ${detail}`);
+      }
+      if (!response.body) throw new Error("provider returned no response body");
+      const text = await consumeOllamaStream(response.body, onEvent);
+      return validatePlanResponse(text);
+    } catch (error) {
+      if (controller.signal.aborted) {
+        throw new Error("provider request timed out after 120s");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /** `providers.ollama.think: true` → request thinking (additive opt-in). */
+  private thinkFragment(): { think?: boolean } {
+    const cfg = loadConfig();
+    if (cfg.providers["ollama"]?.["think"] !== true) return {};
+    return { think: true };
   }
 }
