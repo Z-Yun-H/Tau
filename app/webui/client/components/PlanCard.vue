@@ -5,6 +5,11 @@
  * warnings. High-risk confirmation is card-local state (explicit intent, no
  * global checkbox). Deny verdicts hard-disable Run.
  *
+ * v0.5.0 (issue #110): the card renders LIVE while the plan streams — the
+ * provider's reasoning grows in a collapsible ThinkingPanel above the plan,
+ * actions stay disabled until the terminal `plan` event lands, and the
+ * planning call's token usage shows in the eyebrow when reported.
+ *
  * `Run plan` is the chrome primary action — the only non-identity element
  * that carries the gradient sweep. It marks "this is the gate control."
  */
@@ -14,6 +19,7 @@ import type { PlanCardState } from "../composables/plan-flow.js";
 import { highlightPreBlocks } from "../lib/highlight.js";
 import RiskBadge from "./RiskBadge.vue";
 import StepRow from "./StepRow.vue";
+import ThinkingPanel from "./ThinkingPanel.vue";
 
 const props = defineProps<{
   card: PlanCardState;
@@ -22,12 +28,25 @@ const props = defineProps<{
 
 const emit = defineEmits<{ run: [card: PlanCardState]; discard: [card: PlanCardState] }>();
 
-const runnable = computed(() => props.card.review.verdict !== "deny" && !props.card.running);
+const streaming = computed(() => props.card.streaming === true);
+const runnable = computed(
+  () =>
+    props.card.review.verdict !== "deny" &&
+    !props.card.running &&
+    !streaming.value &&
+    (props.card.plan.steps?.length ?? 0) > 0,
+);
 const issues = computed(() => props.card.review.issues ?? []);
 const enterDelay = computed(() => `${Math.min((props.enterIndex ?? 0) * 40, 200)}ms`);
 const explanation = computed(() =>
   renderMarkdown(props.card.plan.explanation || `“${props.card.intent}”`),
 );
+const usageLabel = computed(() => {
+  const usage = props.card.usage;
+  if (!usage) return "";
+  const total = usage.totalTokens ?? (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0);
+  return total > 0 ? `${Intl.NumberFormat("en", { notation: "compact" }).format(total)} tok` : "";
+});
 
 const rootEl = ref<HTMLElement | null>(null);
 onMounted(() => {
@@ -35,16 +54,40 @@ onMounted(() => {
     if (rootEl.value) void highlightPreBlocks(rootEl.value);
   });
 });
+// The terminal plan event rewrites explanation/steps after the card mounted —
+// re-run the progressive highlighter once the markdown settles.
+watch(
+  () => props.card.streaming,
+  (now, before) => {
+    if (before === true && now === false) {
+      void nextTick(() => {
+        if (rootEl.value) void highlightPreBlocks(rootEl.value);
+      });
+    }
+  },
+);
 </script>
 
 <template>
   <article ref="rootEl" class="tau-card tau-surface plan-enter">
-    <!-- eyebrow: PLAN label + risk badge + provider -->
+    <!-- eyebrow: PLAN label + risk badge + provider + usage -->
     <div class="card-eyebrow">
       <span class="eyebrow-label">plan</span>
-      <RiskBadge :level="card.review.overallRisk" />
-      <span class="eyebrow-meta">via {{ card.providerLabel || card.provider }}</span>
+      <RiskBadge v-if="!streaming || card.review.issues?.length" :level="card.review.overallRisk" />
+      <span v-if="card.providerLabel || card.provider" class="eyebrow-meta"
+        >via {{ card.providerLabel || card.provider }}</span
+      >
+      <span v-if="usageLabel" class="eyebrow-meta">{{ usageLabel }}</span>
+      <span v-if="streaming" class="eyebrow-meta streaming-meta">planning…</span>
     </div>
+
+    <!-- provider thinking: grows live while planning, collapses when done -->
+    <ThinkingPanel
+      v-if="card.thinking || streaming"
+      :thinking="card.thinking"
+      :active="streaming"
+      :duration-ms="card.thinkingMs"
+    />
 
     <!-- markdown preview (escaped-first renderer, see @tau/markdown) -->
     <div class="md-body md-lead" v-html="explanation" />
@@ -53,7 +96,9 @@ onMounted(() => {
     <ol v-if="card.plan.steps?.length" class="step-list">
       <StepRow v-for="(step, s) in card.plan.steps" :key="s" :step="step" :index="s" />
     </ol>
-    <p v-else class="empty-plan">empty plan</p>
+    <p v-else class="empty-plan">
+      {{ streaming ? "waiting for the reviewed plan…" : "empty plan" }}
+    </p>
 
     <!-- issues -->
     <div v-if="issues.length" class="issues">
@@ -83,7 +128,12 @@ onMounted(() => {
 
     <!-- actions: Run plan (chrome primary) + Discard (ghost) + high-risk checkbox -->
     <div class="actions">
-      <button class="run-btn tau-chrome-bg" :disabled="!runnable" @click="emit('run', card)">
+      <button
+        class="run-btn tau-chrome-bg"
+        :disabled="!runnable"
+        :title="streaming ? 'plan is still streaming' : undefined"
+        @click="emit('run', card)"
+      >
         <span v-if="card.running" class="running-dot" />
         <svg
           v-else
@@ -144,6 +194,11 @@ onMounted(() => {
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--tau-faint); /* tau.faint */
+}
+
+.streaming-meta {
+  color: var(--tau-info);
+  animation: tau-pulse 1.2s var(--ease) infinite;
 }
 
 .step-list {

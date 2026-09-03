@@ -7,6 +7,12 @@
  * round, never a blanket pre-approval. The Stop button aborts the fetch;
  * the server cancels the goal (process-group kill mid-shell included).
  *
+ * v0.5.0 (issue #110): the AI's per-round reasoning renders as a
+ * ThinkingPanel on each round (collapsed once the round lands), deltas
+ * still streaming show in a pinned live rail above the timeline, and tool
+ * steps render as structured ToolCallCards (risk badge from the /api/tools
+ * inventory, args JSON, live output) instead of one-line labels.
+ *
  * Visual language matches PlanCard: tau-card/tau-surface shell, eyebrow
  * row, mono labels, one chrome action at a time (Approve while paused,
  * Stop while streaming).
@@ -14,7 +20,10 @@
 import { computed } from "vue";
 import { renderMarkdown } from "@tau/markdown";
 import type { GoalCardState, GoalRoundState } from "../composables/plan-flow.js";
+import { useSession } from "../composables/session.js";
 import RiskBadge from "./RiskBadge.vue";
+import ThinkingPanel from "./ThinkingPanel.vue";
+import ToolCallCard from "./ToolCallCard.vue";
 
 const props = defineProps<{ card: GoalCardState; enterIndex?: number }>();
 
@@ -23,8 +32,19 @@ const emit = defineEmits<{
   stop: [card: GoalCardState];
 }>();
 
+const { tools } = useSession();
+
+/** Tool risk from the /api/tools inventory — "" when unknown (badge hidden). */
+function toolRisk(name: string | undefined): string {
+  if (!name) return "";
+  return tools.value.find((tool) => tool.name === name)?.risk ?? "";
+}
+
 const enterDelay = computed(() => `${Math.min((props.enterIndex ?? 0) * 40, 200)}ms`);
 const answerHtml = computed(() => (props.card.answer ? renderMarkdown(props.card.answer) : ""));
+const liveThinkingActive = computed(
+  () => props.card.streaming && props.card.status === "running" && !!props.card.liveThinking,
+);
 
 const GOAL_STATUS_LABEL: Record<GoalCardState["status"], string> = {
   running: "running",
@@ -67,6 +87,13 @@ function roundStatusLabel(round: GoalRoundState): string {
     <!-- intent -->
     <p class="goal-intent">{{ card.intent }}</p>
 
+    <!-- live thinking rail: deltas stream here before their round lands -->
+    <ThinkingPanel
+      v-if="card.liveThinking"
+      :thinking="card.liveThinking"
+      :active="liveThinkingActive"
+    />
+
     <!-- rounds timeline -->
     <ol class="round-list">
       <li v-for="round in card.rounds" :key="round.round" class="round-item">
@@ -84,32 +111,49 @@ function roundStatusLabel(round: GoalRoundState): string {
           }}</span>
         </div>
 
+        <!-- this round's provider reasoning, collapsed once the round lands -->
+        <ThinkingPanel
+          v-if="round.thinking"
+          :thinking="round.thinking"
+          :duration-ms="round.thinkingMs"
+        />
+
         <p v-if="round.plan?.explanation" class="round-expl">{{ round.plan.explanation }}</p>
 
-        <!-- live steps -->
+        <!-- live steps: tool calls as structured cards, shell as raw rows -->
         <ol class="step-stream">
           <li
             v-for="step in round.steps"
             :key="step.index"
-            class="step-live"
-            :class="{ running: step.running }"
+            :class="{ 'step-live': step.step?.kind !== 'tool' }"
           >
-            <div class="step-line">
-              <span
-                class="step-dot"
-                :class="
-                  step.running
-                    ? 'dot-run'
-                    : step.skipped
-                      ? 'dot-skip'
-                      : step.ok
-                        ? 'dot-ok'
-                        : 'dot-bad'
-                "
-              />
-              <code class="step-label">{{ step.label }}</code>
-            </div>
-            <pre v-if="step.output" class="step-out">{{ step.output }}</pre>
+            <ToolCallCard
+              v-if="step.step?.kind === 'tool'"
+              :step="step.step"
+              :output="step.output"
+              :running="step.running"
+              :ok="step.ok"
+              :skipped="step.skipped"
+              :risk="toolRisk(step.step.tool)"
+            />
+            <template v-else>
+              <div class="step-line">
+                <span
+                  class="step-dot"
+                  :class="
+                    step.running
+                      ? 'dot-run'
+                      : step.skipped
+                        ? 'dot-skip'
+                        : step.ok
+                          ? 'dot-ok'
+                          : 'dot-bad'
+                  "
+                />
+                <code class="step-label">{{ step.label }}</code>
+              </div>
+              <pre v-if="step.output" class="step-out">{{ step.output }}</pre>
+            </template>
           </li>
         </ol>
 

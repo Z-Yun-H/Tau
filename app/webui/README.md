@@ -24,6 +24,10 @@ Chromium with the offline mock provider (regeneration:
 
 ![webui plan](./docs/screenshots/plan.png)
 
+**the thinking panel, expanded — provider reasoning one click away (v0.5.0)**
+
+![webui thinking](./docs/screenshots/thinking.png)
+
 **the streaming result — NDJSON events rendered live**
 
 ![webui result](./docs/screenshots/result.png)
@@ -32,6 +36,12 @@ Chromium with the offline mock provider (regeneration:
 approval gates, final answer**
 
 ![webui agent](./docs/screenshots/agent.png)
+
+**agent mode file viewer (v0.5.0) — a `file.read` round renders as a
+structured tool call card with the shiki-highlighted file, path + language
+chip, and the per-round thinking panel**
+
+![webui file viewer](./docs/screenshots/file-viewer.png)
 
 ## Observability (v0.4.0)
 

@@ -7,8 +7,9 @@
 
 import { createRequire } from "node:module";
 import { buildSystemPrompt, validatePlanResponse } from "../prompt.js";
+import { normalizeUsage } from "../usage.js";
 import { BaseHttpProvider } from "./base.js";
-import type { ModelInfo, Plan, PlanningContext } from "@tau/core";
+import type { ModelInfo, Plan, PlanningContext, ProviderStreamHandler } from "@tau/core";
 // Type-only imports from the optional @deepseek-ai/dsh-llm package: the
 // compiler erases them, so they are safe even when the package is absent at
 // runtime. Runtime access goes exclusively through the dynamic loader below.
@@ -103,10 +104,12 @@ async function* iterateSsePayloads(body: ReadableStream<Uint8Array>): AsyncItera
  * the assistant text (direct fallback path). Tolerates `reasoning_content`
  * deltas (thinking models — collected separately, never mixed into the plan
  * text), usage-only trailing chunks, and streams that close without
- * `[DONE]` once content has arrived.
+ * `[DONE]` once content has arrived. When `onEvent` is provided (v0.5.0
+ * streaming planning), every delta relays verbatim as a provider event.
  */
 export async function collectStreamText(
   body: ReadableStream<Uint8Array>,
+  onEvent?: ProviderStreamHandler,
 ): Promise<DeepSeekStreamResult> {
   let text = "";
   let reasoning = "";
@@ -123,11 +126,21 @@ export async function collectStreamText(
       throw new Error("DeepSeek stream sent a non-JSON data frame — refusing to continue.");
     }
     const delta = parsed.choices?.[0]?.delta;
-    if (typeof delta?.content === "string") text += delta.content;
-    if (typeof delta?.reasoning_content === "string") reasoning += delta.reasoning_content;
+    if (typeof delta?.reasoning_content === "string" && delta.reasoning_content.length > 0) {
+      reasoning += delta.reasoning_content;
+      onEvent?.({ type: "reasoning_delta", text: delta.reasoning_content });
+    }
+    if (typeof delta?.content === "string" && delta.content.length > 0) {
+      text += delta.content;
+      onEvent?.({ type: "text_delta", text: delta.content });
+    }
     // include_usage: usage arrives on the finish chunk or a trailing
     // usage-only chunk (empty choices array).
-    if (parsed.usage) usage = parsed.usage;
+    if (parsed.usage) {
+      usage = parsed.usage;
+      const normalized = normalizeUsage(parsed.usage);
+      if (normalized) onEvent?.({ type: "usage", usage: normalized });
+    }
   };
 
   for await (const payload of iterateSsePayloads(body)) {
@@ -712,6 +725,22 @@ export class DeepSeekProvider extends BaseHttpProvider {
   }
 
   /**
+   * Streaming plan (v0.5.0): SAME two-path architecture as plan(), with the
+   * harness/direct chunk streams additionally relayed to the observer.
+   * `reasoning_content` deltas flow as reasoning events (DeepSeek thinking
+   * models), content deltas as text events, the trailing usage chunk as a
+   * usage event — identical semantics on both paths, and the assembled
+   * text still passes validatePlanResponse.
+   */
+  async planStream(ctx: PlanningContext, onEvent?: ProviderStreamHandler): Promise<Plan> {
+    const { resolveModel } = await import("../models.js");
+    const { model } = await resolveModel(this.name);
+    const llm = await loadDshLlm();
+    if (llm) return this.planViaHarness(llm, ctx, model, onEvent);
+    return this.planDirect(ctx, model, onEvent);
+  }
+
+  /**
    * Harness path: official `LlmAdapter` transport + `BlockAssembler`
    * assembly. `assertUsableApiKey` judges the credential before any request
    * (trimmed, printable-ASCII, secret never echoed).
@@ -720,6 +749,7 @@ export class DeepSeekProvider extends BaseHttpProvider {
     llm: DshLlmBundle,
     ctx: PlanningContext,
     model: string,
+    onEvent?: ProviderStreamHandler,
   ): Promise<Plan> {
     // Official contract: use the returned (trimmed) key, never the raw value.
     const apiKey = llm.assertUsableApiKey(this.apiKey() ?? "", "tau", "DEEPSEEK_API_KEY");
@@ -742,7 +772,22 @@ export class DeepSeekProvider extends BaseHttpProvider {
         maxTokens: PLAN_MAX_TOKENS,
         signal: controller.signal,
       };
-      for await (const chunk of adapter.stream(options)) assembler.push(chunk);
+      for await (const chunk of adapter.stream(options)) {
+        assembler.push(chunk);
+        // Relay the canonical StreamChunk protocol to the observer (v0.5.0):
+        // reasoning/text deltas verbatim; the usage chunk normalized like
+        // the observability baseline does.
+        if (onEvent) {
+          if (chunk.type === "reasoning-delta" && chunk.text) {
+            onEvent({ type: "reasoning_delta", text: chunk.text });
+          } else if (chunk.type === "text-delta" && chunk.text) {
+            onEvent({ type: "text_delta", text: chunk.text });
+          } else if (chunk.type === "usage") {
+            const usage = normalizeUsage(chunk.usage as unknown);
+            if (usage) onEvent({ type: "usage", usage });
+          }
+        }
+      }
     } catch (error) {
       if (controller.signal.aborted) {
         throw new Error(
@@ -770,7 +815,11 @@ export class DeepSeekProvider extends BaseHttpProvider {
    * Direct fallback path: identical wire contract, zero dependencies, used
    * when the optional harness seam is not installed. See DSH_LLM_MISSING.
    */
-  private async planDirect(ctx: PlanningContext, model: string): Promise<Plan> {
+  private async planDirect(
+    ctx: PlanningContext,
+    model: string,
+    onEvent?: ProviderStreamHandler,
+  ): Promise<Plan> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs());
     timer.unref?.();
@@ -816,7 +865,7 @@ export class DeepSeekProvider extends BaseHttpProvider {
       throw new Error(apiErrorMessage(response.status, bodyText));
     }
 
-    const { text } = await collectStreamText(response.body);
+    const { text } = await collectStreamText(response.body, onEvent);
     return validatePlanResponse(text);
   }
 }

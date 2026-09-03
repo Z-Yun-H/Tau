@@ -44,7 +44,7 @@ around: **the AI proposes, deterministic code disposes.**
 
 | Area           | What you get                                                                                                                                                                      |
 | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tau ask`      | NL intent → provider plan → safety review → confirm UI → execution → history                                                                                                      |
+| `tau ask`      | NL intent → provider plan → safety review → confirm UI → execution → history (v0.5.0: the WebUI shows the provider's thinking live while it plans)                                |
 | `tau goal`     | multi-round agent loop: plan → run → reflect → repeat (round cap, per-round safety review, same confirmation gates)                                                               |
 | `tau file`     | glob find (prunes node_modules), tree, stat, line-numbered read (offset/limit), dir list, regex batch rename (dry-run default), text write (workspace-contained, dry-run default) |
 | `tau sys`      | OS/CPU/memory info, disk usage, top processes, datetime (local/ISO/epoch/tz), which, env lookup (one name, medium risk)                                                           |
@@ -139,12 +139,17 @@ intent ──► provider.plan() ──► validatePlanResponse() ──► revi
 | Provider         | Needs                       | Setup                                                                                                                                                                      |
 | ---------------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `mock` (default) | nothing                     | works offline, keyword-matched demo plans                                                                                                                                  |
-| `ollama`         | local ollama                | `ollama serve`, config: `providers.ollama.model`                                                                                                                           |
-| `openai`         | `OPENAI_API_KEY`            | any OpenAI-compatible base URL via `providers.openai.baseUrl`                                                                                                              |
+| `ollama`         | local ollama                | `ollama serve`, config: `providers.ollama.model` (+ `providers.ollama.think: true` requests thinking where the model supports it)                                          |
+| `openai`         | `OPENAI_API_KEY`            | any OpenAI-compatible base URL via `providers.openai.baseUrl` — streaming planner aware of `reasoning_content` (DeepSeek-R1/GLM-style thinking over OpenAI endpoints)      |
 | `deepseek`       | `DEEPSEEK_API_KEY`          | DeepSeek Harness adapter (`@deepseek-ai/dsh-llm`): official streaming wire format, `LlmAdapter` + `StreamChunk` protocol; model/baseUrl/timeoutMs via `providers.deepseek` |
 | `zai`            | optional `z-ai-web-dev-sdk` | graceful "unavailable + how to fix" when missing                                                                                                                           |
+| `anthropic`      | `ANTHROPIC_API_KEY`         | Claude Messages API: streaming, `/v1/models` discovery, extended thinking via `providers.anthropic.thinking` (+ optional `thinkingBudget`)                                 |
+| `gemini`         | `GOOGLE_API_KEY`            | Google Gemini REST: JSON mode (`responseMimeType`), 2.5-series thought deltas as thinking, optional `providers.gemini.thinkingBudget`                                      |
 
-Selection precedence: `--provider` flag > `TAU_PROVIDER` env > `config.provider`.
+All real providers stream (`planStream`): thinking deltas arrive separately
+from plan text and are surfaced in the WebUI while the same
+`validatePlanResponse` gate stays authoritative. Selection precedence:
+`--provider` flag > `TAU_PROVIDER` env > `config.provider`.
 Unknown → safe fallback to `mock`.
 
 API keys resolve in the order **config (`providers.<name>.apiKey`) → environment
@@ -274,6 +279,7 @@ and apps depend on all of them. No cycles — including at test time.
 
 ## Documentation
 
+- **[Documentation site](docs/)** — bilingual VitePress site (zh default, en under `/en/`), one page per feature; `pnpm docs:dev` to browse locally, `pnpm docs:build` to build
 - [Architecture deep-dive](docs/architecture.md) — pipeline diagram, invariants, how to add a tool/provider
 - [Safety model](docs/safety.md) — deny/caution lists, risk semantics, why there is no delete tool
 - [Skill authoring](docs/skills-authoring.md) — frontmatter contract, examples, validation

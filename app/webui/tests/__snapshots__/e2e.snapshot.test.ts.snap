@@ -1,16 +1,75 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`WebUI e2e — real HTTP snapshots > GET /api/config snapshots the redacted settings surface 1`] = `"{"version":"<version>","tauHome":"<sandbox>/home","config":{"provider":"mock","timeout":30,"allowMediumAutoApprove":false,"shell":"auto","aliases":{},"plugins":[],"providers":{"ollama":{"host":"http://localhost:11434"}}},"provider":{"name":"mock","label":"Mock (offline demo)","source":"config","model":"(auto)"},"providers":[{"name":"deepseek","available":false},{"name":"mock","available":true},{"name":"ollama","available":false},{"name":"openai","available":false},{"name":"zai","available":false}],"modelCatalog":{"count":0}}"`;
+exports[`WebUI e2e — real HTTP snapshots > GET /api/config snapshots the redacted settings surface 1`] = `"{"version":"<version>","tauHome":"<sandbox>/home","config":{"provider":"mock","timeout":30,"allowMediumAutoApprove":false,"shell":"auto","aliases":{},"plugins":[],"providers":{"ollama":{"host":"http://localhost:11434"}}},"provider":{"name":"mock","label":"Mock (offline demo)","source":"config","model":"(auto)"},"providers":[{"name":"anthropic","available":false},{"name":"deepseek","available":false},{"name":"gemini","available":false},{"name":"mock","available":true},{"name":"ollama","available":false},{"name":"openai","available":false},{"name":"zai","available":false}],"modelCatalog":{"count":0}}"`;
 
-exports[`WebUI e2e — real HTTP snapshots > GET /api/status reports the runtime inventory 1`] = `"{"version":"<version>","tauHome":"<sandbox>/home","provider":{"name":"mock","label":"Mock (offline demo)","source":"config","model":"(auto)"},"providers":[{"name":"deepseek","available":false},{"name":"mock","available":true},{"name":"ollama","available":false},{"name":"openai","available":false},{"name":"zai","available":false}],"skills":2,"plugins":0}"`;
+exports[`WebUI e2e — real HTTP snapshots > GET /api/status reports the runtime inventory 1`] = `"{"version":"<version>","tauHome":"<sandbox>/home","provider":{"name":"mock","label":"Mock (offline demo)","source":"config","model":"(auto)"},"providers":[{"name":"anthropic","available":false},{"name":"deepseek","available":false},{"name":"gemini","available":false},{"name":"mock","available":true},{"name":"ollama","available":false},{"name":"openai","available":false},{"name":"zai","available":false}],"skills":2,"plugins":0}"`;
 
 exports[`WebUI e2e — real HTTP snapshots > POST /api/execute runs the plan through the real engine 1`] = `"{"status":"ok","output":"file.find in <sandbox> — 2 match(es)\\ndocs/notes.md\\nreadme.md","outcomes":[{"ok":true,"skipped":false,"output":"file.find in <sandbox> — 2 match(es)\\ndocs/notes.md\\nreadme.md"}]}"`;
 
 exports[`WebUI e2e — real HTTP snapshots > POST /api/execute/stream emits the full NDJSON lifecycle 1`] = `
 "{"type":"step_start","index":0,"step":{"kind":"tool","tool":"file.find","args":{"pattern":"*.md","path":"."},"reason":"keyword matched file lookup"}}
+{"type":"step_output","index":0,"chunk":"file.find in <sandbox> — 2 match(es)\\ndocs/notes.md\\nreadme.md"}
 {"type":"step_end","index":0,"ok":true,"exitCode":0}
 {"type":"plan_end","status":"ok"}
 {"type":"result","status":"ok","output":"file.find in <sandbox> — 2 match(es)\\ndocs/notes.md\\nreadme.md","outcomes":[{"ok":true,"skipped":false,"output":"file.find in <sandbox> — 2 match(es)\\ndocs/notes.md\\nreadme.md"}]}"
 `;
 
+exports[`WebUI e2e — real HTTP snapshots > POST /api/goal/stream snapshots round thinking relay to goal_result 1`] = `
+"{"type":"goal_registered","goalId":"<goalId>"}
+{"type":"goal_start","intent":"echo GOAL_COMPLETE:workspace scanned","maxRounds":3,"provider":"mock"}
+{"type":"round_thinking_delta","round":1,"text":"Deterministic offline re"}
+{"type":"round_thinking_delta","round":1,"text":"asoning (mock):\\n1. Match"}
+{"type":"round_thinking_delta","round":1,"text":" the intent against the "}
+{"type":"round_thinking_delta","round":1,"text":"bundled keyword table: \\""}
+{"type":"round_thinking_delta","round":1,"text":"echo GOAL_COMPLETE:works"}
+{"type":"round_thinking_delta","round":1,"text":"pace scanned\\"\\n2. Pick th"}
+{"type":"round_thinking_delta","round":1,"text":"e matching read-only too"}
+{"type":"round_thinking_delta","round":1,"text":"l plan\\n3. Emit the stric"}
+{"type":"round_thinking_delta","round":1,"text":"t-JSON plan document"}
+{"type":"round_text_delta","round":1,"text":"{\\n  \\"explanation\\": \\"Offline mock could not map \\\\"}
+{"type":"round_text_delta","round":1,"text":"\\"echo GOAL_COMPLETE:workspace scanned\\\\\\". Configu"}
+{"type":"round_text_delta","round":1,"text":"re a real provider: tau config set provider open"}
+{"type":"round_text_delta","round":1,"text":"ai\\",\\n  \\"steps\\": [\\n    {\\n      \\"kind\\": \\"shell\\",\\n "}
+{"type":"round_text_delta","round":1,"text":"     \\"command\\": \\"echo \\\\\\"tau mock: echo GOAL_COMP"}
+{"type":"round_text_delta","round":1,"text":"LETE:workspace scanned\\\\\\"\\",\\n      \\"reason\\": \\"fall"}
+{"type":"round_text_delta","round":1,"text":"back echo\\"\\n    }\\n  ],\\n  \\"selfAssessedRisk\\": \\"low"}
+{"type":"round_text_delta","round":1,"text":"\\"\\n}"}
+{"type":"round_plan","round":1,"plan":{"explanation":"Offline mock could not map \\"echo GOAL_COMPLETE:workspace scanned\\". Configure a real provider: tau config set provider openai","steps":[{"kind":"shell","command":"echo \\"tau mock: echo GOAL_COMPLETE:workspace scanned\\"","reason":"fallback echo"}],"selfAssessedRisk":"low"},"review":{"verdict":"allow","overallRisk":"low","issues":[]},"origin":"plan"}
+{"type":"step_start","index":0,"step":{"kind":"shell","command":"echo \\"tau mock: echo GOAL_COMPLETE:workspace scanned\\"","reason":"fallback echo"}}
+{"type":"step_output","index":0,"chunk":"tau mock: echo GOAL_COMPLETE:workspace scanned\\n"}
+{"type":"step_end","index":0,"ok":true,"exitCode":0}
+{"type":"plan_end","status":"ok"}
+{"type":"round_end","round":1,"status":"ok","usage":{"promptTokens":76,"completionTokens":144,"totalTokens":220}}
+{"type":"round_thinking_delta","round":2,"text":"Deterministic offline re"}
+{"type":"round_thinking_delta","round":2,"text":"flection (mock): review "}
+{"type":"round_thinking_delta","round":2,"text":"executed rounds, decide "}
+{"type":"round_thinking_delta","round":2,"text":"done vs one more round."}
+{"type":"round_text_delta","round":2,"text":"{\\"done\\":true,\\"answer\\":\\"workspace scanned\\"}"}
+{"type":"goal_end","status":"ok","answer":"workspace scanned"}
+{"type":"goal_result","status":"ok","rounds":1,"answer":"workspace scanned"}
+"
+`;
+
 exports[`WebUI e2e — real HTTP snapshots > POST /api/plan returns a reviewed mock plan 1`] = `"{"intent":"find all *.md files","plan":{"explanation":"Recursively find files matching *.md under the current directory","steps":[{"kind":"tool","tool":"file.find","args":{"pattern":"*.md","path":"."},"reason":"keyword matched file lookup"}],"selfAssessedRisk":"low"},"review":{"verdict":"allow","overallRisk":"low","issues":[]},"provider":"mock","providerLabel":"Mock (offline demo)","warnings":[],"usage":{"promptTokens":59,"completionTokens":84,"totalTokens":143}}"`;
+
+exports[`WebUI e2e — real HTTP snapshots > POST /api/plan/stream snapshots the streaming planning lifecycle 1`] = `
+"{"type":"reasoning_delta","text":"Deterministic offline re"}
+{"type":"reasoning_delta","text":"asoning (mock):\\n1. Match"}
+{"type":"reasoning_delta","text":" the intent against the "}
+{"type":"reasoning_delta","text":"bundled keyword table: \\""}
+{"type":"reasoning_delta","text":"find all *.md files\\"\\n2. "}
+{"type":"reasoning_delta","text":"Pick the matching read-o"}
+{"type":"reasoning_delta","text":"nly tool plan\\n3. Emit th"}
+{"type":"reasoning_delta","text":"e strict-JSON plan docum"}
+{"type":"reasoning_delta","text":"ent"}
+{"type":"text_delta","text":"{\\n  \\"explanation\\": \\"Recursively find files match"}
+{"type":"text_delta","text":"ing *.md under the current directory\\",\\n  \\"steps\\""}
+{"type":"text_delta","text":": [\\n    {\\n      \\"kind\\": \\"tool\\",\\n      \\"tool\\": \\"f"}
+{"type":"text_delta","text":"ile.find\\",\\n      \\"args\\": {\\n        \\"pattern\\": \\"*"}
+{"type":"text_delta","text":".md\\",\\n        \\"path\\": \\".\\"\\n      },\\n      \\"reason"}
+{"type":"text_delta","text":"\\": \\"keyword matched file lookup\\"\\n    }\\n  ],\\n  \\"s"}
+{"type":"text_delta","text":"elfAssessedRisk\\": \\"low\\"\\n}"}
+{"type":"usage","usage":{"promptTokens":59,"completionTokens":84,"totalTokens":143}}
+{"type":"plan","intent":"find all *.md files","plan":{"explanation":"Recursively find files matching *.md under the current directory","steps":[{"kind":"tool","tool":"file.find","args":{"pattern":"*.md","path":"."},"reason":"keyword matched file lookup"}],"selfAssessedRisk":"low"},"review":{"verdict":"allow","overallRisk":"low","issues":[]},"provider":"mock","providerLabel":"Mock (offline demo)","warnings":[],"usage":{"promptTokens":59,"completionTokens":84,"totalTokens":143}}
+"
+`;

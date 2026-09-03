@@ -22,6 +22,7 @@ import type {
   AgentDecision,
   Plan,
   PlanEvent,
+  ProviderStreamEvent,
   ProviderUsage,
   ReflectContext,
   RoundFeedback,
@@ -31,7 +32,7 @@ import { loadConfig } from "@tau/core";
 import { normalizeUsage, planningContext, resolveProvider, truncateForFeedback } from "@tau/ai";
 import { renderSkillCatalog, scanSkills } from "@tau/skills";
 import { reviewPlan, runPlan, type RunPlanOptions, type StepOutcome } from "@tau/engine";
-import { planIntent, ProviderUnavailableError } from "./pipeline.js";
+import { planIntent, planIntentStream, ProviderUnavailableError } from "./pipeline.js";
 
 /** Loop depth guard: default cap and the hard ceiling (config may lower it). */
 export const DEFAULT_MAX_ROUNDS = 3;
@@ -81,6 +82,14 @@ export interface RunGoalOptions {
   /** Per-round PlanEvent mirror (caller brackets rounds via goal events). */
   onPlanEvent?: (event: PlanEvent, round: number) => void;
   /**
+   * Per-round provider stream relay (v0.5.0): reasoning/text/usage events
+   * from the round's PLANNING turn (round 1 plan + every reflect turn).
+   * Absent = the loop uses the buffered plan()/reflect() paths with zero
+   * behavior change; present = providers with planStream/reflectStream
+   * stream their turns, others fall back to buffered transparently.
+   */
+  onPlanStream?: (event: ProviderStreamEvent, round: number) => void;
+  /**
    * Interactive pause for non-"allow" rounds — INCLUDING the first round
    * when provided (agent mode is never a blanket pre-approval). Resolve
    * true = execute the round; false = goal ends "cancelled". Absent: every
@@ -117,6 +126,7 @@ export async function runGoal(intent: string, options: RunGoalOptions): Promise<
   }
   const reflect = choice.provider.reflect?.bind(choice.provider);
   const canReflect = typeof reflect === "function";
+  const reflectStream = choice.provider.reflectStream?.bind(choice.provider);
   emit({
     type: "goal_start",
     intent,
@@ -161,8 +171,13 @@ export async function runGoal(intent: string, options: RunGoalOptions): Promise<
   };
 
   try {
-    // ---- Round 1: the historical front half (planIntent), unchanged. ----
-    const planned = await planIntent(intent, { provider: options.provider });
+    // ---- Round 1: the historical front half (planIntent), or its streaming
+    // twin when the front door observes provider events. ----
+    const planned = options.onPlanStream
+      ? await planIntentStream(intent, { provider: options.provider }, (event) =>
+          options.onPlanStream?.(event, 1),
+        )
+      : await planIntent(intent, { provider: options.provider });
     const firstReview = reviewPlan(planned.plan);
     emit({ type: "round_plan", round: 1, plan: planned.plan, review: firstReview, origin: "plan" });
     // Interactive front doors pause on a non-"allow" FIRST round too — agent
@@ -191,7 +206,10 @@ export async function runGoal(intent: string, options: RunGoalOptions): Promise<
       const ctx: ReflectContext = { ...ctxBase, rounds };
       let decision: AgentDecision;
       try {
-        decision = await reflect(ctx);
+        decision =
+          options.onPlanStream && reflectStream
+            ? await reflectStream(ctx, (event) => options.onPlanStream?.(event, round + 1))
+            : await reflect(ctx);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         emit({ type: "goal_end", status: "failed", error: `reflection failed: ${message}` });

@@ -4,17 +4,23 @@
 
 ```ts
 interface AIProvider {
-  readonly name: string; // registry key: "mock" | "ollama" | "openai" | "deepseek" | "zai"
+  readonly name: string; // registry key: "mock" | "ollama" | "openai" | "deepseek" | "zai" | "anthropic" | "gemini"
   readonly label: string; // CLI display
   isAvailable(): Promise<boolean>;
   unavailableReason?(): string;
   plan(ctx: PlanningContext): Promise<Plan>;
   listModels?(): Promise<ModelInfo[]>; // optional live model discovery
+  reflect?(ctx: ReflectContext): Promise<AgentDecision>; // optional agent loop
+  planStream?(ctx: PlanningContext, onEvent?: ProviderStreamHandler): Promise<Plan>; // optional streaming planning (v0.5.0)
+  reflectStream?(ctx: ReflectContext, onEvent?: ProviderStreamHandler): Promise<AgentDecision>; // optional streaming reflection (v0.5.0)
 }
 ```
 
 Registration: `packages/ai/src/registry.ts registerProvider(...)`. `DEFAULT_CONFIG.providers`
 in `packages/core/src/config/store.ts` carries NO model defaults — never add one.
+Config-settable provider fields (PROVIDER_FIELDS): `apiKey`, `baseUrl`, `host`,
+`model`, `timeoutMs`, plus the v0.5.0 thinking toggles `think` (ollama),
+`thinking` + `thinkingBudget` (anthropic), `thinkingBudget` (gemini).
 
 Selection precedence: `--provider` flag > `TAU_PROVIDER` env > `config.provider`
 
@@ -92,6 +98,32 @@ mock provider + tests + this file + README example.
 - Keep the prompt deterministic for a given catalog (no timestamps, no
   randomness) so tests can assert on it.
 
+## Streaming planning — the planStream capability (v0.5.0)
+
+`planStream?(ctx, onEvent?)` is the streaming twin of `plan()`: it emits
+`ProviderStreamEvent`s (`reasoning_delta` / `text_delta` / `usage` —
+@tau/core) while generating and resolves to the SAME zod-validated Plan.
+Streaming NEVER weakens the plan contract: the assembled text passes
+`validatePlanResponse` exactly like the buffered path, and thinking traces
+stay separate from plan text.
+
+- **Wire folding** lives in `packages/ai/src/chat-stream.ts` — one consumer
+  per wire shape: OpenAI-compatible SSE (`reasoning_content` aware),
+  Anthropic Messages SSE (thinking_delta / text_delta / message_start +
+  message_delta usage — Anthropic's usage field names are NOT the OpenAI
+  ones, read them raw), Gemini `alt=sse` (thought parts), Ollama NDJSON.
+- **Implemented by**: openai, deepseek (harness chunk relay + direct path),
+  ollama (`providers.ollama.think: true` requests thinking), anthropic
+  (`providers.anthropic.thinking` enables extended thinking; temperature is
+  omitted per the API contract when thinking is on), gemini
+  (`providers.gemini.thinkingBudget`), mock (deterministic canned sequence
+  for offline demos/tests/screenshots). zai degrades to ONE honest
+  single-shot text event (the SDK surface is non-streaming; no fake
+  reasoning events are ever invented).
+- Front doors without a UI simply call `plan()`; streaming callers check
+  `provider.planStream` and fall back to `plan()` when absent — absence is
+  always a zero-behavior-change condition.
+
 ## Adding a provider — checklist
 
 1. `packages/ai/src/providers/<name>.ts` implementing AIProvider. The pattern
@@ -110,11 +142,19 @@ mock provider + tests + this file + README example.
      from `BaseHttpProvider`).
    - **Optional SDK peer** — see `zai.ts` (dynamic `import("z-ai-web-dev-sdk")`,
      graceful unavailable + reason when absent).
+   - **Non-OpenAI wire, zero-dep fetch** — see `anthropic.ts` (Messages API:
+     `x-api-key` + `anthropic-version` headers, top-level `system`,
+     `max_tokens` required; streaming-only wire path shared by plan and
+     planStream) and `gemini.ts` (Generative Language REST: `x-goog-api-key`,
+     `systemInstruction`, JSON mode via
+     `generationConfig.responseMimeType`).
    - The mock provider lives in `providers/mock.ts` and hosts NO shared
      utility — keep it self-contained so the offline demo never depends on
      (or accidentally exports) code used by real backends. The shared
-     `chatJSON` helper lives in `providers/http.ts`.
-2. Register in `registry.ts`; add config defaults in `store.ts`.
+     `chatJSON` helper lives in `providers/http.ts`; the shared streaming
+     wire folding lives in `../chat-stream.ts`.
+2. Register in `registry.ts`; add config defaults in `store.ts` (defaults
+   only — never model defaults).
 3. `isAvailable()` must be CHEAP and never prompt; `unavailableReason()`
    explains exactly what to install/export.
 4. Tests: request shaping + response parsing with a mocked `chatJSON`/fetch.
@@ -122,7 +162,8 @@ mock provider + tests + this file + README example.
    through its concrete subclasses (see `tests/base-provider.test.ts`);
    `chatJSON` retry/backoff semantics are pinned in
    `tests/http-retry.test.ts` (stubbed fetch, injected sleep — no real
-   waiting, no network).
+   waiting, no network); the streaming wire folding is pinned in
+   `tests/chat-stream.test.ts` and `tests/plan-stream.test.ts`.
 5. Update README (both languages) provider table + `tau config list` output
    if it changes.
 
@@ -136,9 +177,15 @@ each); the provider answers either `{done:true, answer}` or
 `{done:false, plan}` — and a proposed plan is ALWAYS re-graded by the
 deterministic reviewer before it can run (the AI never grades itself).
 
-- Implemented by: `mock` (deterministic decision table, offline tests) and
-  `openai` (same chat/completions wire path as plan). NOT yet: ollama,
-  deepseek, zai — they degrade to one executed round with an honest note.
+- Implemented by: `mock` (deterministic decision table, offline tests),
+  `openai` (same chat/completions wire path as plan), `anthropic` (same
+  Messages wire path), `gemini` (same Generative Language wire path).
+  NOT yet: ollama, deepseek, zai — they degrade to one executed round with
+  an honest note.
+- Streaming variant: `mock`/`openai`/`anthropic`/`gemini` also implement
+  `reflectStream?` (same wire path, same returned decision). The agent
+  loop falls back to buffered `reflect()` when the capability is missing,
+  so not having it is never an error.
 - Validation mirrors plan validation (fences/prose tolerated, strict
   schema otherwise): `validateReflectResponse` + `reflectSchema`.
 - Round history kept in the prompt is capped (last 3 verbatim; older

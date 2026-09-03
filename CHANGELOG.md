@@ -3,7 +3,137 @@
 All notable changes to Tau are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [SemVer](https://semver.org/).
 
-## Unreleased
+## 0.5.0 — 2026-09-03
+
+The streaming release: the AI's thinking finally becomes visible. Seven
+providers (two new: `anthropic` and `gemini`) stream their planning turn —
+reasoning deltas travel separately from the plan text — the agent layer
+relays them per round, and the WebUI renders them as collapsible
+"Thought for Ns" panels next to structured tool-call cards and a
+shiki-highlighted file viewer. A bilingual VitePress docs site decomposes
+the whole product into one page per feature. The safety model is
+untouched: streamed plans pass the exact same strict-JSON validation and
+deterministic review, refusals stay plain JSON before any stream starts,
+and `runPlan()` remains the only execution channel.
+
+### Added
+
+- **Two new AI providers: `anthropic` and `gemini`.** Tau now plans with
+  Claude (Messages API: streaming, `/v1/models` discovery, optional extended
+  thinking via `providers.anthropic.thinking` + `thinkingBudget`) and Google
+  Gemini (Generative Language REST: JSON mode via `responseMimeType`,
+  2.5-series thought deltas surfaced as thinking, optional
+  `providers.gemini.thinkingBudget`). Both are pure `fetch` — zero new
+  dependencies, same config/key conventions as the existing providers.
+
+- **Streaming planning (`planStream`) across every provider.** All real
+  providers can now stream their planning turn: reasoning/thinking deltas
+  (DeepSeek `reasoning_content`, Anthropic `thinking_delta`, Gemini thought
+  parts, Ollama `thinking`) travel separately from the plan text, token
+  usage is reported, and the returned plan passes the exact same strict-JSON
+  validation as before. `providers.ollama.think: true` requests thinking
+  from thinking-capable local models; the offline mock streams a
+  deterministic reasoning trace so the whole pipeline is demonstrable (and
+  screenshotable) without a network.
+
+- **Streaming relay through the agent pipeline.** The planning turn can
+  now surface provider thinking as it happens:
+  `planIntentStream`/`planAndReviewStream` stream the planning turn with
+  the identical strict-JSON validation and deterministic review as before,
+  and `runGoal` accepts an `onPlanStream` observer that relays per-round
+  reasoning/text/usage events (reflect thinking included, tagged with its
+  round). Providers without the new optional `reflectStream` capability —
+  and callers that pass no observer — behave exactly as before. The WebUI
+  wires these APIs into live thinking panels in the next release step.
+
+- **`file.read` reports the detected language.** The structured result now
+  carries `path` and `language` — a best-effort, shiki-compatible language
+  id derived from the file name (`typescript`, `python`, `yaml`,
+  `dockerfile`, ... with an honest `text` fallback for unknown names).
+  `languageForFile()` is exported from `@tau/tools` so the WebUI file
+  viewer picks its highlighter with the exact same detection (issue #110).
+
+- **The WebUI shows the thinking, streams the plan, and renders tool
+  calls.** Planning now streams to the browser (`/api/plan/stream`): the
+  plan card appears immediately, provider reasoning grows live in a
+  collapsible "Thought for Ns" panel, token usage shows in the eyebrow,
+  and the reviewed plan lands as one authoritative terminal event. Agent
+  mode relays per-round thinking (`round_thinking_delta`) onto each round
+  of the timeline. Tool steps render as structured call cards — tool name,
+  risk badge, collapsible args JSON, live output — and `file.read` steps
+  become a highlighted file viewer (path + language chip + shiki body,
+  language detected by the SAME `languageForFile` detection the tool
+  reports, parity-tested across the node and browser copies). Refusals
+  stay plain JSON before any stream starts; every gate is untouched.
+
+- **A documentation site, decomposed from the feature map — one `docs/`
+  directory, no duplication.** The private workspace `docs/` (package
+  `@tau/docs`) builds a bilingual VitePress site (zh default, en mirror
+  under `/en/`): one guide page per user-facing surface (getting started,
+  ask, goal, tools, providers, skills, plugins, WebUI, TUI, config) and
+  one reference page per architecture concern (architecture, safety,
+  adding a provider, authoring skills). The legacy root-level deep dives
+  (`docs/architecture.md`, `docs/safety.md`, `docs/plugins.md`,
+  `docs/skills-authoring.md`) are merged INTO the site's `en/` pages —
+  the deep-dive substance survives verbatim, updated for v0.5.0 — so
+  there is exactly one docs location, not two. Root scripts `docs:dev` /
+  `docs:build` / `docs:preview`; a new L1 skill (`.claude/skills/tau-docs`)
+  owns the authoring workflow and the zh/en mirror contract; the root
+  skill router and the directory governance table register it. The site
+  is pure content — never runtime data, and its build stays outside the
+  `pnpm build` gate.
+
+### Changed
+
+- `normalizeUsage` now understands the DeepSeek harness, Gemini, and Ollama
+  usage wire shapes in addition to the OpenAI shape, so token accounting
+  works uniformly across all seven providers; provider config accepts the
+  new thinking toggles (`think`, `thinking`, `thinkingBudget`) via
+  `tau config set providers.<name>.<field>`.
+
+- Tool steps now stream their output like shell steps do: `executeStep`
+  relays a tool's full result text as one `step_output` chunk (CLI/TUI
+  unaffected — they never consumed `step_output`; the WebUI plan flow
+  still gets its authoritative output from the terminal `result` event).
+  This is what feeds the goal-card tool call cards and the `file.read`
+  viewer — previously those rendered with empty output for tool steps.
+
+- The offline mock provider maps read intents (`read readme.md`,
+  `查看 docs/notes.md`) to a `file.read` plan, so the file viewer and the
+  thinking surfaces are fully demonstrable offline.
+
+- **Docs deploy to GitHub Pages automatically.** A dedicated workflow
+  (`.github/workflows/deploy-docs.yml`) builds the site with the
+  project-site base (`/Tau/`, overridable via `DOCS_BASE`) and deploys it
+  via the official Pages actions (OIDC — no long-lived tokens) whenever a
+  push to `main` or the active release branch touches `docs/**`. Live at
+  https://z-yun-h.github.io/Tau/ once Pages is enabled.
+
+- **CI gate green again: `pnpm audit --prod` passes.** Two newly
+  disclosed moderate advisories against `qs < 6.16.0` (arriving via the
+  `@modelcontextprotocol/sdk → express` chain) broke the dependency-audit
+  gate for every push since they were published. A range-scoped override
+  in `pnpm-workspace.yaml` (`"qs@<6.16.0": "^6.16.0"`) lifts only the
+  vulnerable resolutions to the patched release; the audit is clean
+  without weakening the gate. The root package version now also reads
+  0.5.0.
+
+### Review hardening
+
+- **Browser-level DOM snapshot suite** (`app/webui/tests/client-snapshot.test.ts`):
+  the REAL built client in headless Chromium against the REAL server —
+  pinned snapshots for the plan card (thinking collapsed), the expanded
+  thinking panel, the streamed result card, and the agent goal card with
+  per-round thinking plus the `file.read` viewer; volatile fields
+  (sandbox paths, wall-clock seconds, ISO stamps) are normalized. Skips
+  automatically where no Chromium exists (e.g. the CI runner).
+- **Streaming endpoint snapshots**: `POST /api/plan/stream` (full
+  reasoning → text → usage → terminal plan lifecycle) and
+  `POST /api/goal/stream` (round thinking relay to `goal_result`) are now
+  file-snapshotted like the rest of the e2e suite.
+- **Regenerated run screenshots** incl. two new views: `thinking.png`
+  (expanded panel) and `file-viewer.png` (agent `file.read` viewer) —
+  every PNG now reflects the v0.5.0 UI.
 
 ## 0.4.0 — 2026-09-02
 

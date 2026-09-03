@@ -1,0 +1,128 @@
+# Architecture
+
+This is the human-facing deep dive. Agents: read `AGENTS/architecture.md`
+for the rulebook version (same facts, normative wording).
+
+Tau is a pnpm workspace monorepo: `packages/` holds the capability layers, `app/` the front doors — all TypeScript ESM. The core principle is **one-way dependencies**: front doors depend on capability layers, and capability layers depend only downward.
+
+## Package layout
+
+```
+packages/
+  core/      types, config, tool registry contracts (ToolDefinition / ToolResult)
+  tools/     deterministic tool layer: file/sys/net/text families
+  engine/    execution & safety: reviewPlan() + runPlan() (the only channel)
+  ai/        provider abstraction: AIProvider + seven implementations + streaming wire layer
+  skills/    skill runtime + bundled user-facing skills (product content)
+  plugins/   MCP client layer (plugin tools are ALWAYS medium risk)
+  agent/     orchestration: catalog assembly + planning pipeline shared by ask/goal
+  ui/ markdown/  terminal render primitives / dual-form markdown (HTML + ANSI)
+app/
+  cli/ tui/ webui/   three front doors, one engine, one gate
+```
+
+## The pipeline
+
+```
+                 ┌──────────────────────────────────────────────────────────────────┐
+ user intent ──► │ tau ask (app/cli/src/ask.ts)                                     │
+                 │   1. resolveProvider()      packages/ai/src/registry.ts          │
+                 │   2. planningContext()      packages/ai/src/prompt.ts            │
+                 │      ├─ tool catalog  ←─ packages/tools/src/registry.ts         │
+                 │      └─ skill catalog ←─ packages/skills/src/loader.ts          │
+                 │   3. provider.plan()        packages/ai/src/providers/*          │
+                 │      └─ validatePlanResponse()  zod, STRICT JSON                 │
+                 │   4. runPlan()              packages/engine/src/session.ts       │
+                 │      ├─ reviewPlan()        packages/engine/src/safety.ts        │
+                 │      ├─ confirm UI          packages/ui/src/confirm.ts           │
+                 │      ├─ executeStep()       packages/engine/src/executor.ts      │
+                 │      └─ appendHistory()     packages/core/src/config/history.ts  │
+                 └──────────────────────────────────────────────────────────────────┘
+
+ direct CLI (tau file find ...) ──► runToolDirect() ──► tool.run() ──► history
+ tui / webui (tau tui, tau web) ──► @tau/agent planIntent() ──► runPlan() ──┘
+```
+
+Three invariants: (1) the AI never grades itself — review is deterministic code; (2) `runPlan()` is the only execution channel, no bypass; (3) plans are strict JSON — loose output is rejected.
+
+## The streaming layer (v0.5.0)
+
+`packages/ai/src/chat-stream.ts` is the unified streaming wire layer: four wire protocols (OpenAI SSE, Anthropic Messages SSE, Gemini `alt=sse`, Ollama NDJSON) collapse into provider-agnostic `ProviderStreamEvent`s (`reasoning_delta` / `text_delta` / `usage`). The agent layer (`planIntentStream`, `runGoal`'s `onPlanStream`) and the WebUI (`/api/plan/stream`, thinking panels) consume the same event shapes, relaying layer by layer without re-invention. Streaming is an optional capability: a provider without `planStream()`/`reflectStream()` falls back to buffered planning with zero behavior change, and a streamed plan still passes the same validation and review as a buffered one.
+
+## Module tour
+
+### packages/core/src/types.ts — the vocabulary
+
+Every subsystem speaks the same language: `Plan`, `PlanStep`, `ToolDefinition`, `SkillMeta`, `SafetyReview`, `RiskLevel` (low < medium < high < blocked). Since v0.5.0 the vocabulary also carries the streaming shapes — `ProviderStreamEvent`, `ProviderUsage`, and the optional `planStream`/`reflectStream` capability methods on `AIProvider`. Change these and the typechecker will walk you through the consequences.
+
+### packages/tools/src/ — the dual-use toolbelt
+
+A `ToolDefinition` is both a CLI backend and a unit the AI planner can propose. Tools return plain text (no ANSI — history must stay clean) and may throw; callers render errors. Registration is idempotent for core tools and throw-on-duplicate for skills (shadowing a core tool must fail loudly).
+
+Families: `file.*`, `sys.*`, `net.*`, `text.*`. Design bias: read-only by default; the mutating tools (`file.rename`, `text.replace`, `file.write`) are dry-run by default and carry `risk: medium`.
+
+### packages/engine/src/safety.ts — the deterministic gate
+
+Two pattern lists: `DENY_PATTERNS` (verdict: deny) and `CAUTION_PATTERNS` (escalate to high risk). Plus structural rules: no steps, >10 steps, unknown tool references, empty shell commands, >2000-char shell commands → blocked. The reviewer is pure: same plan in, same verdict out, no network, no clock.
+
+### packages/engine/src/session.ts — the only door to execution
+
+`runPlan()` orchestrates review → confirm → execute → history. Anything that runs AI-generated steps goes through it. Direct CLI tool runs bypass confirmation (first-party code) but never bypass history.
+
+### packages/ai/src/ — providers behind one interface
+
+`AIProvider.plan(ctx) -> Plan`. Providers receive the REAL tool+skill catalog in the system prompt, so they can only propose things that exist — and the reviewer independently re-verifies that. `validatePlanResponse()` is strict about content (zod `.strict()`), tolerant about wrapping (code fences, prose).
+
+Providers: `mock` (offline keyword matching), `ollama` (local HTTP), `openai` (any OpenAI-compatible endpoint), `deepseek` (official streaming wire format, harness adapter with zero-dep fallback), `zai` (optional SDK, dynamically imported), `anthropic` (Messages API with native thinking blocks), `gemini` (GenerateContent with thought parts).
+
+Providers may also implement `listModels()` for live model discovery. The catalog service (`packages/ai/src/models.ts`) caches ids per provider (24 h TTL) and the `tau provider` command family (set-key / models / use) turns it into the model-selection UX: configuring an API key auto-refreshes the catalog, then you pick from real models. There are no bundled default models — with a single-model catalog Tau auto-selects it, otherwise selection is explicit (`tau provider use`) and the request-time resolver (`resolveModel`) fails with an actionable hint when nothing is chosen. Keys live in config (chmod 0600) with env vars as fallback and are masked in every CLI output.
+
+### packages/skills/src/ — markdown as a plugin format
+
+SKILL.md frontmatter (yaml + zod) → `SkillMeta`. Declarative `commands` become tools named `<skill>.<command>` at startup. Three scopes with later-wins precedence: bundled → user ($TAU_HOME/skills) → workspace (./skills, ./.tau/skills). Skills are data: nothing in a skill directory is ever `eval`'d or dynamically imported.
+
+### packages/core/src/config/ — where state lives
+
+`$TAU_HOME` (default `~/.tau`, XDG-aware, overridable for tests): `config.json` (provider, timeout, aliases, per-provider settings — may hold API keys, so it is written with chmod 0600 and keys are masked on display), `history.jsonl` (append-only, one `HistoryEntry` per line).
+
+## Directory governance
+
+The normative table is in `AGENTS/architecture.md`; the short version:
+
+- **Repo root**: `AGENTS.md` + `AGENTS/` (AI behavior rulebooks), `SKILL.md`
+  (the root dev-tool skill router — top of the SKILL.md read chain),
+  `.claude/skills/`
+  (root-layer dev-workflow SKILL.md files for coding agents — tau-skill-new is
+  a thin router), `docs/` (the VitePress documentation site — this site),
+  `.github/`, `scripts/` (workspace tooling incl. `scripts/screenshot/`;
+  run-screenshot captures live in each app's `docs/screenshots/`). Package-
+  and app-bound agent skills live at `packages/<pkg>/SKILL.md` and
+  `app/<app>/SKILL.md`
+  (tool layer — today: `packages/skills/SKILL.md` and `app/webui/SKILL.md`).
+- **`packages/skills/`**: `bundled/<name>/SKILL.md` (skills that ship with the
+  CLI, resolved at runtime via `packageRoot()`) and `templates/` (the
+  `tau skill new` scaffold, read at runtime) — these are product content
+  (runtime data for the CLI), not agent skills.
+- **Runtime, never committed**: `$TAU_HOME/skills/` (user skills), `config.json`,
+  `history.jsonl`; plus the _user's_ project `./skills/` / `./.tau/skills/`
+  scopes. Tau's own repo never contains user-scope skills.
+
+`docs/` is a PRIVATE workspace member (`@tau/docs`) — the docs are content, never runtime data; the CLI does not read from here.
+
+## Invariants
+
+1. `runPlan()` is the single execution path for AI plans.
+2. `blocked` risk is terminal — no flag or config downgrades it.
+3. Mutating tools dry-run by default.
+4. The planner sees exactly what the reviewer will enforce.
+5. History records everything that touched the world.
+
+## Extending
+
+- **New tool op** → `packages/tools/src/<family>.ts` (ToolDefinition) + CLI wiring in
+  `app/cli/src/<family>.ts` + tests. Mutating? Make it dry-run default.
+- **New provider** → `packages/ai/src/providers/<name>.ts` + registry + config defaults
+  - tests with mocked fetch. Adding streaming? Implement `planStream()` on the wire protocol, or fall back to buffered `plan()`. See [provider development](/en/reference/provider-dev).
+- **New skill** → just markdown; see the [skills guide](/en/guide/skills).
+
+Full "I want to..." table lives in `AGENTS/architecture.md`.

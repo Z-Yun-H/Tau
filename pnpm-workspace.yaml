@@ -1,6 +1,7 @@
 packages:
   - "packages/*"
   - "app/*"
+  - "docs"
 
 # Single source of truth for every external dependency version in the
 # workspace (pnpm catalog:). Packages declare `"<dep>": "catalog:"` and
@@ -36,6 +37,7 @@ catalog:
   typescript: ^7.0.2
   unocss: ^66.9.1
   vite: ^8.2.0
+  vitepress: ^1.6.3
   vitest: ^4.1.11
   vue: ^3.5.0
 
@@ -70,3 +72,10 @@ minimumReleaseAgeExclude:
   - "@unocss/transformer-directives@66.9.1"
   - "@unocss/transformer-variant-group@66.9.1"
   - "@unocss/vite@66.9.1"
+
+# Security overrides — keep vulnerable transitive ranges out of the tree.
+# qs < 6.16.0 has two moderate advisories (GHSA-x5fp-wj9c-mxmx,
+# GHSA-4mjr-xmp4-gh2g) via @modelcontextprotocol/sdk → express; the range
+# selector only touches installs that would otherwise resolve vulnerable.
+overrides:
+  "qs@<6.16.0": "^6.16.0"

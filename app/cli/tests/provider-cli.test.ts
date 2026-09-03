@@ -71,7 +71,7 @@ function stubModelsEndpoint(
 describe("tau provider CLI", () => {
   it("list shows registered providers with key source and model", async () => {
     const out = await run("provider", "list");
-    for (const name of ["mock", "ollama", "openai", "deepseek", "zai"]) {
+    for (const name of ["mock", "ollama", "openai", "deepseek", "zai", "anthropic", "gemini"]) {
       expect(out).toContain(name);
     }
     expect(out).toContain("no key needed");
@@ -83,7 +83,7 @@ describe("tau provider CLI", () => {
       model: string;
       default: boolean;
     }>;
-    expect(json).toHaveLength(5);
+    expect(json).toHaveLength(7);
     const mock = json.find((row) => row.provider === "mock");
     expect(mock?.default).toBe(true);
     expect(mock?.keySource).toBe("-");

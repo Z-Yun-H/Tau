@@ -5,7 +5,7 @@
  */
 
 import { buildSystemPrompt, validatePlanResponse } from "../prompt.js";
-import type { AIProvider, Plan, PlanningContext } from "@tau/core";
+import type { AIProvider, Plan, PlanningContext, ProviderStreamHandler } from "@tau/core";
 
 /**
  * Z.ai provider via the optional `z-ai-web-dev-sdk` package.
@@ -72,6 +72,31 @@ export class ZaiProvider implements AIProvider {
       ],
     });
     const content = response.choices?.[0]?.message?.content ?? "";
+    return validatePlanResponse(content);
+  }
+
+  /**
+   * Streaming plan (v0.5.0): the SDK surface Tau consumes is non-streaming,
+   * so planStream degrades HONESTLY — one text_delta carrying the whole
+   * reply (no invented reasoning events), then the same validation gate.
+   * Front doors can treat it uniformly; no thinking is claimed that the
+   * wire never produced.
+   */
+  async planStream(ctx: PlanningContext, onEvent?: ProviderStreamHandler): Promise<Plan> {
+    const sdk = await loadSDK();
+    if (!sdk) throw new Error(this.unavailableReason());
+    // Dynamic import avoids the registry -> provider -> models -> registry
+    // ESM initialization cycle (see the note in providers/openai.ts).
+    const { resolveModel } = await import("../models.js");
+    const { model } = await resolveModel(this.name);
+    const response = await sdk.chat.completions.create({
+      messages: [
+        { role: "system", content: `${buildSystemPrompt(ctx)} (model: ${model})` },
+        { role: "user", content: ctx.intent },
+      ],
+    });
+    const content = response.choices?.[0]?.message?.content ?? "";
+    if (content.length > 0) onEvent?.({ type: "text_delta", text: content });
     return validatePlanResponse(content);
   }
 }

@@ -1,4 +1,4 @@
-# MCP plugins — driving external tools from Tau
+# Plugins (MCP)
 
 Tau can act as an **MCP host**: any server that speaks the
 [Model Context Protocol](https://modelcontextprotocol.io) can plug its tools
@@ -149,3 +149,18 @@ Any bridge that speaks MCP works — the tool names in your catalog are
 
 Configuration lives in `$TAU_HOME/config.json` under `plugins`; edit with
 `tau plugin ...` commands or by hand (see `tau config path`).
+
+## Skill or plugin?
+
+|       | Skill                                    | Plugin                            |
+| ----- | ---------------------------------------- | --------------------------------- |
+| Shape | one SKILL.md document                    | separate tool-server process      |
+| Tools | declarative commands (expand to intents) | real executable tools             |
+| Risk  | declared, reviewed                       | always medium                     |
+| Fits  | prompt injection, conventions            | real external system capabilities |
+
+Zero-code injection → [skills](/en/guide/skills); real systems → plugins.
+
+## Troubleshooting
+
+When a plugin is unreachable, Tau degrades honestly: its tools drop out of the catalog with a note and the rest of the pipeline continues. `tau plugin list` shows availability; for network servers check the URL and auth env vars.

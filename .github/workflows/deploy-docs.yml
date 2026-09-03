@@ -1,0 +1,71 @@
+name: Deploy docs site
+
+# The bilingual VitePress site (docs/, @tau/docs) deploys to GitHub Pages
+# as a PROJECT site: https://z-yun-h.github.io/Tau/ (base "/Tau/", pinned
+# in the build step — DOCS_BASE overrides for other hosts). Deploys fire on
+# pushes that touch the site or this workflow, and manually via
+# workflow_dispatch. Pages must be enabled once with build_type=workflow
+# (Settings → Pages → Source: GitHub Actions); the workflow then owns the
+# deployment — no gh-pages branch is ever created.
+
+on:
+  push:
+    branches:
+      - main
+      - release/v0.5.0-webui-ai-docs
+    paths:
+      - "docs/**"
+      - ".github/workflows/deploy-docs.yml"
+  workflow_dispatch:
+
+# Actions-level permissions for the Pages deploy (OIDC, no long-lived
+# deploy key/token).
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a newer push supersedes an in-flight one.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: build + deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm version comes from package.json "packageManager" (pnpm@12.2.1)
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Build docs (project-site base /Tau/)
+        run: pnpm docs:build
+        env:
+          DOCS_BASE: /Tau/
+
+      # enablement: true — the workflow's own GITHUB_TOKEN (pages: write)
+      # turns Pages on with build_type=workflow on the first run, so no
+      # manual Settings → Pages step is ever needed.
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/.vitepress/dist
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
