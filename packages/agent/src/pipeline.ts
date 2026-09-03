@@ -6,7 +6,7 @@
  * the returned plan through @tau/engine's runPlan, the only execution channel.
  */
 
-import type { Plan, ProviderUsage, SkillMeta } from "@tau/core";
+import type { Plan, ProviderStreamHandler, ProviderUsage, SkillMeta } from "@tau/core";
 import { normalizeUsage, planningContext, resolveProvider } from "@tau/ai";
 import { registerPluginTools } from "@tau/plugins";
 import { registerCoreTools, registerTools, resetRegistry } from "@tau/tools";
@@ -46,14 +46,11 @@ export interface PlannedIntent {
 }
 
 /**
- * Plan a natural-language intent with the full catalog in scope. Plugin tools
- * are registered before planning so an enabled MCP server contributes its
- * tools; its failures degrade to returned warnings, never a crash.
+ * Shared front half of the intent pipeline (catalog + provider resolution):
+ * planIntent and planIntentStream both funnel through here so the two stay
+ * behaviorally identical up to the plan() call itself.
  */
-export async function planIntent(
-  intent: string,
-  options: PlanIntentOptions = {},
-): Promise<PlannedIntent> {
+async function preparePlanning(intent: string, options: PlanIntentOptions) {
   const warnings = await registerPluginTools();
   const scan = scanSkills();
   const ctx = planningContext(intent, renderSkillCatalog(scan.skills));
@@ -62,9 +59,53 @@ export async function planIntent(
   if (!available) {
     throw new ProviderUnavailableError(choice.provider.name, choice.provider.unavailableReason?.());
   }
+  return { warnings, ctx, choice };
+}
+
+/**
+ * Plan a natural-language intent with the full catalog in scope. Plugin tools
+ * are registered before planning so an enabled MCP server contributes its
+ * tools; its failures degrade to returned warnings, never a crash.
+ */
+export async function planIntent(
+  intent: string,
+  options: PlanIntentOptions = {},
+): Promise<PlannedIntent> {
+  const { warnings, ctx, choice } = await preparePlanning(intent, options);
   const plan = await choice.provider.plan(ctx);
   // Observability (issue #98): read the provider's captured usage right
   // after the awaited call (sequential per process — see BaseHttpProvider).
+  const usage = normalizeUsage((choice.provider as { lastUsage?: unknown }).lastUsage);
+  return {
+    intent,
+    plan,
+    providerName: choice.provider.name,
+    providerLabel: choice.provider.label,
+    providerSource: choice.source,
+    warnings,
+    ...(usage ? { usage } : {}),
+  };
+}
+
+/**
+ * Streaming twin of planIntent (v0.5.0): identical catalog assembly, provider
+ * resolution and validation — the ONLY difference is that a provider with the
+ * optional planStream capability streams its turn (reasoning/text/usage
+ * events relayed to onEvent verbatim). Falls back to the buffered plan()
+ * when the provider has no planStream, so absence is always zero-change.
+ * Execution never happens here — the returned plan must still funnel through
+ * @tau/engine's runPlan, the only execution channel.
+ */
+export async function planIntentStream(
+  intent: string,
+  options: PlanIntentOptions = {},
+  onEvent?: ProviderStreamHandler,
+): Promise<PlannedIntent> {
+  const { warnings, ctx, choice } = await preparePlanning(intent, options);
+  const plan =
+    choice.provider.planStream === undefined
+      ? await choice.provider.plan(ctx)
+      : await choice.provider.planStream(ctx, onEvent);
   const usage = normalizeUsage((choice.provider as { lastUsage?: unknown }).lastUsage);
   return {
     intent,

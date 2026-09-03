@@ -82,14 +82,21 @@ export class OpenAIProvider extends BaseHttpProvider {
   }
 
   /**
-   * Streaming plan (v0.5.0): same request shape as chatCompletion with
-   * `stream: true` + `stream_options.include_usage`; `reasoning_content`
-   * deltas (thinking models served over OpenAI-compatible endpoints) relay
-   * as reasoning events and never mix into the plan text. The assembled
-   * text passes the SAME validatePlanResponse gate — streaming never
-   * weakens the plan contract.
+   * Streaming chat completion (v0.5.0): same request shape as
+   * chatCompletion with `stream: true` + `stream_options.include_usage`;
+   * `reasoning_content` deltas (thinking models served over
+   * OpenAI-compatible endpoints) relay as reasoning events and never mix
+   * into the reply text. Shared wire path for planStream() and
+   * reflectStream().
    */
-  async planStream(ctx: PlanningContext, onEvent?: ProviderStreamHandler): Promise<Plan> {
+  protected async streamChatCompletion(
+    system: string,
+    user: string,
+    onEvent?: ProviderStreamHandler,
+  ): Promise<string> {
+    // Dynamic import: models.ts pulls in the provider registry, and a static
+    // edge here would create a registry -> provider -> models -> registry
+    // cycle that breaks ESM module initialization.
     const { resolveModel } = await import("../models.js");
     const { model } = await resolveModel(this.name);
     const controller = new AbortController();
@@ -111,8 +118,8 @@ export class OpenAIProvider extends BaseHttpProvider {
           stream: true,
           stream_options: { include_usage: true },
           messages: [
-            { role: "system", content: buildSystemPrompt(ctx) },
-            { role: "user", content: ctx.intent },
+            { role: "system", content: system },
+            { role: "user", content: user },
           ],
         }),
         signal: controller.signal,
@@ -124,8 +131,7 @@ export class OpenAIProvider extends BaseHttpProvider {
       if (!response.body) {
         throw new Error("provider returned no response body");
       }
-      const text = await consumeOpenAiCompatibleStream(response.body, onEvent);
-      return validatePlanResponse(text);
+      return await consumeOpenAiCompatibleStream(response.body, onEvent);
     } catch (error) {
       if (controller.signal.aborted) {
         throw new Error(`provider request timed out after ${Math.round(this.timeoutMs() / 1000)}s`);
@@ -140,6 +146,26 @@ export class OpenAIProvider extends BaseHttpProvider {
   async reflect(ctx: ReflectContext): Promise<AgentDecision> {
     return validateReflectResponse(
       await this.chatCompletion(buildReflectPrompt(ctx), lastRoundDigest(ctx)),
+    );
+  }
+
+  /**
+   * Streaming plan (v0.5.0): shared streaming wire path, same validation
+   * gate — streaming never weakens the plan contract.
+   */
+  async planStream(ctx: PlanningContext, onEvent?: ProviderStreamHandler): Promise<Plan> {
+    return validatePlanResponse(
+      await this.streamChatCompletion(buildSystemPrompt(ctx), ctx.intent, onEvent),
+    );
+  }
+
+  /** Streaming reflection — same wire path, deltas relayed, same schema. */
+  async reflectStream(
+    ctx: ReflectContext,
+    onEvent?: ProviderStreamHandler,
+  ): Promise<AgentDecision> {
+    return validateReflectResponse(
+      await this.streamChatCompletion(buildReflectPrompt(ctx), lastRoundDigest(ctx), onEvent),
     );
   }
 }

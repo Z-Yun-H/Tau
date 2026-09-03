@@ -12,6 +12,7 @@ interface AIProvider {
   listModels?(): Promise<ModelInfo[]>; // optional live model discovery
   reflect?(ctx: ReflectContext): Promise<AgentDecision>; // optional agent loop
   planStream?(ctx: PlanningContext, onEvent?: ProviderStreamHandler): Promise<Plan>; // optional streaming planning (v0.5.0)
+  reflectStream?(ctx: ReflectContext, onEvent?: ProviderStreamHandler): Promise<AgentDecision>; // optional streaming reflection (v0.5.0)
 }
 ```
 
@@ -181,6 +182,10 @@ deterministic reviewer before it can run (the AI never grades itself).
   Messages wire path), `gemini` (same Generative Language wire path).
   NOT yet: ollama, deepseek, zai — they degrade to one executed round with
   an honest note.
+- Streaming variant: `mock`/`openai`/`anthropic`/`gemini` also implement
+  `reflectStream?` (same wire path, same returned decision). The agent
+  loop falls back to buffered `reflect()` when the capability is missing,
+  so not having it is never an error.
 - Validation mirrors plan validation (fences/prose tolerated, strict
   schema otherwise): `validateReflectResponse` + `reflectSchema`.
 - Round history kept in the prompt is capped (last 3 verbatim; older
