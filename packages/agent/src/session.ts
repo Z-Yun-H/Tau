@@ -11,13 +11,14 @@
 
 import { createRequire } from "node:module";
 import { loadConfig, readHistory, tauHome } from "@tau/core";
-import type { HistoryEntry, RiskLevel, SafetyReview } from "@tau/core";
+import type { HistoryEntry, ProviderStreamHandler, RiskLevel, SafetyReview } from "@tau/core";
 import { getProvider, providerNames, resolveProvider } from "@tau/ai";
 import { reviewPlan } from "@tau/engine";
 import { scanSkills } from "@tau/skills";
 import { allTools } from "@tau/tools";
 import {
   planIntent,
+  planIntentStream,
   prepareCatalog,
   type PlannedIntent,
   type PlanIntentOptions,
@@ -193,5 +194,20 @@ export async function planAndReview(
   options: PlanIntentOptions = {},
 ): Promise<PlannedWithReview> {
   const planned = await planIntent(intent, options);
+  return { ...planned, review: reviewPlan(planned.plan) };
+}
+
+/**
+ * Streaming twin of planAndReview (v0.5.0): same catalog, same provider
+ * resolution, same deterministic review — provider stream events (thinking
+ * / text / usage) relay to onEvent while the plan generates. Falls back to
+ * the buffered plan() when the provider has no planStream capability.
+ */
+export async function planAndReviewStream(
+  intent: string,
+  options: PlanIntentOptions = {},
+  onEvent?: ProviderStreamHandler,
+): Promise<PlannedWithReview> {
+  const planned = await planIntentStream(intent, options, onEvent);
   return { ...planned, review: reviewPlan(planned.plan) };
 }

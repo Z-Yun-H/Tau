@@ -189,6 +189,16 @@ export class GeminiProvider extends BaseHttpProvider {
       await this.generateTurn(buildReflectPrompt(ctx), lastRoundDigest(ctx)),
     );
   }
+
+  /** Streaming reflection — same wire, deltas relayed, same schema. */
+  async reflectStream(
+    ctx: ReflectContext,
+    onEvent?: ProviderStreamHandler,
+  ): Promise<AgentDecision> {
+    return validateReflectResponse(
+      await this.generateTurn(buildReflectPrompt(ctx), lastRoundDigest(ctx), onEvent),
+    );
+  }
 }
 
 /**

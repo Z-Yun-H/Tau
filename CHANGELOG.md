@@ -25,6 +25,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   deterministic reasoning trace so the whole pipeline is demonstrable (and
   screenshotable) without a network.
 
+- **Streaming relay through the agent pipeline.** The planning turn can
+  now surface provider thinking as it happens:
+  `planIntentStream`/`planAndReviewStream` stream the planning turn with
+  the identical strict-JSON validation and deterministic review as before,
+  and `runGoal` accepts an `onPlanStream` observer that relays per-round
+  reasoning/text/usage events (reflect thinking included, tagged with its
+  round). Providers without the new optional `reflectStream` capability —
+  and callers that pass no observer — behave exactly as before. The WebUI
+  wires these APIs into live thinking panels in the next release step.
+
 ### Changed
 
 - `normalizeUsage` now understands the DeepSeek harness, Gemini, and Ollama

@@ -228,6 +228,15 @@ export interface AIProvider {
    * zai degrades to a single-shot emission (SDK is non-streaming).
    */
   planStream?(ctx: PlanningContext, onEvent?: ProviderStreamHandler): Promise<Plan>;
+  /**
+   * Optional streaming twin of {@link reflect} (v0.5.0): same contract and
+   * the same validated {@link AgentDecision}, with reasoning/text deltas
+   * relayed through the observer while the reflection turn generates.
+   * Absent = the agent loop calls the buffered reflect() (zero behavior
+   * change). Implemented by: mock, openai, anthropic, gemini; providers
+   * without reflect() at all omit both.
+   */
+  reflectStream?(ctx: ReflectContext, onEvent?: ProviderStreamHandler): Promise<AgentDecision>;
 }
 
 /** ---------- Provider streaming (v0.5.0) ---------- */

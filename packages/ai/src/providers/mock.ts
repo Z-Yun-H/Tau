@@ -170,6 +170,36 @@ export class MockProvider implements AIProvider {
   }
 
   /**
+   * Streaming reflection (v0.5.0) — deterministic canned reasoning + the
+   * decision document, resolving to exactly what reflect() returns. Keeps
+   * agent-mode thinking demos reproducible offline.
+   */
+  async reflectStream(
+    ctx: ReflectContext,
+    onEvent?: ProviderStreamHandler,
+  ): Promise<AgentDecision> {
+    const decision = await this.reflect(ctx);
+    const reasoning =
+      "Deterministic offline reflection (mock): review executed rounds, decide done vs one more round.";
+    for (const piece of chunkText(reasoning, 24)) {
+      onEvent?.({ type: "reasoning_delta", text: piece });
+    }
+    const document = decision.done
+      ? JSON.stringify({ done: true, answer: decision.answer })
+      : JSON.stringify({
+          done: false,
+          explanation: decision.plan.explanation,
+          steps: decision.plan.steps,
+          note: decision.note,
+        });
+    for (const piece of chunkText(document, 48)) {
+      onEvent?.({ type: "text_delta", text: piece });
+    }
+    if (this.lastUsage) onEvent?.({ type: "usage", usage: this.lastUsage });
+    return decision;
+  }
+
+  /**
    * Deterministic reflection for tests and offline demos of the agent loop.
    *
    * Decision table (keyword-driven, zero-network):
