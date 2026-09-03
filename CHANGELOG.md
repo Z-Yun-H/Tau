@@ -3,7 +3,18 @@
 All notable changes to Tau are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [SemVer](https://semver.org/).
 
-## Unreleased
+## 0.5.0 — 2026-09-03
+
+The streaming release: the AI's thinking finally becomes visible. Seven
+providers (two new: `anthropic` and `gemini`) stream their planning turn —
+reasoning deltas travel separately from the plan text — the agent layer
+relays them per round, and the WebUI renders them as collapsible
+"Thought for Ns" panels next to structured tool-call cards and a
+shiki-highlighted file viewer. A bilingual VitePress docs site decomposes
+the whole product into one page per feature. The safety model is
+untouched: streamed plans pass the exact same strict-JSON validation and
+deterministic review, refusals stay plain JSON before any stream starts,
+and `runPlan()` remains the only execution channel.
 
 ### Added
 

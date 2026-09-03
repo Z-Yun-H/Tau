@@ -40,7 +40,7 @@ tau file find "*.ts"                    # 也可以直接用工具
 
 | 命令族         | 能力                                                                                                                                                         |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `tau ask`      | 自然语言 → Provider 计划 → 安全审查 → 确认 UI → 执行 → 历史                                                                                                  |
+| `tau ask`      | 自然语言 → Provider 计划 → 安全审查 → 确认 UI → 执行 → 历史（v0.5.0：WebUI 规划时实时展示 AI 思考）                                                          |
 | `tau goal`     | 多轮 Agent 循环：计划 → 执行 → 反思 → 循环（轮数上限、每轮安全审查、确认门完全一致）                                                                         |
 | `tau file`     | glob 查找（自动跳过 node_modules）、目录树、stat、行号读取（offset/limit）、单目录清单、正则批量重命名（默认 dry-run）、文本写入（工作区收容，默认 dry-run） |
 | `tau sys`      | 系统/CPU/内存信息、磁盘用量、CPU 排行进程、日期时间（本地/ISO/epoch/时区）、which、环境变量查询（单名，medium 风险）                                         |
@@ -264,6 +264,7 @@ SKILL.md          根级开发工具技能路由         changelog/  每日 AI �
 
 ## 文档
 
+- **[文档站](docs-site/)** —— 双语 VitePress 站点（默认中文，英文在 `/en/`），每个功能一篇；`pnpm docs:dev` 本地浏览，`pnpm docs:build` 构建
 - [架构详解](docs/architecture.md) —— 流水线图、不变量、如何添加工具/Provider
 - [安全模型](docs/safety.md) —— 黑白名单、风险语义、为什么没有删除工具
 - [技能编写](docs/skills-authoring.md) —— frontmatter 契约、示例、校验规则

@@ -13,11 +13,9 @@ You will see the AI's planning explanation, every step (tool or shell command), 
 
 ## Streaming thinking (v0.5.0)
 
-```bash
-tau ask "list all TODO comments" --stream
-```
+Since v0.5.0, the planning turn can stream the provider's thinking as it happens (reasoning deltas): DeepSeek's `reasoning_content`, Anthropic's `thinking_delta` and Gemini's thought parts arrive on a separate channel from the plan text. The assembled plan still passes the exact same strict-JSON validation and deterministic review as buffered mode — streaming changes when you see things, never what can execute.
 
-`--stream` surfaces the provider's thinking as it happens (reasoning deltas): DeepSeek's `reasoning_content`, Anthropic's `thinking_delta` and Gemini's thought parts all arrive on a separate channel from the plan text. The plan itself still passes the exact same strict-JSON validation and deterministic review as buffered mode — streaming changes when you see things, never what can execute.
+This capability currently surfaces in the **WebUI**: while planning, thinking streams live into the collapsible panel at the top of the plan card. The CLI does not expose a `--stream` flag yet — the library APIs (`planIntentStream` / `onPlanStream`) are ready for custom integrations.
 
 ## tau ask vs tau goal
 

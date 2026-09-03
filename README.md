@@ -44,7 +44,7 @@ around: **the AI proposes, deterministic code disposes.**
 
 | Area           | What you get                                                                                                                                                                      |
 | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tau ask`      | NL intent → provider plan → safety review → confirm UI → execution → history                                                                                                      |
+| `tau ask`      | NL intent → provider plan → safety review → confirm UI → execution → history (v0.5.0: the WebUI shows the provider's thinking live while it plans)                                |
 | `tau goal`     | multi-round agent loop: plan → run → reflect → repeat (round cap, per-round safety review, same confirmation gates)                                                               |
 | `tau file`     | glob find (prunes node_modules), tree, stat, line-numbered read (offset/limit), dir list, regex batch rename (dry-run default), text write (workspace-contained, dry-run default) |
 | `tau sys`      | OS/CPU/memory info, disk usage, top processes, datetime (local/ISO/epoch/tz), which, env lookup (one name, medium risk)                                                           |
@@ -279,6 +279,7 @@ and apps depend on all of them. No cycles — including at test time.
 
 ## Documentation
 
+- **[Documentation site](docs-site/)** — bilingual VitePress site (zh default, en under `/en/`), one page per feature; `pnpm docs:dev` to browse locally, `pnpm docs:build` to build
 - [Architecture deep-dive](docs/architecture.md) — pipeline diagram, invariants, how to add a tool/provider
 - [Safety model](docs/safety.md) — deny/caution lists, risk semantics, why there is no delete tool
 - [Skill authoring](docs/skills-authoring.md) — frontmatter contract, examples, validation
