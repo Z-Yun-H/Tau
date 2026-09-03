@@ -35,6 +35,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   and callers that pass no observer — behave exactly as before. The WebUI
   wires these APIs into live thinking panels in the next release step.
 
+- **`file.read` reports the detected language.** The structured result now
+  carries `path` and `language` — a best-effort, shiki-compatible language
+  id derived from the file name (`typescript`, `python`, `yaml`,
+  `dockerfile`, ... with an honest `text` fallback for unknown names).
+  `languageForFile()` is exported from `@tau/tools` so the WebUI file
+  viewer picks its highlighter with the exact same detection (issue #110).
+
 ### Changed
 
 - `normalizeUsage` now understands the DeepSeek harness, Gemini, and Ollama
