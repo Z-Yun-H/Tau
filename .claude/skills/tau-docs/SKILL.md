@@ -22,6 +22,13 @@ it. Normative placement: the directory governance table in
 | Production build              | `pnpm docs:build`   |
 | Preview the production build  | `pnpm docs:preview` |
 
+**Deployment is automatic**: `.github/workflows/deploy-docs.yml` builds
+and deploys the site to GitHub Pages (project site
+https://z-yun-h.github.io/Tau/, base `/Tau/` via `DOCS_BASE`) whenever a
+push to `main` or the active release branch touches `docs/**` — no
+manual deploy step exists. `DOCS_BASE` overrides the base for other
+hosts.
+
 Build output goes to `docs/.vitepress/dist/` (gitignored). The docs
 build is NOT part of the `pnpm build` gate — run `pnpm docs:build` explicitly
 when you touched the site.

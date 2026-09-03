@@ -127,10 +127,19 @@ const en = {
   },
 };
 
+/**
+ * Site base — GitHub Pages serves this repo as a PROJECT site at
+ * https://z-yun-h.github.io/Tau/, so the default base is "/Tau/". Set
+ * DOCS_BASE (e.g. "/" for a custom domain or local preview at root) to
+ * override; the deploy workflow pins "/Tau/" explicitly.
+ */
+const base = process.env["DOCS_BASE"] ?? "/Tau/";
+
 export default defineConfig({
+  base,
   title: "Tau",
   description: "AI terminal assistant — natural language in, reviewed deterministic tools out",
-  head: [["link", { rel: "icon", type: "image/svg+xml", href: "/logo.svg" }]],
+  head: [["link", { rel: "icon", type: "image/svg+xml", href: `${base}logo.svg` }]],
   locales: {
     root: zh,
     en,
