@@ -76,6 +76,6 @@ jobs:
           git add -A
           git commit -qm "deploy: docs site @ ${GITHUB_SHA}" \
             -m "Built from ${GITHUB_REPOSITORY}@${GITHUB_SHA} (docs/, @tau/docs — VitePress, zh + en). Base /Tau/. Orphan snapshot: one commit per deploy." \
-            -m "AI-Generated: This commit is AI-generated (Super Z / GLM pipeline).
-AI-agent: Super Z (GLM)"
-  git push -qf origin gh-pages
+            -m "AI-Generated: This commit is AI-generated (Super Z / GLM pipeline)." \
+            -m "AI-agent: Super Z (GLM)"
+          git push -qf origin gh-pages
