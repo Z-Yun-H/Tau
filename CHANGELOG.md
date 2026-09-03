@@ -102,6 +102,22 @@ and `runPlan()` remains the only execution channel.
   `查看 docs/notes.md`) to a `file.read` plan, so the file viewer and the
   thinking surfaces are fully demonstrable offline.
 
+- **Docs deploy to GitHub Pages automatically.** A dedicated workflow
+  (`.github/workflows/deploy-docs.yml`) builds the site with the
+  project-site base (`/Tau/`, overridable via `DOCS_BASE`) and deploys it
+  via the official Pages actions (OIDC — no long-lived tokens) whenever a
+  push to `main` or the active release branch touches `docs/**`. Live at
+  https://z-yun-h.github.io/Tau/ once Pages is enabled.
+
+- **CI gate green again: `pnpm audit --prod` passes.** Two newly
+  disclosed moderate advisories against `qs < 6.16.0` (arriving via the
+  `@modelcontextprotocol/sdk → express` chain) broke the dependency-audit
+  gate for every push since they were published. A range-scoped override
+  in `pnpm-workspace.yaml` (`"qs@<6.16.0": "^6.16.0"`) lifts only the
+  vulnerable resolutions to the patched release; the audit is clean
+  without weakening the gate. The root package version now also reads
+  0.5.0.
+
 ### Review hardening
 
 - **Browser-level DOM snapshot suite** (`app/webui/tests/client-snapshot.test.ts`):
