@@ -104,10 +104,14 @@ and `runPlan()` remains the only execution channel.
 
 - **Docs deploy to GitHub Pages automatically.** A dedicated workflow
   (`.github/workflows/deploy-docs.yml`) builds the site with the
-  project-site base (`/Tau/`, overridable via `DOCS_BASE`) and deploys it
-  via the official Pages actions (OIDC — no long-lived tokens) whenever a
-  push to `main` or the active release branch touches `docs/**`. Live at
-  https://z-yun-h.github.io/Tau/ once Pages is enabled.
+  project-site base (`/Tau/`, overridable via `DOCS_BASE`) and publishes
+  it to the `gh-pages` branch (single orphan commit per deploy,
+  `contents:write` only) whenever a push to `main` touches `docs/**`.
+  Live at https://z-yun-h.github.io/Tau/. The original Actions-mode
+  deploy-pages flow could not bootstrap the site — the repo's
+  `GITHUB_TOKEN` cannot create a never-enabled Pages site (API returns
+  "Resource not accessible by integration") — so publishing switched to
+  the branch model, which brought the site online without manual setup.
 
 - **CI gate green again: `pnpm audit --prod` passes.** Two newly
   disclosed moderate advisories against `qs < 6.16.0` (arriving via the

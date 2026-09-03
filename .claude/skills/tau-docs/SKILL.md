@@ -23,11 +23,15 @@ it. Normative placement: the directory governance table in
 | Preview the production build  | `pnpm docs:preview` |
 
 **Deployment is automatic**: `.github/workflows/deploy-docs.yml` builds
-and deploys the site to GitHub Pages (project site
-https://z-yun-h.github.io/Tau/, base `/Tau/` via `DOCS_BASE`) whenever a
-push to `main` or the active release branch touches `docs/**` — no
-manual deploy step exists. `DOCS_BASE` overrides the base for other
-hosts.
+the site (base `/Tau/` via `DOCS_BASE`) and publishes it to the
+`gh-pages` branch — GitHub Pages serves it as the project site
+https://z-yun-h.github.io/Tau/. Deploys fire on pushes to `main` that
+touch `docs/**`, or manually via `workflow_dispatch` — no manual deploy
+step exists. `DOCS_BASE` overrides the base for other hosts. The publish
+model is branch-based (one orphan commit per deploy, `contents:write`
+only): the repo's `GITHUB_TOKEN` cannot create or drive an Actions-mode
+Pages site, so the deploy-pages flow was replaced (details in the
+workflow header).
 
 Build output goes to `docs/.vitepress/dist/` (gitignored). The docs
 build is NOT part of the `pnpm build` gate — run `pnpm docs:build` explicitly
