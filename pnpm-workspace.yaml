@@ -1,7 +1,7 @@
 packages:
   - "packages/*"
   - "app/*"
-  - "docs-site"
+  - "docs"
 
 # Single source of truth for every external dependency version in the
 # workspace (pnpm catalog:). Packages declare `"<dep>": "catalog:"` and

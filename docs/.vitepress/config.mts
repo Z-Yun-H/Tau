@@ -8,7 +8,7 @@ import { defineConfig } from "vitepress";
  * safety / provider-dev / skill-authoring). zh is the default locale;
  * en mirrors under /en/.
  *
- * Governance: docs-site is a PRIVATE workspace member — the docs are
+ * Governance: docs/ is a PRIVATE workspace member — the docs are
  * content, never runtime data; the CLI does not read from here.
  * Authoring workflow: .claude/skills/tau-docs/SKILL.md.
  */

@@ -279,7 +279,7 @@ and apps depend on all of them. No cycles — including at test time.
 
 ## Documentation
 
-- **[Documentation site](docs-site/)** — bilingual VitePress site (zh default, en under `/en/`), one page per feature; `pnpm docs:dev` to browse locally, `pnpm docs:build` to build
+- **[Documentation site](docs/)** — bilingual VitePress site (zh default, en under `/en/`), one page per feature; `pnpm docs:dev` to browse locally, `pnpm docs:build` to build
 - [Architecture deep-dive](docs/architecture.md) — pipeline diagram, invariants, how to add a tool/provider
 - [Safety model](docs/safety.md) — deny/caution lists, risk semantics, why there is no delete tool
 - [Skill authoring](docs/skills-authoring.md) — frontmatter contract, examples, validation

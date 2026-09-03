@@ -3,7 +3,7 @@
 Thanks for helping build Tau. This repo is engineered to be worked on by
 humans **and** AI agents — start with whichever fits you:
 
-- Humans: this file, then [docs/architecture.md](docs/architecture.md)
+- Humans: this file, then the [architecture reference](docs/en/reference/architecture.md)
 - AI agents: [AGENTS.md](AGENTS.md) (entry) → the relevant
   [AGENTS/](AGENTS/) rulebook for the subsystem you touch
 
@@ -60,7 +60,8 @@ no self-merging). Human authors never add the AI markers.
 2. **New behavior needs tests.** Safety-adjacent changes need positive AND
    benign-lookalike test pairs.
 3. **User-facing changes update both READMEs** (`README.md` + `README.zh-CN.md`)
-   and, when applicable, `docs/safety.md` / `docs/skills-authoring.md`.
+   and, when applicable, the docs site's [safety](docs/en/reference/safety.md) /
+   [skills](docs/en/guide/skills.md) pages.
 4. **Runtime dependencies are frozen** and live in the package that imports
    them (commander in `@tau/cli`, chalk in `@tau/ui`, yaml+zod in `@tau/skills`,
    zod in `@tau/ai`). Adding one requires justification + AGENTS.md update.

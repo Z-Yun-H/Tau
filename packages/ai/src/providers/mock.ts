@@ -128,6 +128,24 @@ export class MockProvider implements AIProvider {
       };
     }
 
+    // Read a file — exercises the file.read viewer surface (webui file
+    // viewer, tool language metadata) with zero network. The first
+    // filename-looking token wins ("read readme.md" → readme.md).
+    if (/read|查看|读取|打开|open|cat\b/.test(intent)) {
+      const target = intent.match(/((?:[\w.-]+\/)*[\w.-]+\.[A-Za-z0-9]+)/)?.[1] ?? "README.md";
+      const explanation = isChinese
+        ? `查看文件 ${target} 的内容`
+        : `Show the contents of ${target}`;
+      this.recordUsage(ctx.intent, explanation);
+      return {
+        explanation,
+        steps: [
+          { kind: "tool", tool: "file.read", args: { path: target }, reason: "read keyword" },
+        ],
+        selfAssessedRisk: "low",
+      };
+    }
+
     // Fallback: harmless echo, showing the strict-JSON contract works.
     const note = isChinese
       ? `离线 mock 无法理解「${ctx.intent}」。配置真实 AI Provider 后重试：tau config set provider openai`
