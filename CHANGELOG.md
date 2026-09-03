@@ -55,6 +55,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   reports, parity-tested across the node and browser copies). Refusals
   stay plain JSON before any stream starts; every gate is untouched.
 
+- **A documentation site, decomposed from the feature map.** New private
+  workspace `docs-site/` builds a bilingual VitePress site (zh default,
+  en mirror under `/en/`): one guide page per user-facing surface
+  (getting started, ask, goal, tools, providers, skills, plugins, WebUI,
+  TUI, config) and one reference page per architecture concern
+  (architecture, safety, adding a provider, authoring skills). Root
+  scripts `docs:dev` / `docs:build` / `docs:preview`; a new L1 skill
+  (`.claude/skills/tau-docs`) owns the authoring workflow and the
+  zh/en mirror contract; the root skill router and the directory
+  governance table register it. The site is pure content — never runtime
+  data, and its build stays outside the `pnpm build` gate.
+
 ### Changed
 
 - `normalizeUsage` now understands the DeepSeek harness, Gemini, and Ollama

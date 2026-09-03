@@ -29,3 +29,7 @@ Thumbs.db
 
 # Tau local runtime data (never commit user history/config)
 .tau/
+
+# Docs site build output (vitepress)
+docs-site/.vitepress/dist/
+docs-site/.vitepress/cache/

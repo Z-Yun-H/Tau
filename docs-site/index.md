@@ -1,0 +1,32 @@
+---
+layout: home
+
+hero:
+  name: Tau
+  text: AI 终端助手
+  tagline: 自然语言进，经安全审查的确定性工具出 —— 计划透明、执行可控、永不越权
+  actions:
+    - theme: brand
+      text: 快速上手
+      link: /guide/getting-started
+    - theme: alt
+      text: 安全模型
+      link: /reference/safety
+    - theme: alt
+      text: GitHub
+      link: https://github.com/Z-Yun-H/Tau
+
+features:
+  - title: 计划先行
+    details: AI 不直接执行任何东西。每次请求先生成结构化计划，经确定性安全审查后展示给你，你确认了才运行。
+  - title: 多轮代理
+    details: tau goal 让一个意图跨越最多五个受审查的轮次：计划 → 执行 → 反思 → 再计划，每一步都过同一道审查门。
+  - title: 七家 Provider
+    details: OpenAI / DeepSeek / Anthropic / Gemini / Ollama / Z.ai / 离线 mock，纯 fetch 零额外运行时依赖，支持流式思考输出。
+  - title: 三种界面
+    details: CLI 管道友好、TUI 全键盘操作、WebUI 思考面板与实时工具调用卡片——同一引擎，同一道门。
+  - title: 工具可扩展
+    details: 内置 file/sys/net/text 四族工具，技能（skills）注入声明式命令，插件（MCP）接入外部工具服务器。
+  - title: 离线可演示
+    details: 内置 mock provider 输出确定性计划与思考轨迹，零网络也能演示、测试、截图整条管线。
+---
