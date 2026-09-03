@@ -12,8 +12,36 @@
 
 import type { Highlighter } from "shiki";
 
-/** Languages fenced code actually carries in this UI (bash dominates). */
-const LANGS = ["bash", "shell", "typescript", "javascript", "json", "python"] as const;
+/**
+ * Languages this UI actually renders (v0.5.0, issue #110: the file viewer
+ * extends the set with the config/doc/system files file.read most often
+ * returns — yaml, toml, markdown, html, css, dockerfile, go, rust, java,
+ * sql — plus the c/cpp/ini/xml trio that shows up in native trees).
+ * shiki loads grammars lazily from its bundled set; the growth is bounded
+ * to what the viewer can name.
+ */
+const LANGS = [
+  "bash",
+  "shell",
+  "typescript",
+  "javascript",
+  "json",
+  "python",
+  "yaml",
+  "toml",
+  "markdown",
+  "html",
+  "css",
+  "go",
+  "rust",
+  "java",
+  "sql",
+  "dockerfile",
+  "c",
+  "cpp",
+  "ini",
+  "xml",
+] as const;
 const THEME = "one-dark-pro";
 
 let highlighterPromise: Promise<Highlighter | null> | null = null;
@@ -49,6 +77,27 @@ interface HighlightableCode {
 /** Structural subset of a query root — satisfied by DOM Element/document. */
 interface HighlightableRoot {
   querySelectorAll(selector: string): Iterable<HighlightableCode>;
+}
+
+/**
+ * Highlight one code snippet and return shiki HTML — for DYNAMIC content
+ * (the file viewer's body grows/re-renders, so the shared DOM-upgrade path
+ * with its data-shiki guard does not fit). Returns null when highlighting
+ * is unavailable (shiki failed to load) — callers keep the plain escaped
+ * text, which is always a valid final state.
+ */
+export async function highlightCode(code: string, lang: string): Promise<string | null> {
+  const highlighter = await getHighlighter();
+  if (!highlighter) return null;
+  const loaded = highlighter.getLoadedLanguages();
+  try {
+    return highlighter.codeToHtml(code.replace(/\n$/, ""), {
+      lang: langFor(lang, loaded),
+      theme: THEME,
+    });
+  } catch {
+    return null;
+  }
 }
 
 /**

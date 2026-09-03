@@ -42,6 +42,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   `languageForFile()` is exported from `@tau/tools` so the WebUI file
   viewer picks its highlighter with the exact same detection (issue #110).
 
+- **The WebUI shows the thinking, streams the plan, and renders tool
+  calls.** Planning now streams to the browser (`/api/plan/stream`): the
+  plan card appears immediately, provider reasoning grows live in a
+  collapsible "Thought for Ns" panel, token usage shows in the eyebrow,
+  and the reviewed plan lands as one authoritative terminal event. Agent
+  mode relays per-round thinking (`round_thinking_delta`) onto each round
+  of the timeline. Tool steps render as structured call cards — tool name,
+  risk badge, collapsible args JSON, live output — and `file.read` steps
+  become a highlighted file viewer (path + language chip + shiki body,
+  language detected by the SAME `languageForFile` detection the tool
+  reports, parity-tested across the node and browser copies). Refusals
+  stay plain JSON before any stream starts; every gate is untouched.
+
 ### Changed
 
 - `normalizeUsage` now understands the DeepSeek harness, Gemini, and Ollama
