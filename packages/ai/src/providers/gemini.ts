@@ -21,7 +21,7 @@ import { buildSystemPrompt, validatePlanResponse } from "../prompt.js";
 import { buildReflectPrompt, validateReflectResponse } from "../reflect.js";
 import { consumeGeminiStream } from "../chat-stream.js";
 import { BaseHttpProvider } from "./base.js";
-import type { ProviderStreamHandler } from "@tau/core";
+import type { ImageAttachment, ProviderStreamHandler } from "@tau/core";
 import type { AgentDecision, ModelInfo, Plan, PlanningContext, ReflectContext } from "@tau/core";
 
 const DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
@@ -32,6 +32,8 @@ const MIN_THINKING_BUDGET = 128;
 export class GeminiProvider extends BaseHttpProvider {
   readonly name = "gemini";
   readonly label = "Google (Gemini)";
+  /** Vision-capable (issue #135): attachments map to inline_data parts. */
+  readonly supportsVision = true;
 
   protected readonly config = {
     name: "gemini",
@@ -116,10 +118,14 @@ export class GeminiProvider extends BaseHttpProvider {
   }
 
   /** Request body shared by generateContent and streamGenerateContent. */
-  private generateBody(system: string, user: string): Record<string, unknown> {
+  private generateBody(
+    system: string,
+    user: string,
+    attachments?: ImageAttachment[],
+  ): Record<string, unknown> {
     return {
       systemInstruction: { parts: [{ text: system }] },
-      contents: [{ role: "user", parts: [{ text: user }] }],
+      contents: [{ role: "user", parts: userParts(user, attachments) }],
       generationConfig: {
         responseMimeType: "application/json",
         temperature: 0,
@@ -137,6 +143,7 @@ export class GeminiProvider extends BaseHttpProvider {
     system: string,
     user: string,
     onEvent?: ProviderStreamHandler,
+    attachments?: ImageAttachment[],
   ): Promise<string> {
     // Dynamic import avoids the registry -> provider -> models -> registry
     // ESM cycle (same convention as the other providers).
@@ -152,7 +159,7 @@ export class GeminiProvider extends BaseHttpProvider {
         {
           method: "POST",
           headers: { "content-type": "application/json", "x-goog-api-key": this.apiKey() ?? "" },
-          body: JSON.stringify(this.generateBody(system, user)),
+          body: JSON.stringify(this.generateBody(system, user, attachments)),
           signal: controller.signal,
         },
       );
@@ -173,13 +180,15 @@ export class GeminiProvider extends BaseHttpProvider {
   }
 
   async plan(ctx: PlanningContext): Promise<Plan> {
-    return validatePlanResponse(await this.generateTurn(buildSystemPrompt(ctx), ctx.intent));
+    return validatePlanResponse(
+      await this.generateTurn(buildSystemPrompt(ctx), ctx.intent, undefined, ctx.attachments),
+    );
   }
 
   /** Streaming plan — same wire, deltas relayed, same validation gate. */
   async planStream(ctx: PlanningContext, onEvent?: ProviderStreamHandler): Promise<Plan> {
     return validatePlanResponse(
-      await this.generateTurn(buildSystemPrompt(ctx), ctx.intent, onEvent),
+      await this.generateTurn(buildSystemPrompt(ctx), ctx.intent, onEvent, ctx.attachments),
     );
   }
 
@@ -210,4 +219,21 @@ function lastRoundDigest(ctx: ReflectContext): string {
   if (!last) return ctx.intent;
   const outputs = last.outputs.map((output, i) => `step ${i + 1}: ${output}`).join("\n");
   return `Round ${last.round} finished with status ${last.status}.\nIntent: ${ctx.intent}\nOutputs:\n${outputs}`;
+}
+
+/**
+ * Generative Language user parts (issue #135): a single text part when no
+ * images ride along (byte-identical to the historical wire), text + one
+ * inline_data part per attachment when they do. inline_data.mime_type is
+ * the sender-claimed value; front doors whitelist it and probe the magic
+ * number before it gets here.
+ */
+function userParts(user: string, attachments?: ImageAttachment[]): Array<Record<string, unknown>> {
+  if (!attachments || attachments.length === 0) return [{ text: user }];
+  return [
+    { text: user },
+    ...attachments.map((attachment) => ({
+      inline_data: { mime_type: attachment.mediaType, data: attachment.dataBase64 },
+    })),
+  ];
 }

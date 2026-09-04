@@ -5,6 +5,68 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+## 0.6.0 — 2026-09-04
+
+Slash commands in both front doors, conversation continuity, image
+attachments, and browser-native rendering for generated content — the
+WebUI grows from a dashboard into a conversational cockpit, all through
+the same single engine and safety gate.
+
+### Added
+
+- **Sandboxed HTML preview + native PDF/image viewing (generated-content
+  display).** `html` fenced blocks in result/goal output gain a `preview`
+  toggle that opens the code in an `<iframe sandbox="allow-scripts"
+srcdoc=…>` — no `allow-same-origin`, so previewed scripts run in an
+  opaque origin that cannot touch the parent page, cookies or storage;
+  the escape-first markdown pipeline is untouched. `file.read` of a PDF
+  or an image now streams through the new read-only `GET /api/file?path=…`
+  route into the browser's native viewer (`<embed>` / `<img>`) instead of
+  showing binary garbage as text — the route is workspace-contained
+  (reusing the write tools' own containment helpers plus a realpath
+  re-check), size-capped (8 MB), and serves a conservative mime whitelist
+  (pdf/images/plain text — never html/js/svg), with 400/403/404/413
+  semantics pinned by tests.
+- **Image attachments in the WebUI (image parsing module).** Attach images
+  to any plan or agent request via the paperclip button, clipboard paste,
+  or drag-and-drop; drafts show as removable chips with previews. The
+  server validates hard — media-type whitelist (PNG/JPEG/WebP/GIF), up to
+  4 images, per-image and total size caps, and a magic-number probe that
+  reuses `@tau/ui`'s header parser (a renamed text file cannot masquerade
+  as an image) — refusals answer as plain-JSON 4xx before any stream
+  starts. Vision-capable providers receive the payloads in their native
+  wire shape (OpenAI `image_url` data URLs, Anthropic base64 image blocks,
+  Gemini `inline_data` parts, Ollama `images` field); text-only providers
+  get an honest text annotation saying the image was dropped instead of
+  pretending to see it. Payloads ride the request only — nothing image-
+  shaped enters the NDJSON event stream or localStorage.
+- **`/` command menu in the WebUI composer.** Typing a bare command token
+  (`/`, `/th`, …) opens a floating menu above the composer — `↑`/`↓` to
+  move, `Tab`/`Enter` to run, `Esc` to dismiss, mouse hover/click supported.
+  Commands execute client-side (`/new` thread, `/theme`, `/plan` `/agent`
+  mode switches, `/help`, `/settings`, rail openers) and are never sent to
+  the AI as intents. The menu reads the same shared command catalog as the
+  TUI palette, served additively via `GET /api/commands`.
+- **`/` command palette in the TUI.** Typing `/` on an empty line opens a
+  filterable command palette below the prompt — keep typing to narrow,
+  `↑`/`↓` to move, `Tab`/`Enter` to insert, `Esc` to dismiss. Backspace
+  past the `/` returns to the empty prompt, and `Tab` outside the palette
+  completes command names through readline's native completer. The palette,
+  dispatch, and `/help` all read one shared command catalog, so what is
+  shown can never drift from what runs. New `suggestFromList()` primitive
+  in `@tau/ui` (raw-mode overlay, injectable streams, non-TTY graceful
+  dismissal).
+
+### Changed
+
+- **`tau tui`'s `/help` output is now generated from a shared slash-command
+  catalog.** Command names, aliases (`/quit`), descriptions and argument
+  hints moved from a hardcoded switch into `@tau/agent`
+  (`slashCommandCatalog()` / `slashCommandsFor()`), the single vocabulary
+  both the TUI and the WebUI composer present. Dispatch behavior is
+  unchanged — unknown or malformed `/` lines still fall through to the
+  natural-language intent pipeline.
+
 ### Removed
 
 - **Dead public exports pruned from `@tau/ai`, `@tau/plugins` and `@tau/webui`.**

@@ -17,10 +17,11 @@
  * row, mono labels, one chrome action at a time (Approve while paused,
  * Stop while streaming).
  */
-import { computed } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { renderMarkdown } from "@tau/markdown";
 import type { GoalCardState, GoalRoundState } from "../composables/plan-flow.js";
 import { useSession } from "../composables/session.js";
+import { attachHtmlPreviews } from "../lib/preview.js";
 import RiskBadge from "./RiskBadge.vue";
 import ThinkingPanel from "./ThinkingPanel.vue";
 import ToolCallCard from "./ToolCallCard.vue";
@@ -42,6 +43,16 @@ function toolRisk(name: string | undefined): string {
 
 const enterDelay = computed(() => `${Math.min((props.enterIndex ?? 0) * 40, 200)}ms`);
 const answerHtml = computed(() => (props.card.answer ? renderMarkdown(props.card.answer) : ""));
+
+// Sandboxed html-block previews in the final answer (issue #136) — the
+// same progressive attach pattern as ResultCard (no shiki pass here;
+// answer fences render escaped until previewed).
+const answerEl = ref<HTMLElement | null>(null);
+watch(answerHtml, () => {
+  void nextTick(() => {
+    if (answerEl.value) attachHtmlPreviews(answerEl.value);
+  });
+});
 const liveThinkingActive = computed(
   () => props.card.streaming && props.card.status === "running" && !!props.card.liveThinking,
 );
@@ -178,7 +189,7 @@ function roundStatusLabel(round: GoalRoundState): string {
     </ol>
 
     <!-- final answer -->
-    <div v-if="card.answer" class="goal-answer md-body" v-html="answerHtml" />
+    <div v-if="card.answer" ref="answerEl" class="goal-answer md-body" v-html="answerHtml" />
 
     <!-- error -->
     <div v-if="card.error" class="goal-error">

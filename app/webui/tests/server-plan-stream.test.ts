@@ -207,3 +207,43 @@ describe("POST /api/plan/stream", () => {
     expect(result["status"]).toBe("ok");
   });
 });
+
+describe("POST /api/plan/stream — conversation history (issue #134)", () => {
+  it("threads client history into the planning context", async () => {
+    let captured: PlanningContext | undefined;
+    registerProvider({
+      name: "capture-ctx",
+      label: "capture",
+      isAvailable: async () => true,
+      plan: async (ctx) => {
+        captured = ctx;
+        return { explanation: "ok", steps: [] } satisfies Plan;
+      },
+    });
+    const res = await streamPost({
+      intent: "now compress them",
+      provider: "capture-ctx",
+      history: [
+        { role: "user", text: "find the big logs" },
+        { role: "assistant", text: "found three logs" },
+        { role: "nonsense", text: "dropped" },
+      ],
+    });
+    expect(res.status).toBe(200);
+    expect(captured?.intent).toContain("user: find the big logs");
+    expect(captured?.intent).toContain("assistant: found three logs");
+    expect(captured?.intent).toContain("Current request: now compress them");
+    // malformed roles never reach the provider
+    expect(captured?.intent).not.toContain("nonsense");
+  });
+
+  it("malformed history is dropped, not fatal", async () => {
+    const res = await streamPost({
+      intent: "find all *.ts files",
+      provider: "mock",
+      history: "garbage",
+    });
+    expect(res.status).toBe(200);
+    expect(res.lines.some((line) => line["type"] === "plan")).toBe(true);
+  });
+});

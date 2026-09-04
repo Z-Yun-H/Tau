@@ -178,6 +178,36 @@ export interface ModelInfo {
   ownedBy?: string;
 }
 
+/**
+ * One prior conversation turn presented to the provider for context
+ * (conversation mode, issue #134). UIs send the last N turns of the active
+ * thread; the prompt layer folds them into the planning intent.
+ */
+export interface PriorTurn {
+  role: "user" | "assistant";
+  text: string;
+}
+
+/**
+ * One image attached to a planning request (image parsing module, issue
+ * #135). Payload-only data: raw base64 (no `data:` URL prefix) plus the
+ * IANA media type the SENDER claims — front doors must whitelist the type
+ * AND verify the magic number before the attachment reaches a provider.
+ * Vision-capable providers map it into their wire shape (OpenAI image_url,
+ * Anthropic image source block, Gemini inline_data, Ollama images field);
+ * text-only providers see a text annotation and the image is honestly
+ * reported as dropped.
+ */
+export interface ImageAttachment {
+  kind: "image";
+  /** Original file name when the front door knows one (display-only). */
+  name?: string;
+  /** Claimed media type, e.g. "image/png". Whitelisted by front doors. */
+  mediaType: string;
+  /** Raw base64 payload (no data: prefix, no padding games). */
+  dataBase64: string;
+}
+
 /** Context handed to a provider so it can plan against the real tool catalog. */
 export interface PlanningContext {
   intent: string;
@@ -185,6 +215,14 @@ export interface PlanningContext {
   skillCatalog: string;
   platform: string;
   cwd: string;
+  /**
+   * Images attached to this request (issue #135), in the order the user
+   * attached them. Absent/empty = a plain text request — providers then
+   * behave byte-identically to before. The prompt layer folds a text
+   * annotation per image into `intent`; vision-capable providers ALSO map
+   * the payload into their wire shape from this field.
+   */
+  attachments?: ImageAttachment[];
 }
 
 /** Provider interface. Implement this to add a new AI backend. */
@@ -193,6 +231,14 @@ export interface AIProvider {
   readonly name: string;
   /** Human-readable label used in CLI output. */
   readonly label: string;
+  /**
+   * True when the provider maps {@link PlanningContext.attachments} into its
+   * wire shape (image parsing module, issue #135). Optional and absent by
+   * default — a provider that omits it is treated as text-only and the
+   * prompt layer annotates attached images as dropped (honest degradation).
+   * Set so far by: openai, anthropic, gemini, ollama.
+   */
+  readonly supportsVision?: boolean;
   /** True when the provider has what it needs (key, host, sdk...) to run. */
   isAvailable(): Promise<boolean>;
   /** Where the missing configuration is, when isAvailable() is false. */

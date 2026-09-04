@@ -43,6 +43,26 @@ chip, and the per-round thinking panel**
 
 ![webui file viewer](./docs/screenshots/file-viewer.png)
 
+**`/` command menu (v0.6.0) — the shared slash catalog, one keystroke away;
+narrows as you type, keyboard-first**
+
+![webui command menu](./docs/screenshots/command-menu.png)
+
+**image attachments (v0.6.0) — pick, paste, or drop; chips preview in the
+composer (magic-number-gated) and travel with the sent message**
+
+![webui attachments](./docs/screenshots/attachments.png)
+
+**sandboxed HTML preview (v0.6.0) — a generated ```html block renders
+inside an opaque-origin iframe (scripts run, page access denied); native
+viewers for generated PDF/image files stream through `GET /api/file`**
+
+![webui html preview](./docs/screenshots/html-preview.png)
+
+More: `command-menu-filter.png` (typed filter), `attachments-sent.png`
+(chips on the sent card + plan review), `image-view.png` /
+`image-viewer-card.png` (native image view).
+
 ## Observability (v0.4.0)
 
 The server logs **one line per request** to stderr — `ts · method · path →
@@ -73,6 +93,21 @@ plan`, ResultCard, ErrorCard, SidePanel with Skills/History/Tools,
   Alt+T theme cycle / Ctrl+⌘+, settings / Esc closes modal + drawer); markdown preview with
   rendered/raw toggle, copy and expand — rendered by the zero-dependency,
   escape-first `@tau/markdown`, never a sanitizer gap
+- **Generated-content previews** (issue #136) — `html` fenced blocks in
+  results/goal answers get a `preview` toggle rendering in an opaque-origin
+  sandboxed iframe (`allow-scripts` only); `file.read` of PDFs and images
+  streams through the read-only, workspace-contained `GET /api/file` into
+  the browser's native viewer instead of binary-as-text; the escape-first
+  markdown pipeline is untouched
+- **Image attachments** (issue #135) — paperclip button, clipboard paste
+  and drag-and-drop all feed one validated draft list in the Composer;
+  drafts render as removable chips with data-URL previews (PNG/JPEG/WebP/
+  GIF, up to 4, max 4 MB each — the server re-validates with its own
+  whitelist + magic-number probe). Sending images with no text uses an
+  explicit default intent. Payloads ride the plan/goal request only;
+  user cards keep name/type/size meta (thumbnails are session-only), and
+  text-only providers get an honest "image dropped" annotation instead
+  of pretending to see pixels
 - **Light & dark themes** — three-state preference (`light`/`dark`/
   `system`, default follows the OS) cycled from the header button or
   `Alt+T`, persisted in `tau-webui-theme-v1`, resolved before first

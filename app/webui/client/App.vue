@@ -21,6 +21,7 @@
  */
 import { nextTick, onMounted, ref, watch } from "vue";
 import { useEventListener, watchDebounced } from "@vueuse/core";
+import AttachmentChips from "./components/AttachmentChips.vue";
 import Composer from "./components/Composer.vue";
 import EmptyState from "./components/EmptyState.vue";
 import ErrorCard from "./components/ErrorCard.vue";
@@ -34,6 +35,7 @@ import SidePanel from "./components/SidePanel.vue";
 import StatusHeader from "./components/StatusHeader.vue";
 import { usePlanFlow } from "./composables/plan-flow.js";
 import { useSession } from "./composables/session.js";
+import type { SlashActionId } from "./lib/slash.js";
 import { useTheme } from "./lib/theme.js";
 
 const {
@@ -48,9 +50,37 @@ const {
   createThread,
 } = usePlanFlow();
 const { cyclePreference: cycleTheme } = useTheme();
+const { commands, refreshCommands } = useSession();
 
 // Composer mode (issue #97): plan (default, historical flow) | agent (goal loop).
 const agentMode = ref(false);
+
+/** Slash-menu actions (issue #133) — all client-side, never sent as intents. */
+function onSlashCommand(action: SlashActionId): void {
+  switch (action) {
+    case "new":
+      createThread();
+      break;
+    case "theme":
+      cycleTheme();
+      break;
+    case "plan":
+    case "agent":
+      agentMode.value = action === "agent";
+      break;
+    case "help":
+      shortcutsOpen.value = true;
+      break;
+    case "settings":
+      settingsOpen.value = true;
+      break;
+    default:
+      // status / skills / tools / history live in the reference rail —
+      // open it (the tab is one click away; SidePanel owns its tabs).
+      railOpen.value = true;
+      break;
+  }
+}
 
 const streamEl = ref<HTMLElement | null>(null);
 const composer = ref<InstanceType<typeof Composer> | null>(null);
@@ -104,10 +134,11 @@ function onKeydown(event: KeyboardEvent): void {
 }
 
 onMounted(() => {
-  const { refreshStatus, refreshSkills, refreshHistory } = useSession();
+  const { refreshStatus, refreshSkills, refreshHistory, refreshCommands } = useSession();
   void refreshStatus();
   void refreshSkills();
   void refreshHistory();
+  void refreshCommands();
 });
 
 // vueuse useEventListener — auto cleanup on unmount
@@ -198,7 +229,14 @@ watchDebounced(
 
           <template v-for="(card, i) in cards" :key="card.id">
             <div v-if="card.type === 'user'" class="user-row">
-              <div class="user-bubble" :title="card.ts">{{ card.text }}</div>
+              <div class="user-col">
+                <div class="user-bubble" :title="card.ts">{{ card.text }}</div>
+                <AttachmentChips
+                  v-if="card.attachments?.length"
+                  class="user-attach"
+                  :items="card.attachments"
+                />
+              </div>
             </div>
             <PlanCard
               v-else-if="card.type === 'plan'"
@@ -225,8 +263,15 @@ watchDebounced(
         class="composer-dock"
         :planning="planning"
         :agent-mode="agentMode"
-        @submit="(intent: string) => (agentMode ? submitGoal(intent) : submitIntent(intent))"
+        :commands="commands"
+        @submit="
+          (intent: string, attachments) =>
+            agentMode
+              ? submitGoal(intent, undefined, attachments)
+              : submitIntent(intent, attachments)
+        "
         @mode="(agent: boolean) => (agentMode = agent)"
+        @command="onSlashCommand"
       />
     </section>
 
@@ -306,8 +351,21 @@ watchDebounced(
   animation: tau-enter var(--t-med) var(--ease) both;
 }
 
-.user-bubble {
+/* bubble + attachment chips stack right-aligned (issue #135) */
+.user-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
   max-width: 78%;
+}
+
+.user-attach {
+  justify-content: flex-end;
+}
+
+.user-bubble {
+  max-width: 100%;
   background: var(--tau-active); /* tau.active */
   border: 1px solid var(--tau-line-strong); /* tau.line-strong */
   color: var(--tau-text); /* tau.text */

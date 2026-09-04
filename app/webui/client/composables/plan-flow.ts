@@ -11,7 +11,13 @@
  * from /api/execute/stream — the same runPlan() channel the CLI uses.
  */
 import { computed, reactive, ref, watch } from "vue";
-import { postJson, type PlanResponse, type PlanStep } from "../lib/api.js";
+import { postJson, type PlanResponse, type PlanStep, type TurnInfo } from "../lib/api.js";
+import {
+  draftToMeta,
+  draftToPayload,
+  type AttachmentDraft,
+  type AttachmentMeta,
+} from "../lib/attachments.js";
 import { postNdjson, type StreamEvent } from "../lib/stream.js";
 import { useSession } from "./session.js";
 
@@ -20,6 +26,12 @@ export interface UserCardState {
   id: number;
   text: string;
   ts: string;
+  /**
+   * Attached images (issue #135) — meta only (name/type/bytes + a runtime
+   * data-URL thumb). The base64 payloads ride the REQUEST, never the card:
+   * persist() strips thumbs and localStorage could not hold the payloads.
+   */
+  attachments?: AttachmentMeta[];
 }
 
 export interface PlanCardState {
@@ -159,9 +171,36 @@ function loadThreads(): Thread[] {
   }
 }
 
+/**
+ * Extract the conversation turns the AI should see with the next request
+ * (conversation mode, issue #134): user messages + the assistant's final
+ * outputs, in thread order, newest-capped. The server re-sanitizes; this
+ * pass keeps the payload small and honest (failed runs are skipped).
+ * MAX 12 turns / 2000 chars each — server caps are the hard ceiling.
+ */
+function priorTurnsOf(cards: CardState[]): TurnInfo[] {
+  const turns: TurnInfo[] = [];
+  for (const card of cards) {
+    if (card.type === "user") {
+      turns.push({ role: "user", text: card.text });
+    } else if (card.type === "result" && card.status === "ok" && card.output.trim()) {
+      turns.push({ role: "assistant", text: card.output.trim().slice(0, 2000) });
+    } else if (card.type === "goal" && card.status === "ok" && card.answer?.trim()) {
+      turns.push({ role: "assistant", text: card.answer.trim().slice(0, 2000) });
+    }
+  }
+  return turns.slice(-12);
+}
+
 function persist(threads: Thread[]): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(threads));
+    // `thumb` (data-URL image previews) is runtime-only — localStorage has
+    // no room for image payloads and a stale preview would be a lie after
+    // the tab session ends anyway.
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(threads, (_key, value) => (_key === "thumb" ? undefined : value)),
+    );
   } catch {
     // Storage unavailable (private mode/quota) — threads stay in-memory only.
   }
@@ -206,6 +245,16 @@ const currentId = ref<number>(0);
 const planning = ref(false);
 let nextId = 1;
 let initialized = false;
+
+/**
+ * Wire shape for attached images (issue #135): raw payloads only — the
+ * meta/thumbnail decorations never leave the browser. Empty input stays
+ * absent so plain-text requests keep their exact historical body.
+ */
+function attachmentPayload(attachments?: AttachmentDraft[]): Record<string, unknown> {
+  if (!attachments || attachments.length === 0) return {};
+  return { attachments: attachments.map(draftToPayload) };
+}
 
 function now(): string {
   return new Date().toISOString();
@@ -287,10 +336,19 @@ export function usePlanFlow() {
    * keep the error-card contract; a card whose stream died mid-flight is
    * dropped by the post-load migration on the next reload.
    */
-  function submitIntent(intent: string): void {
+  function submitIntent(intent: string, attachments?: AttachmentDraft[]): void {
     const thread = currentThread.value;
     if (!thread) return;
-    thread.cards.push({ type: "user", id: nextId++, text: intent, ts: now() });
+    const history = priorTurnsOf(thread.cards);
+    thread.cards.push({
+      type: "user",
+      id: nextId++,
+      text: intent,
+      ts: now(),
+      ...(attachments && attachments.length > 0
+        ? { attachments: attachments.map(draftToMeta) }
+        : {}),
+    });
     thread.title = threadTitle(thread.cards);
     touch(thread);
     planning.value = true;
@@ -315,25 +373,29 @@ export function usePlanFlow() {
     const startedAt = Date.now();
     void (async () => {
       try {
-        await postNdjson("/api/plan/stream", { intent }, (event: StreamEvent) => {
-          const type = event["type"];
-          if (type === "reasoning_delta" && typeof event["text"] === "string") {
-            card.thinking += event["text"];
-          } else if (type === "usage" && typeof event["usage"] === "object") {
-            card.usage = event["usage"] as PlanCardState["usage"];
-          } else if (type === "plan") {
-            card.plan = event["plan"] as PlanCardState["plan"];
-            card.review = (event["review"] as PlanCardState["review"]) ?? card.review;
-            card.provider = (event["provider"] as string) ?? "";
-            card.providerLabel = (event["providerLabel"] as string) ?? "";
-            card.warnings = (event["warnings"] as string[]) ?? [];
-            if (typeof event["usage"] === "object") {
+        await postNdjson(
+          "/api/plan/stream",
+          { intent, history, ...attachmentPayload(attachments) },
+          (event: StreamEvent) => {
+            const type = event["type"];
+            if (type === "reasoning_delta" && typeof event["text"] === "string") {
+              card.thinking += event["text"];
+            } else if (type === "usage" && typeof event["usage"] === "object") {
               card.usage = event["usage"] as PlanCardState["usage"];
+            } else if (type === "plan") {
+              card.plan = event["plan"] as PlanCardState["plan"];
+              card.review = (event["review"] as PlanCardState["review"]) ?? card.review;
+              card.provider = (event["provider"] as string) ?? "";
+              card.providerLabel = (event["providerLabel"] as string) ?? "";
+              card.warnings = (event["warnings"] as string[]) ?? [];
+              if (typeof event["usage"] === "object") {
+                card.usage = event["usage"] as PlanCardState["usage"];
+              }
+            } else if (type === "error") {
+              throw new Error(`stream error: ${String(event["error"] ?? "unknown")}`);
             }
-          } else if (type === "error") {
-            throw new Error(`stream error: ${String(event["error"] ?? "unknown")}`);
-          }
-        });
+          },
+        );
         // A stream that ended without a terminal plan event is a failure —
         // the card must not linger as an empty shell.
         if (!card.plan.steps?.length && card.review.verdict !== "deny") {
@@ -469,10 +531,19 @@ export function usePlanFlow() {
    * round is engine-reviewed exactly like the plan flow; nothing here
    * bypasses runPlan.
    */
-  function submitGoal(intent: string, provider?: string): void {
+  function submitGoal(intent: string, provider?: string, attachments?: AttachmentDraft[]): void {
     const thread = currentThread.value;
     if (!thread) return;
-    thread.cards.push({ type: "user", id: nextId++, text: intent, ts: now() });
+    const history = priorTurnsOf(thread.cards);
+    thread.cards.push({
+      type: "user",
+      id: nextId++,
+      text: intent,
+      ts: now(),
+      ...(attachments && attachments.length > 0
+        ? { attachments: attachments.map(draftToMeta) }
+        : {}),
+    });
     thread.title = threadTitle(thread.cards);
     touch(thread);
 
@@ -502,7 +573,12 @@ export function usePlanFlow() {
       try {
         await postNdjson(
           "/api/goal/stream",
-          { intent, ...(provider ? { provider } : {}) },
+          {
+            intent,
+            history,
+            ...(provider ? { provider } : {}),
+            ...attachmentPayload(attachments),
+          },
           (event: StreamEvent) => {
             const type = event["type"];
             if (type === "goal_registered" && typeof event["goalId"] === "string") {

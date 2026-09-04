@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="786" height="180" viewBox="0 0 786 180" font-family="ui-monospace, 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace" font-size="13">
+<rect width="786" height="180" rx="10" fill="#0e1218"/><rect x="1" y="1" width="784" height="178" rx="9" fill="none" stroke="#2a3140" stroke-width="1"/>
+<text x="16" y="22" fill="#8b95a7" xml:space="preserve" textLength="385" lengthAdjust="spacing">tau tui — palette narrows as you type (filter: s)</text><line x1="0" y1="34" x2="786" y2="34" stroke="#2a3140" stroke-width="1"/>
+<text x="16" y="63" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="71" lengthAdjust="spacing">τ tau tui</text>
+<rect x="86.64999999999999" y="52" width="172.7" height="19" fill="6578"/>
+<text x="86.64999999999999" y="63" fill="#5b6578" xml:space="preserve" textLength="173" lengthAdjust="spacing"> — interactive session</text>
+<rect x="16" y="71" width="408.2" height="19" fill="6578"/>
+<text x="16" y="82" fill="#5b6578" xml:space="preserve" textLength="409" lengthAdjust="spacing">type an intent, or /help for commands. Ctrl+D exits.</text>
+<text x="16" y="101" fill="#3d8484" xml:space="preserve" font-weight="700" textLength="40" lengthAdjust="spacing">tau ❯</text>
+<text x="63.099999999999994" y="101" fill="#d6dce6" xml:space="preserve" textLength="8" lengthAdjust="spacing">/</text>
+<text x="16" y="120" fill="#3d8484" xml:space="preserve" textLength="8" lengthAdjust="spacing">❯</text>
+<text x="31.7" y="120" fill="#d6dce6" xml:space="preserve" font-weight="700" textLength="212" lengthAdjust="spacing">/skills  list loaded skills</text>
+<text x="16" y="139" fill="#d6dce6" xml:space="preserve" textLength="346" lengthAdjust="spacing">/status  runtime locations and catalog sizes</text>
+<rect x="16" y="147" width="384.65" height="19" fill="6578"/>
+<text x="16" y="158" fill="#5b6578" xml:space="preserve" textLength="385" lengthAdjust="spacing">  ↑/↓ move · tab/enter insert · esc dismiss · 1/2</text>
+</svg>

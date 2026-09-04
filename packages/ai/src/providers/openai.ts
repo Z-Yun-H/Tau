@@ -19,6 +19,7 @@ import { chatJSON } from "./http.js";
 import { BaseHttpProvider } from "./base.js";
 import type {
   AgentDecision,
+  ImageAttachment,
   Plan,
   PlanningContext,
   ProviderStreamHandler,
@@ -29,6 +30,8 @@ import type {
 export class OpenAIProvider extends BaseHttpProvider {
   readonly name = "openai";
   readonly label = "OpenAI-compatible";
+  /** Vision-capable (issue #135): attachments map to image_url content parts. */
+  readonly supportsVision = true;
 
   protected readonly config = {
     name: "openai",
@@ -44,7 +47,11 @@ export class OpenAIProvider extends BaseHttpProvider {
    * request via the catalog service; the request body is byte-identical
    * between both capabilities.
    */
-  protected async chatCompletion(system: string, user: string): Promise<string> {
+  protected async chatCompletion(
+    system: string,
+    user: string,
+    attachments?: ImageAttachment[],
+  ): Promise<string> {
     // Dynamic import: models.ts pulls in the provider registry, and a static
     // edge here would create a registry -> provider -> models -> registry
     // cycle that breaks ESM module initialization.
@@ -61,7 +68,7 @@ export class OpenAIProvider extends BaseHttpProvider {
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: system },
-          { role: "user", content: user },
+          { role: "user", content: userContent(user, attachments) },
         ],
       },
       this.timeoutMs(),
@@ -78,7 +85,9 @@ export class OpenAIProvider extends BaseHttpProvider {
   }
 
   async plan(ctx: PlanningContext): Promise<Plan> {
-    return validatePlanResponse(await this.chatCompletion(buildSystemPrompt(ctx), ctx.intent));
+    return validatePlanResponse(
+      await this.chatCompletion(buildSystemPrompt(ctx), ctx.intent, ctx.attachments),
+    );
   }
 
   /**
@@ -93,6 +102,7 @@ export class OpenAIProvider extends BaseHttpProvider {
     system: string,
     user: string,
     onEvent?: ProviderStreamHandler,
+    attachments?: ImageAttachment[],
   ): Promise<string> {
     // Dynamic import: models.ts pulls in the provider registry, and a static
     // edge here would create a registry -> provider -> models -> registry
@@ -119,7 +129,7 @@ export class OpenAIProvider extends BaseHttpProvider {
           stream_options: { include_usage: true },
           messages: [
             { role: "system", content: system },
-            { role: "user", content: user },
+            { role: "user", content: userContent(user, attachments) },
           ],
         }),
         signal: controller.signal,
@@ -155,7 +165,7 @@ export class OpenAIProvider extends BaseHttpProvider {
    */
   async planStream(ctx: PlanningContext, onEvent?: ProviderStreamHandler): Promise<Plan> {
     return validatePlanResponse(
-      await this.streamChatCompletion(buildSystemPrompt(ctx), ctx.intent, onEvent),
+      await this.streamChatCompletion(buildSystemPrompt(ctx), ctx.intent, onEvent, ctx.attachments),
     );
   }
 
@@ -181,4 +191,25 @@ function lastRoundDigest(ctx: ReflectContext): string {
   if (!last) return ctx.intent;
   const outputs = last.outputs.map((output, i) => `step ${i + 1}: ${output}`).join("\n");
   return `Round ${last.round} finished with status ${last.status}.\nIntent: ${ctx.intent}\nOutputs:\n${outputs}`;
+}
+
+/**
+ * OpenAI chat-completions user content (issue #135): a plain string when no
+ * images ride along (byte-identical to the historical wire), a multipart
+ * content array (`text` + one `image_url` data URL per attachment) when
+ * they do. The data URL embeds the sender-claimed media type; front doors
+ * whitelist the type and probe the magic number before it gets here.
+ */
+function userContent(
+  user: string,
+  attachments?: ImageAttachment[],
+): string | Array<{ type: "text" | "image_url"; text?: string; image_url?: { url: string } }> {
+  if (!attachments || attachments.length === 0) return user;
+  return [
+    { type: "text", text: user },
+    ...attachments.map((attachment) => ({
+      type: "image_url" as const,
+      image_url: { url: `data:${attachment.mediaType};base64,${attachment.dataBase64}` },
+    })),
+  ];
 }

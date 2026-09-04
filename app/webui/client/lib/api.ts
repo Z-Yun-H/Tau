@@ -81,6 +81,29 @@ export interface SkillSummary {
   origin: "bundled" | "user" | "workspace";
 }
 
+/** One slash-command entry of the shared catalog (server: GET /api/commands). */
+export interface CommandInfo {
+  name: string;
+  aliases?: string[];
+  description: string;
+  argsHint?: string;
+  argsKind?: "none" | "file" | "free";
+}
+
+export interface CommandsPayload {
+  commands: CommandInfo[];
+}
+
+/**
+ * One prior conversation turn sent WITH a new request (conversation mode) —
+ * the server sanitizes and folds it into the planning context. Mirrors
+ * @tau/core's PriorTurn (hand-mirrored like every other payload shape).
+ */
+export interface TurnInfo {
+  role: "user" | "assistant";
+  text: string;
+}
+
 export interface ToolParamInfo {
   name: string;
   type: "string" | "number" | "boolean" | "string[]";

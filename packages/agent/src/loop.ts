@@ -20,8 +20,10 @@
 
 import type {
   AgentDecision,
+  ImageAttachment,
   Plan,
   PlanEvent,
+  PriorTurn,
   ProviderStreamEvent,
   ProviderUsage,
   ReflectContext,
@@ -77,6 +79,19 @@ export interface RunGoalOptions {
   autoApproveAll?: boolean;
   /** Cancellation signal — honored between steps and mid-shell (runPlan). */
   signal?: AbortSignal;
+  /**
+   * Prior conversation turns (conversation mode, issue #134) — folded into
+   * the round-1 planning intent and the reflection context snapshot by the
+   * prompt layer, all providers included.
+   */
+  priorTurns?: PriorTurn[];
+  /**
+   * Images attached to the goal's opening request (issue #135). They ride
+   * the ROUND-1 planning call only: reflection turns describe executed
+   * rounds (their digest is text) and never re-attach the payloads, so the
+   * snapshot context below stays attachment-free on purpose.
+   */
+  attachments?: ImageAttachment[];
   /** Goal lifecycle observer (front doors). */
   onGoalEvent?: (event: GoalEvent) => void;
   /** Per-round PlanEvent mirror (caller brackets rounds via goal events). */
@@ -140,7 +155,7 @@ export async function runGoal(intent: string, options: RunGoalOptions): Promise<
   // uses) — reflection reuses the exact catalog the first round planned
   // against, so a mid-goal registry change can never silently widen the
   // continuation surface.
-  const ctxBase = planningContext(intent, skillCatalog);
+  const ctxBase = planningContext(intent, skillCatalog, options.priorTurns);
 
   /** Execute one round end-to-end and record its feedback. */
   const executeRound = async (
@@ -174,10 +189,20 @@ export async function runGoal(intent: string, options: RunGoalOptions): Promise<
     // ---- Round 1: the historical front half (planIntent), or its streaming
     // twin when the front door observes provider events. ----
     const planned = options.onPlanStream
-      ? await planIntentStream(intent, { provider: options.provider }, (event) =>
-          options.onPlanStream?.(event, 1),
+      ? await planIntentStream(
+          intent,
+          {
+            provider: options.provider,
+            priorTurns: options.priorTurns,
+            attachments: options.attachments,
+          },
+          (event) => options.onPlanStream?.(event, 1),
         )
-      : await planIntent(intent, { provider: options.provider });
+      : await planIntent(intent, {
+          provider: options.provider,
+          priorTurns: options.priorTurns,
+          attachments: options.attachments,
+        });
     const firstReview = reviewPlan(planned.plan);
     emit({ type: "round_plan", round: 1, plan: planned.plan, review: firstReview, origin: "plan" });
     // Interactive front doors pause on a non-"allow" FIRST round too — agent

@@ -492,3 +492,59 @@ body {
   font-size: 13px;
   color: var(--tau-text);
 }
+
+/* ---- sandboxed html preview shells (issue #136, created via DOM — global) ---- */
+
+.html-preview .hp-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-top: 1px solid var(--tau-line);
+  background: var(--tau-raised);
+}
+
+.html-preview .hp-toggle {
+  background: none;
+  border: 1px solid var(--tau-line-strong);
+  border-radius: 5px;
+  padding: 1px 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--tau-faint);
+  cursor: pointer;
+  transition:
+    color var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease);
+}
+
+.html-preview .hp-toggle:hover,
+.html-preview.previewing .hp-toggle {
+  color: var(--tau-info);
+  border-color: var(--tau-info-edge);
+}
+
+.html-preview .hp-note {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--tau-faint);
+  user-select: none;
+}
+
+.html-preview .hp-body {
+  border-top: 1px solid var(--tau-line);
+}
+
+.html-preview .hp-frame {
+  display: block;
+  width: 100%;
+  height: 320px;
+  border: 0;
+  background: #fff; /* previews render the page's own background — white base */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .html-preview .hp-toggle {
+    transition: none;
+  }
+}
