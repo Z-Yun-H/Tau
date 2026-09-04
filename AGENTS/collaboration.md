@@ -17,7 +17,7 @@
 4. Dependency updates are standalone PRs with add/upgrade/remove lists, `pnpm audit` results, and full test results; never change workspace/dependency strategy without maintainer approval.
 5. Docs must be synced in the same PR (both READMEs, AGENTS, docs/); state doc status in the PR body; respect root-vs-subpackage doc responsibilities.
 6. Refactors / architecture changes: `[REFACTOR]` / `[ARCHITECTURE]` tag in PR title, motivation + impact + risk + structure-impact statement, and NEVER self-merge.
-7. Every AI PR body prominently notes "此 PR 由 AI 生成"; every AI commit message carries the `AI-Generated: <说明>` prefix line AND the `AI-declaration:` trailer block (see AGENTS/release.md / .gitmessage).
+7. Every AI PR body prominently notes "此 PR 由 AI 生成"; every AI commit message carries the `AI-Generated: <说明>` prefix line AND the `AI-declaration:` trailer block (see AGENTS/release.md / .gitmessage). Commit author/committer email must resolve to the maintainer's GitHub account (official noreply form `<ID>+<user>@users.noreply.github.com`) — never invent `<name>@users.noreply.github.com`, GitHub links it to the unrelated user named `<name>` (see AGENTS/release.md "Commit author identity").
 8. **Daily changelog folder**: every working day appends `changelog/YYYY-MM-DD.md` (summary, type, Issue/PR refs, impact); `CHANGELOG.md` remains the release-level summary distilled from it. Every PR still carries a `CHANGELOG.md` Unreleased fragment.
 9. Behavior-rule changes → update `AGENTS.md`/`AGENTS/`; executable-skill changes → update `.claude/skills/`; state the check result in the PR body.
 10. No dead code, no needless hardcoding: clean up what you touch, extract hardcoded values into constants/env/config without behavior change; large cleanups go standalone.
@@ -115,6 +115,7 @@
 
 - **必须**在 PR 描述中显著注明"此 PR 由 AI 生成"。
 - **必须**在每个 commit message 中统一添加 `AI-Generated: <简要说明>` 前缀行（位于标题与正文之后、`AI-declaration:` 尾注块之前），并保留既有的 `AI-declaration:` 尾注块（格式见 `.gitmessage` / AGENTS/release.md）。
+- **必须**保证每个 commit 的 author 与 committer 邮箱可归属到维护者本人的 GitHub 账号——使用账号官方 noreply 邮箱（`88868011+Z-Yun-H@users.noreply.github.com`，经 `git config user.email` 固定）；**禁止**编造 `<任意名>@users.noreply.github.com` 形式的邮箱——GitHub 纯按邮箱归属 commit，该格式会被匹配到同名的无关账号（事故先例：PR #127 的 AI commit 曾因此被归属给陌生用户 `ai`，见 AGENTS/release.md "Commit author identity"）。AI 参与声明仅通过本节的 message 标注尾注承载，**不得**以改写作者身份的方式表达；push 前自检：`git log --format='%an <%ae> | %cn <%ce>' -1` 两侧均须为维护者身份。
 - **禁止**省略或隐藏 AI 生成标注；人类作者的提交则**不得**添加这些标注。
 - 若 CI 检查发现缺少 AI 标注，**必须**立即修正并重新推送。
 
@@ -260,6 +261,7 @@ Tau 将"AI 行为准则"与"AI 可执行技能"分别存放：
 - [ ] 复合需求是否已自动分解并在实施前公示分解方案（一单元一 Issue 一 PR，见 §3）？
 - [ ] 大型重构/版本发布是否采用集成分支统一合并模式（单元 PR base = `release/vX.Y.Z-*`，发布单元最后合并，总 PR 留人工合并，见 §3）？
 - [ ] 是否在 PR 描述或 commit 中包含 AI 标注、必要的结构影响说明？
+- [ ] commit 的 author/committer 邮箱是否均为维护者账号官方 noreply 邮箱（无编造的 `*@users.noreply.github.com`，见 §7 与 AGENTS/release.md "Commit author identity"）？
 - [ ] 是否更新了相关文档并明确了目录职责？
 - [ ] 是否在 `changelog/` 文件夹中按日记录了当日变更？
 - [ ] 是否清理了相关死代码和硬编码逻辑，且未改变其他功能？

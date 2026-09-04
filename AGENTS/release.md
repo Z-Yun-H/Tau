@@ -14,6 +14,20 @@
 
 Hotfixes follow the same path — a fast-track PR is still a PR.
 
+### Commit author identity (GitHub attribution)
+
+Every commit's author AND committer email MUST resolve to the maintainer's
+GitHub account — use the account's official noreply address
+(`88868011+Z-Yun-H@users.noreply.github.com`; set it once via
+`git config user.email`). **Never invent an address of the form
+`<name>@users.noreply.github.com`**: GitHub links commits to accounts purely
+by email, and that pattern matches the noreply address of whichever user is
+named `<name>` — PR #127 briefly attributed an AI commit to the unrelated
+GitHub user `ai` this way. AI participation is declared through the message
+trailers below, never by rewriting the author identity. Check before every
+push: `git log --format='%an <%ae> | %cn <%ce>' -1` must show the
+maintainer identity on both sides.
+
 ## AI commit declaration (mandatory)
 
 **No silent AI commits.** When a commit is authored by an AI agent:

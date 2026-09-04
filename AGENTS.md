@@ -187,6 +187,11 @@ docs/                       human-facing deep dives (architecture, safety, skill
       the `AI-Generated:` prefix line AND the `AI-declaration:` block,
       presented to the human BEFORE committing (AGENTS/collaboration.md,
       AGENTS/release.md)
+- [ ] Commit author/committer email = the maintainer account's official
+      noreply address (`88868011+Z-Yun-H@users.noreply.github.com`) — never
+      an invented `<name>@users.noreply.github.com`, GitHub links that to
+      the unrelated user named `<name>` (AGENTS/release.md "Commit author
+      identity")
 - [ ] PR title tagged `[REFACTOR]` / `[ARCHITECTURE]` when applicable; AI
       never merges — human review required
 

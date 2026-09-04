@@ -4,6 +4,15 @@
 #
 # Body: what & why, wrapped at ~72 chars. Reference PRs/issues.
 #
+# ============ Commit author identity (GitHub attribution) ====================
+# The commit author/committer email must be the maintainer account's official
+# noreply address (88868011+Z-Yun-H@users.noreply.github.com). NEVER invent
+# <name>@users.noreply.github.com — GitHub links commits to accounts by email
+# and matches that pattern to the existing user named <name>. Verify before
+# pushing: git log --format='%an <%ae> | %cn <%ce>' -1
+# Norms: AGENTS/release.md "Commit author identity".
+# =============================================================================
+#
 # ============ AI commit declaration (MANDATORY for AI-authored commits) ======
 # If this commit is authored by an AI agent, BEFORE committing you must:
 #   1. Present the declaration to the human in the session (no silent AI
