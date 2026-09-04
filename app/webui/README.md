@@ -43,6 +43,26 @@ chip, and the per-round thinking panel**
 
 ![webui file viewer](./docs/screenshots/file-viewer.png)
 
+**`/` command menu (v0.6.0) — the shared slash catalog, one keystroke away;
+narrows as you type, keyboard-first**
+
+![webui command menu](./docs/screenshots/command-menu.png)
+
+**image attachments (v0.6.0) — pick, paste, or drop; chips preview in the
+composer (magic-number-gated) and travel with the sent message**
+
+![webui attachments](./docs/screenshots/attachments.png)
+
+**sandboxed HTML preview (v0.6.0) — a generated ```html block renders
+inside an opaque-origin iframe (scripts run, page access denied); native
+viewers for generated PDF/image files stream through `GET /api/file`**
+
+![webui html preview](./docs/screenshots/html-preview.png)
+
+More: `command-menu-filter.png` (typed filter), `attachments-sent.png`
+(chips on the sent card + plan review), `image-view.png` /
+`image-viewer-card.png` (native image view).
+
 ## Observability (v0.4.0)
 
 The server logs **one line per request** to stderr — `ts · method · path →

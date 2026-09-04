@@ -6,12 +6,15 @@ types), captured with `script(1)` and rendered to SVG by
 `scripts/screenshot/term-svg.mjs`. Offline throughout — the mock provider
 plans and the deterministic safety gate rules.
 
-| file             | what it shows                                                                                                          |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `overview.svg`   | session banner + `/help` + `/status` + `/provider` — the command surface                                               |
-| `markdown.svg`   | `/md demo.md` — headings, fenced code, a aligned table, blockquote, CJK text through the `@tau/markdown` ANSI renderer |
-| `image-view.svg` | `/view logo.png` — the metadata card fallback when the terminal advertises no inline-image protocol                    |
-| `plan-flow.svg`  | an intent → mock plan → review → `y` confirm → execution — the full safety loop inside the session                     |
+| file                       | what it shows                                                                                                          |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `overview.svg`             | session banner + `/help` + `/status` + `/provider` — the command surface                                               |
+| `markdown.svg`             | `/md demo.md` — headings, fenced code, a aligned table, blockquote, CJK text through the `@tau/markdown` ANSI renderer |
+| `image-view.svg`           | `/view logo.png` — the metadata card fallback when the terminal advertises no inline-image protocol                    |
+| `plan-flow.svg`            | an intent → mock plan → review → `y` confirm → execution — the full safety loop inside the session                     |
+| `slash-palette.svg`        | `/` as the whole buffer — the live command palette over the 9-command TUI catalog, with the 1/9 counter (v0.6.0)       |
+| `slash-palette-filter.svg` | typing narrows the palette live (`s` → /skills + /status, 1/2) (v0.6.0)                                                |
+| `slash-palette-select.svg` | ↓ moves the selection — the counter and highlight track the keyboard (2/9) (v0.6.0)                                    |
 
 The plan-flow capture double-runs as an e2e regression check for the
 single-reader confirm (#69): the confirm prompt echoes each key once and the
@@ -38,3 +41,20 @@ node $repo/scripts/screenshot/term-svg.mjs /tmp/cap.raw \
 Input is fed with sleeps so the REPL is already prompting when each line
 arrives (pre-start echo would land above the banner). Full tool docs:
 [`scripts/screenshot/README.md`](../../../scripts/screenshot/README.md).
+
+The v0.6.0 palette shots freeze mid-overlay instead of exiting: typing
+`/` as the whole empty buffer opens the palette, and it hangs (without
+erasing) while stdin stays open — so hold the pipe, then TERM **node
+only**; script notices its child exited and flushes the capture cleanly
+(SIGKILL loses the buffered capture, EOF dismisses the overlay).
+
+```bash
+( sleep 1.2; printf '/'; sleep 30 ) | \
+  script -qec "node $repo/app/tui/dist/index.js" /tmp/cap.raw >/dev/null 2>&1 &
+bg=$!; sleep 3.4
+pkill -TERM -f "^node $repo/app/tui/dist/index.js"; wait "$bg" || true
+node $repo/scripts/screenshot/term-svg.mjs /tmp/cap.raw \
+  --title "tau tui — '/' live command palette (shared catalog)" --min-cols 96 \
+  > $repo/app/tui/docs/screenshots/slash-palette.svg
+# repeat: '/' + 's' → slash-palette-filter.svg · '/' + ↓ (\x1b[B) → slash-palette-select.svg
+```

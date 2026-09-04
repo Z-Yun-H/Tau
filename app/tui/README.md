@@ -18,8 +18,14 @@ Real pty sessions driven with scripted keystrokes, rendered to SVG
 
 ![tui markdown](./docs/screenshots/markdown.svg)
 
+**`/` — the live command palette (v0.6.0): opens over the shared slash
+catalog, narrows as you type, ↓ to navigate, enter to run**
+
+![tui slash palette](./docs/screenshots/slash-palette.svg)
+
 More: `overview.svg` (command surface), `image-view.svg` (inline image /
-metadata-card fallback).
+metadata-card fallback), `slash-palette-filter.svg` / `slash-palette-select.svg`
+(palette filter + keyboard navigation).
 
 ## Slash commands
 
