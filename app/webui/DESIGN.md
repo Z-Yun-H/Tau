@@ -711,36 +711,40 @@ shapes above:
 
 ## 11. File ownership map
 
-| File                                   | Owns                                                                                             |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `client/theme.css`                     | `--tau-*` color vars for BOTH themes, elevation/edge vars, surface classes, dividers, base layer |
-| `uno.config.ts`                        | `tau.*` → `var(--tau-*)` mapping + font/utility shortcuts (no raw hex)                           |
-| `client/App.vue`                       | shell: header + 3-col grid + drawer + modal + global keymap (incl. Alt+T) + autoscroll           |
-| `client/components/StatusHeader.vue`   | top bar + theme cycle button                                                                     |
-| `client/components/SessionSidebar.vue` | history rail (`.tau-surface` dock)                                                               |
-| `client/components/Composer.vue`       | the beam + toolbar + send                                                                        |
-| `client/components/PlanCard.vue`       | review surface + chrome Run plan (`--tau-on-chrome` label)                                       |
-| `client/components/GoalCard.vue`       | agent-mode round timeline (live steps, per-round approval bar, Stop)                             |
-| `client/components/StepRow.vue`        | numbered step rail                                                                               |
-| `client/components/ResultCard.vue`     | streaming outcome                                                                                |
-| `client/components/ErrorCard.vue`      | failed plan                                                                                      |
-| `client/components/EmptyState.vue`     | serif hero + contract                                                                            |
-| `client/components/SidePanel.vue`      | skills/history/tools rail                                                                        |
-| `client/components/ShortcutsModal.vue` | keyboard contract overlay                                                                        |
-| `client/components/SettingsPanel.vue`  | read-only settings surface (`GET /api/config` view + theme picker)                               |
-| `client/components/RiskBadge.vue`      | the ONE semantic atom                                                                            |
-| `client/composables/session.ts`        | status/skills/tools/history (module singleton)                                                   |
-| `client/composables/plan-flow.ts`      | threads + cards state machine (localStorage-persisted; goal cards + abort-controller registry)   |
-| `client/lib/api.ts`                    | typed HTTP client (no `@tau/*` runtime import)                                                   |
-| `client/lib/stream.ts`                 | DOM-free NDJSON splitter (unit-tested)                                                           |
-| `client/lib/format.ts`                 | args/time/tool-family formatters                                                                 |
-| `client/lib/highlight.ts`              | shiki progressive upgrade (silent no-op)                                                         |
-| `client/lib/theme.ts`                  | three-state theme preference, `tau-webui-theme-v1` persistence, `useTheme()` singleton           |
-| `scripts/screenshot.mjs`               | real-server screenshot rig (dark pinned + light pass + agent pass, 5 PNGs)                       |
-| `src/server.ts`                        | HTTP API incl. `/api/goal/stream` + `/api/goal/approve` (additive, v0.4.0)                       |
-| `src/goal.ts`                          | goal approval registry (TTL, one pending decision per goal)                                      |
-| `DESIGN.md` (this file)                | the spec                                                                                         |
-| `SKILL.md`                             | the checklist (contract layer)                                                                   |
+| File                                             | Owns                                                                                             |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `client/theme.css`                               | `--tau-*` color vars for BOTH themes, elevation/edge vars, surface classes, dividers, base layer |
+| `uno.config.ts`                                  | `tau.*` → `var(--tau-*)` mapping + font/utility shortcuts (no raw hex)                           |
+| `client/App.vue`                                 | shell: header + 3-col grid + drawer + modal + global keymap (incl. Alt+T) + autoscroll           |
+| `client/components/StatusHeader.vue`             | top bar + theme cycle button                                                                     |
+| `client/components/SessionSidebar.vue`           | history rail (`.tau-surface` dock)                                                               |
+| `client/components/Composer.vue`                 | the beam + toolbar + send                                                                        |
+| `client/components/PlanCard.vue`                 | review surface + chrome Run plan (`--tau-on-chrome` label)                                       |
+| `client/components/GoalCard.vue`                 | agent-mode round timeline (live steps, per-round approval bar, Stop)                             |
+| `client/components/StepRow.vue`                  | numbered step rail                                                                               |
+| `client/components/ResultCard.vue`               | streaming outcome                                                                                |
+| `client/components/ErrorCard.vue`                | failed plan                                                                                      |
+| `client/components/EmptyState.vue`               | serif hero + contract                                                                            |
+| `client/components/SidePanel.vue`                | skills/history/tools rail                                                                        |
+| `client/components/ShortcutsModal.vue`           | keyboard contract overlay                                                                        |
+| `client/components/SettingsPanel.vue`            | read-only settings surface (`GET /api/config` view + theme picker)                               |
+| `client/components/RiskBadge.vue`                | the ONE semantic atom                                                                            |
+| `client/composables/session.ts`                  | status/skills/tools/history (module singleton)                                                   |
+| `client/composables/plan-flow.ts`                | threads + cards state machine (localStorage-persisted; goal cards + abort-controller registry)   |
+| `client/lib/api.ts`                              | typed HTTP client (no `@tau/*` runtime import)                                                   |
+| `client/lib/stream.ts`                           | DOM-free NDJSON splitter (unit-tested)                                                           |
+| `client/lib/format.ts`                           | args/time/tool-family formatters                                                                 |
+| `client/lib/highlight.ts`                        | shiki progressive upgrade (silent no-op)                                                         |
+| `client/lib/slash.ts` (v0.6.0)                   | composer command-menu pure logic (filter/clamp/open rules over the shared catalog)               |
+| `client/lib/attachments.ts` (v0.6.0)             | image-attachment drafts: caps, chunked base64, all-or-nothing batches, payload/meta projections  |
+| `client/lib/preview.ts` (v0.6.0)                 | sandboxed html-preview srcdoc builder + DOM attach pass + binary view sniffing (server parity)   |
+| `client/components/AttachmentChips.vue` (v0.6.0) | image chips (preview thumb, session-only; persisted meta strips thumbs)                          |
+| `client/lib/theme.ts`                            | three-state theme preference, `tau-webui-theme-v1` persistence, `useTheme()` singleton           |
+| `scripts/screenshot.mjs`                         | real-server screenshot rig (dark pinned + light pass + agent pass, 5 PNGs)                       |
+| `src/server.ts`                                  | HTTP API incl. `/api/goal/stream` + `/api/goal/approve` (additive, v0.4.0)                       |
+| `src/goal.ts`                                    | goal approval registry (TTL, one pending decision per goal)                                      |
+| `DESIGN.md` (this file)                          | the spec                                                                                         |
+| `SKILL.md`                                       | the checklist (contract layer)                                                                   |
 
 ## 12. Verification checklist
 

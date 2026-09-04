@@ -155,6 +155,10 @@ chords like Ctrl+T/W/N).
   the redacted effective config; NO write path by design.
 - `EmptyState` — serif headline ("What can Tau do for you?") + contract
   prose + pipeline mono + kbd hints.
+- `AttachmentChips` (v0.6.0) — image attachment chips (preview thumb /
+  type-label fallback after reload, name + human size, optional remove);
+  used by the composer (live drafts) and under the user bubble (persisted
+  meta — thumbs are session-only, `persist()` strips them)
 - `RiskBadge` — the only place a risk level becomes color.
 - `PlanCard` / `StepRow` — the review surface: `Run plan` chrome
   primary action (the gate control), steps on a numbered rail, kind
@@ -239,6 +243,18 @@ NDJSON event field names: `type`, `index`, `step`, `chunk`, `ok`,
 `exitCode`, `skipped`, `status`, `output`, `outcomes`, `error`. The
 `result` event is authoritative — it overwrites the incremental view.
 403 as plain JSON (not NDJSON) for deny / high-risk-without-confirm.
+`GET /api/commands` (v0.6.0) — the shared slash-command catalog (pure
+data: name/aliases/description/argsHint) for the composer menu; commands
+execute client-side and are NEVER sent as intents.
+`GET /api/file?path=` (v0.6.0, read-only) — workspace-contained file
+preview for the browser's native pdf/image viewers: reuse the write
+tools' containment helpers + realpath re-check, 8 MB cap, conservative
+mime whitelist (pdf/images/plain text — never html/js/svg), plain-JSON
+400/403/404/413. Sandbox rule for html previews: `iframe
+sandbox="allow-scripts" srcdoc` and NOTHING else — no allow-same-origin.
+`POST /api/plan[/stream]` + `/api/goal/stream` (v0.6.0) additionally
+accept `attachments` (≤4 images, png/jpeg/webp/gif, magic-number
+verified); refusals answer 400 as plain JSON before any stream starts.
 `GET /api/config` is read-only: the `config` field is exactly
 `redactConfig(loadConfig())` (keys masked `sk-***last4`, never plaintext;
 same output as `tau config list`), and no method other than GET exists on

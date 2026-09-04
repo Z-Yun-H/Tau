@@ -72,6 +72,50 @@ Invariants added on top of the base set:
   shells are killed as a process group (`detached` + `kill(-pid)`), so
   grandchildren (`sleep`, pipelines) cannot outlive a Stop.
 
+## Conversation, attachments & shared command surfaces (v0.6.0)
+
+Three additive context channels feed the SAME pipeline (no second engine,
+no second execution path):
+
+```
+priorTurns (conversation, #134)
+  UI threads ──► server sanitize (12 turns / 4000 chars)
+             ──► planIntent options ──► planningContext()
+             ──► folded into ctx.intent (<conversation> block) ──► ALL providers
+
+attachments (images, #135)
+  UI drafts ──► server readAttachments(): mediaType whitelist + count/size
+                caps + strict base64 + @tau/ui probeImageHeader magic gate
+             ──► planIntent options ──► planningContext()
+             ├─ <attachments> annotation folded into ctx.intent
+             │    (wording depends on the RESOLVED provider's supportsVision)
+             └─ vision providers map ctx.attachments into their wire shape
+                (openai image_url / anthropic image block / gemini inline_data
+                / ollama images); text-only providers see the honest
+                "image was dropped" annotation — never a pretend image
+
+slash commands (#133)
+  @tau/agent commands.ts (SlashCommandDef catalog, single source)
+  ├─ TUI palette (@tau/ui suggestFromList) + /help generation + dispatch
+  └─ WebUI composer menu (GET /api/commands, client-side execution)
+```
+
+Invariants:
+
+- `priorTurns`/`attachments` are OPTIONS, never state: absent = byte-
+  identical prompts (pinned by tests). Attachments ride ROUND 1 only —
+  reflection digests stay attachment-free on purpose.
+- Attachment payloads live ONLY on the request path: never in NDJSON
+  events, never in history, never in the WebUI's localStorage.
+- `GET /api/file?path=` (read-only preview route, #136): containment via
+  the write tools' own helpers (escapesWorkspace / isSystemWritePath)
+  PLUS a realpath re-check (symlink escape closed), 8 MB cap, and a
+  conservative mime whitelist (pdf/images/plain text — never html/js/svg);
+  403/404/413 as plain JSON.
+- Sandboxed HTML previews (#136) run in `<iframe sandbox="allow-scripts">
+srcdoc` WITHOUT allow-same-origin — an opaque origin; the escape-first
+  markdown pipeline is untouched (the preview is a separate channel).
+
 ## Invariants (do not break)
 
 1. `runPlan()` is the ONLY path that executes AI-generated steps. Direct CLI
@@ -165,6 +209,10 @@ $TAU_HOME/
 
 - `PlanStep` — one action: `tool` (registry lookup) or `shell` (reviewed spawn)
 - `Plan` — explanation + steps; what providers return and runPlan executes
+- `PriorTurn` — one prior conversation turn (role + text) folded into the
+  planning intent by the prompt layer (conversation mode, #134)
+- `ImageAttachment` — one attached image (kind/name/mediaType/dataBase64);
+  request-path only, magic-number verified by front doors (#135)
 - `SafetyReview` — verdict allow/review/deny + issues; from reviewPlan()
 - `ToolDefinition` — name/description/params/risk/run; dual-use unit
 - `PluginConfig` — one MCP server (transport stdio|http, endpoint, env/headers)
