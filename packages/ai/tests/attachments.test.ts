@@ -120,8 +120,9 @@ describe("OpenAI wire — image_url content parts", () => {
     const user = body.messages[1]!;
     expect(user.role).toBe("user");
     const parts = user.content as Array<{ type: string; image_url?: { url: string } }>;
-    expect(parts[0]!.type).toBe("text");
-    expect(parts[0]!.type === "text" && parts[0]!.text).toContain("what is this");
+    const first = parts[0]!;
+    expect(first.type).toBe("text");
+    expect("text" in first ? first.text : undefined).toContain("what is this");
     expect(parts[1]!.type).toBe("image_url");
     expect(parts[1]!.image_url?.url).toBe(`data:image/png;base64,${PNG_B64}`);
   });
