@@ -11,11 +11,18 @@
  * detection the tool itself reports — see lib/language.ts, parity-tested
  * against @tau/tools). Highlighting stays progressive: any failure leaves
  * the plain escaped text, which is always a valid final state.
+ *
+ * Binary previews (issue #136): pdf/image files skip the text pipeline —
+ * the viewer streams the workspace file through the read-only /api/file
+ * route into the browser's NATIVE pdf viewer (<embed>) / <img>. Sniffing
+ * is suffix-only and mirrors the server whitelist exactly; the two stay
+ * parity-locked by tests. Non-previewable types keep the shiki text view.
  */
 import { computed, ref, watch } from "vue";
 import type { PlanStep } from "../lib/api.js";
 import { languageForFile } from "../lib/language.js";
 import { highlightCode } from "../lib/highlight.js";
+import { binaryViewKind, filePreviewUrl } from "../lib/preview.js";
 import RiskBadge from "./RiskBadge.vue";
 
 const props = defineProps<{
@@ -58,8 +65,19 @@ const viewer = computed(() => {
     path: path as string,
     language: languageForFile(path as string),
     content: parseNumberedOutput(props.output),
+    /** pdf/image render through the browser's native viewers, not shiki. */
+    binary: binaryViewKind(path as string),
+    url: filePreviewUrl(path as string),
   };
 });
+
+const binaryFailed = ref(false);
+watch(
+  () => viewer.value?.url ?? "",
+  () => {
+    binaryFailed.value = false;
+  },
+);
 
 const viewerHtml = ref<string | null>(null);
 
@@ -100,12 +118,56 @@ watch(
     <div v-if="viewer" class="file-viewer">
       <div class="viewer-head">
         <span class="viewer-path">{{ viewer.path }}</span>
-        <span class="viewer-lang">{{ viewer.language }}</span>
+        <span v-if="!viewer.binary" class="viewer-lang">{{ viewer.language }}</span>
+        <a
+          v-if="viewer.binary"
+          class="viewer-open"
+          :href="viewer.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="open in a new tab (browser-native viewer, large-file friendly)"
+          >open ↗</a
+        >
       </div>
-      <!-- eslint-disable-next-line vue/no-v-html — shiki output, escaped-first input -->
-      <div v-if="viewerHtml" class="viewer-body" v-html="viewerHtml" />
-      <pre v-else-if="viewer.content" class="viewer-plain">{{ viewer.content }}</pre>
-      <p v-else class="viewer-empty">no content returned</p>
+
+      <!-- pdf: the browser's native viewer through the read-only route -->
+      <template v-if="viewer.binary === 'pdf'">
+        <embed
+          v-if="!binaryFailed"
+          class="viewer-embed"
+          :src="viewer.url"
+          type="application/pdf"
+          @error="binaryFailed = true"
+        />
+        <p v-else class="viewer-empty">
+          preview unavailable —
+          <a :href="viewer.url" target="_blank" rel="noopener noreferrer">open ↗</a>
+        </p>
+      </template>
+
+      <!-- image: native rendering through the read-only route -->
+      <template v-else-if="viewer.binary === 'image'">
+        <img
+          v-if="!binaryFailed"
+          class="viewer-img"
+          :src="viewer.url"
+          :alt="viewer.path"
+          loading="lazy"
+          @error="binaryFailed = true"
+        />
+        <p v-else class="viewer-empty">
+          preview unavailable —
+          <a :href="viewer.url" target="_blank" rel="noopener noreferrer">open ↗</a>
+        </p>
+      </template>
+
+      <!-- text: the shiki (or plain escaped) path -->
+      <template v-else>
+        <!-- eslint-disable-next-line vue/no-v-html — shiki output, escaped-first input -->
+        <div v-if="viewerHtml" class="viewer-body" v-html="viewerHtml" />
+        <pre v-else-if="viewer.content" class="viewer-plain">{{ viewer.content }}</pre>
+        <p v-else class="viewer-empty">no content returned</p>
+      </template>
     </div>
 
     <!-- every other tool: collapsible args + plain live output -->
@@ -255,6 +317,43 @@ watch(
   border-radius: 5px;
   padding: 0 6px;
   flex: none;
+}
+
+.viewer-open {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--tau-info);
+  text-decoration: none;
+  border: 1px solid var(--tau-info-edge);
+  border-radius: 5px;
+  padding: 0 6px;
+  flex: none;
+}
+
+.viewer-open:hover {
+  background: var(--tau-info-soft);
+}
+
+.viewer-embed {
+  display: block;
+  width: 100%;
+  height: 360px;
+  border: 0;
+  background: var(--tau-bg);
+}
+
+.viewer-img {
+  display: block;
+  max-width: 100%;
+  max-height: 360px;
+  margin: 0 auto;
+  padding: 6px;
+  object-fit: contain;
+}
+
+.viewer-empty a {
+  color: var(--tau-info);
 }
 
 .viewer-body {

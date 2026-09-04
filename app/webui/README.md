@@ -73,6 +73,12 @@ plan`, ResultCard, ErrorCard, SidePanel with Skills/History/Tools,
   Alt+T theme cycle / Ctrl+⌘+, settings / Esc closes modal + drawer); markdown preview with
   rendered/raw toggle, copy and expand — rendered by the zero-dependency,
   escape-first `@tau/markdown`, never a sanitizer gap
+- **Generated-content previews** (issue #136) — `html` fenced blocks in
+  results/goal answers get a `preview` toggle rendering in an opaque-origin
+  sandboxed iframe (`allow-scripts` only); `file.read` of PDFs and images
+  streams through the read-only, workspace-contained `GET /api/file` into
+  the browser's native viewer instead of binary-as-text; the escape-first
+  markdown pipeline is untouched
 - **Image attachments** (issue #135) — paperclip button, clipboard paste
   and drag-and-drop all feed one validated draft list in the Composer;
   drafts render as removable chips with data-URL previews (PNG/JPEG/WebP/

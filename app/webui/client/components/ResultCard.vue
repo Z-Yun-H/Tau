@@ -13,6 +13,7 @@ import { useClipboard } from "@vueuse/core";
 import { renderMarkdown } from "@tau/markdown";
 import type { ResultCardState } from "../composables/plan-flow.js";
 import { highlightPreBlocks } from "../lib/highlight.js";
+import { attachHtmlPreviews } from "../lib/preview.js";
 import RiskBadge from "./RiskBadge.vue";
 
 const props = defineProps<{ card: ResultCardState; enterIndex?: number }>();
@@ -39,11 +40,17 @@ async function copy(): Promise<void> {
 
 // Progressive shiki highlighting: plain escaped markdown first, upgraded
 // in place after each render (streaming updates re-trigger this watch).
+// Sandboxed html-block previews attach FIRST (issue #136): the preview
+// shell wraps the original <pre>, which the highlighter then still finds
+// and upgrades inside the shell.
 watch(
   [html, view],
   () => {
     void nextTick(() => {
-      if (rootEl.value && view.value === "rendered") void highlightPreBlocks(rootEl.value);
+      if (rootEl.value && view.value === "rendered") {
+        attachHtmlPreviews(rootEl.value);
+        void highlightPreBlocks(rootEl.value);
+      }
     });
   },
   { immediate: true },

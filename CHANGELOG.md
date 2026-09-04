@@ -7,6 +7,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Added
 
+- **Sandboxed HTML preview + native PDF/image viewing (generated-content
+  display).** `html` fenced blocks in result/goal output gain a `preview`
+  toggle that opens the code in an `<iframe sandbox="allow-scripts"
+  srcdoc=…>` — no `allow-same-origin`, so previewed scripts run in an
+  opaque origin that cannot touch the parent page, cookies or storage;
+  the escape-first markdown pipeline is untouched. `file.read` of a PDF
+  or an image now streams through the new read-only `GET /api/file?path=…`
+  route into the browser's native viewer (`<embed>` / `<img>`) instead of
+  showing binary garbage as text — the route is workspace-contained
+  (reusing the write tools' own containment helpers plus a realpath
+  re-check), size-capped (8 MB), and serves a conservative mime whitelist
+  (pdf/images/plain text — never html/js/svg), with 400/403/404/413
+  semantics pinned by tests.
 - **Image attachments in the WebUI (image parsing module).** Attach images
   to any plan or agent request via the paperclip button, clipboard paste,
   or drag-and-drop; drafts show as removable chips with previews. The

@@ -110,7 +110,10 @@ const normalizeDom = (html: string): string =>
     // Vue SFC scoped-style hashes change whenever a component's source
     // changes — they carry no structural meaning, so pin them to a stable
     // token and keep the snapshots about STRUCTURE, not build metadata.
-    .replaceAll(/data-v-[a-f0-9]{8}/g, "data-v-HASH");
+    // Two spellings: the data-v attribute AND the --v* custom property the
+    // same scoping injects into inline style attributes (enter delays).
+    .replaceAll(/data-v-[a-f0-9]{8}/g, "data-v-HASH")
+    .replaceAll(/--v[a-f0-9]{8}/g, "--vHASH");
 
 const streamHtml = async (): Promise<string> =>
   normalizeDom(await page.locator(".stream-inner").innerHTML());

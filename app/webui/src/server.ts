@@ -24,6 +24,7 @@ import {
   type SafetyReview,
 } from "@tau/core";
 import { cachedModels, formatUsage } from "@tau/ai";
+import { escapesWorkspace, isSystemWritePath } from "@tau/tools";
 import { probeImageHeader } from "@tau/ui";
 import {
   ensureCatalog,
@@ -48,6 +49,28 @@ const WEBUI_TIMEOUT_SEC = 120;
  * raw HTTP body; the server binds to 127.0.0.1 so the exposure stays local.
  */
 const BODY_CAP_BYTES = 24 * 1024 * 1024;
+/**
+ * Read-only file-preview route limits (issue #136): the size cap for ONE
+ * streamed file, and the conservative extension whitelist. No html/js/svg/
+ * css — anything a browser could execute or script is deliberately absent,
+ * so /api/file can never become an origin for scriptable content. Images
+ * and PDFs render natively in the client; plain text is inert under
+ * nosniff.
+ */
+const FILE_PREVIEW_MAX_BYTES = 8 * 1024 * 1024;
+/** Exported for client/server parity tests (lib/preview.ts mirrors this set). */
+export const FILE_PREVIEW_MIME: Record<string, string> = {
+  ".pdf": "application/pdf",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".txt": "text/plain; charset=utf-8",
+  ".md": "text/plain; charset=utf-8",
+  ".log": "text/plain; charset=utf-8",
+  ".csv": "text/plain; charset=utf-8",
+};
 const MIME: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -384,6 +407,72 @@ export function createRequestListener(options: RequestListenerOptions = {}): htt
         }
         if (req.method === "GET" && url.pathname === "/api/config") {
           sendJson(res, 200, await configPayload());
+          return;
+        }
+        if (req.method === "GET" && url.pathname === "/api/file") {
+          // Read-only file preview (issue #136): workspace-contained files in
+          // a conservative mime whitelist, streamed for the client's native
+          // PDF/image viewers. Reuses the SAME containment definition as the
+          // write tools + safety reviewer (escapesWorkspace / isSystemWrite-
+          // Path), plus a realpath re-check so a symlink inside the
+          // workspace cannot point out. 404 missing/directory, 403 escape or
+          // non-previewable type, 413 oversize — always plain JSON.
+          const raw = url.searchParams.get("path") ?? "";
+          if (!raw.trim()) {
+            sendJson(res, 400, { error: "path (query string) is required" });
+            return;
+          }
+          const base = process.cwd();
+          const target = path.resolve(base, raw);
+          if (escapesWorkspace(raw, base) || isSystemWritePath(target)) {
+            sendJson(res, 403, { error: "path escapes the workspace" });
+            return;
+          }
+          let stat: fs.Stats;
+          try {
+            stat = await fs.promises.stat(target);
+          } catch {
+            sendJson(res, 404, { error: "file not found" });
+            return;
+          }
+          if (!stat.isFile()) {
+            sendJson(res, 404, { error: "not a file" });
+            return;
+          }
+          // Symlink containment: the REAL path must stay inside the
+          // workspace too — containment by name is not containment.
+          try {
+            const real = await fs.promises.realpath(target);
+            if (escapesWorkspace(real, base)) {
+              sendJson(res, 403, { error: "path escapes the workspace" });
+              return;
+            }
+          } catch {
+            sendJson(res, 404, { error: "file not found" });
+            return;
+          }
+          if (stat.size > FILE_PREVIEW_MAX_BYTES) {
+            sendJson(res, 413, {
+              error: `file too large to preview (max ${Math.round(FILE_PREVIEW_MAX_BYTES / 1024 / 1024)} MB)`,
+            });
+            return;
+          }
+          const mime = FILE_PREVIEW_MIME[path.extname(target).toLowerCase()];
+          if (!mime) {
+            sendJson(res, 403, {
+              error: "file type not previewable (pdf, images and plain text only)",
+            });
+            return;
+          }
+          const name = path.basename(target).replace(/["\\]/g, "");
+          res.writeHead(200, {
+            "content-type": mime,
+            "content-length": String(stat.size),
+            "content-disposition": `inline; filename="${name}"`,
+            "x-content-type-options": "nosniff",
+            "cache-control": "no-store",
+          });
+          fs.createReadStream(target).pipe(res);
           return;
         }
         if (req.method === "POST" && url.pathname === "/api/plan") {
