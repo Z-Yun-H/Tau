@@ -120,12 +120,6 @@ export interface PlanResponse {
   warnings: string[];
 }
 
-export interface ExecuteResponse {
-  status: string;
-  output: string;
-  outcomes: { ok: boolean; skipped: boolean; output?: string }[];
-}
-
 export async function api<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(path, options);
   const body = (await res.json().catch(() => ({}))) as T & { error?: string };

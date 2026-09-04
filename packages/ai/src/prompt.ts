@@ -6,7 +6,7 @@
  */
 
 import { z } from "zod";
-import { renderToolCatalog, catalogSummary, allTools } from "@tau/tools";
+import { renderToolCatalog, catalogSummary } from "@tau/tools";
 import type { PlanningContext, Plan } from "@tau/core";
 
 /**
@@ -32,8 +32,6 @@ export const planSchema = z
     selfAssessedRisk: z.enum(["low", "medium", "high", "blocked"]).optional(),
   })
   .strict();
-
-export type RawPlan = z.infer<typeof planSchema>;
 
 /** Parse+validate a provider response. Throws with a readable message on failure. */
 export function validatePlanResponse(raw: string): Plan {
@@ -110,9 +108,4 @@ export function planningContext(intent: string, skillCatalog: string): PlanningC
     platform: `${process.platform}`,
     cwd: process.cwd(),
   };
-}
-
-/** Convenience for tests/docs: list registered tool names. */
-export function toolNames(): string[] {
-  return allTools().map((tool) => tool.name);
 }
