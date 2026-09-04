@@ -5,12 +5,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+## 0.6.0 — 2026-09-04
+
+Slash commands in both front doors, conversation continuity, image
+attachments, and browser-native rendering for generated content — the
+WebUI grows from a dashboard into a conversational cockpit, all through
+the same single engine and safety gate.
+
 ### Added
 
 - **Sandboxed HTML preview + native PDF/image viewing (generated-content
   display).** `html` fenced blocks in result/goal output gain a `preview`
   toggle that opens the code in an `<iframe sandbox="allow-scripts"
-  srcdoc=…>` — no `allow-same-origin`, so previewed scripts run in an
+srcdoc=…>` — no `allow-same-origin`, so previewed scripts run in an
   opaque origin that cannot touch the parent page, cookies or storage;
   the escape-first markdown pipeline is untouched. `file.read` of a PDF
   or an image now streams through the new read-only `GET /api/file?path=…`
