@@ -23,14 +23,27 @@ metadata-card fallback).
 
 ## Slash commands
 
-| Command     | Effect                                      |
-| ----------- | ------------------------------------------- |
-| `/help`     | command overview                            |
-| `/provider` | show/switch the active AI provider          |
-| `/skills`   | list available skills                       |
-| `/history`  | recent executed plans                       |
-| `/status`   | session summary (provider, model, counters) |
-| `/clear`    | reset the conversation view                 |
+| Command        | Effect                                           |
+| -------------- | ------------------------------------------------ |
+| `/help`        | command overview (generated from the catalog)    |
+| `/provider`    | show the active provider, source, and model      |
+| `/skills`      | list loaded skills                               |
+| `/history`     | recent executed plans                            |
+| `/status`      | session summary (home, provider, catalogs)       |
+| `/md <file>`   | preview a markdown file (ANSI-rendered)          |
+| `/view <file>` | preview an image (inline image or metadata card) |
+| `/clear`       | clear the screen                                 |
+| `/exit`        | leave the session (alias `/quit`, or Ctrl+D)     |
+
+### The `/` suggestion palette
+
+Typing `/` on an empty line opens a filterable command palette right below
+the prompt: keep typing to narrow the list, `↑`/`↓` (or `Ctrl+P`/`Ctrl+N`)
+to move, `Tab`/`Enter` to insert the command, `Esc`/`Ctrl+C` to dismiss.
+Backspacing past the `/` closes the palette and returns to the empty prompt.
+The palette shares one command catalog with dispatch and `/help` — the
+listing can never drift from what actually runs. Outside the palette,
+`Tab` still completes command names inline (readline's native completer).
 
 Intents show a live planning spinner, and the plan explanation renders as
 markdown through the same `@tau/markdown` ANSI renderer.

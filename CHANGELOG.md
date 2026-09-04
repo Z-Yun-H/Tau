@@ -5,6 +5,18 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+### Added
+
+- **`/` command palette in the TUI.** Typing `/` on an empty line opens a
+  filterable command palette below the prompt — keep typing to narrow,
+  `↑`/`↓` to move, `Tab`/`Enter` to insert, `Esc` to dismiss. Backspace
+  past the `/` returns to the empty prompt, and `Tab` outside the palette
+  completes command names through readline's native completer. The palette,
+  dispatch, and `/help` all read one shared command catalog, so what is
+  shown can never drift from what runs. New `suggestFromList()` primitive
+  in `@tau/ui` (raw-mode overlay, injectable streams, non-TTY graceful
+  dismissal).
+
 ### Changed
 
 - **`tau tui`'s `/help` output is now generated from a shared slash-command

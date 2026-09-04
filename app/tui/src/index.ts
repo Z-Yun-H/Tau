@@ -34,7 +34,13 @@ import { readFile } from "node:fs/promises";
 import { realpathSync } from "node:fs";
 import { loadConfig } from "@tau/core";
 import { renderPlan, renderReview, runPlan } from "@tau/engine";
-import { theme, type ConfirmAnswer } from "@tau/ui";
+import {
+  suggestFromList,
+  theme,
+  type ConfirmAnswer,
+  type SuggestItem,
+  type SuggestResult,
+} from "@tau/ui";
 import { detectGraphicsProtocol, metadataCard, readImage, renderImage } from "@tau/ui";
 import { renderToAnsi, type AnsiTheme } from "@tau/markdown";
 import {
@@ -53,6 +59,15 @@ import {
 
 const TUI_TIMEOUT_SEC = 120;
 const MD_MAX_BYTES = 512 * 1024;
+
+/** Palette entries from the shared catalog — one item per TUI command. */
+function suggestItems(): SuggestItem[] {
+  return slashCommandsFor("tui").map((def) => ({
+    value: slashCommandUsage(def) + (def.argsHint ? " " : ""),
+    usage: slashCommandUsage(def),
+    description: def.description,
+  }));
+}
 
 /** Terminal markdown styling bound to the shared tau theme. */
 const markdownTheme: AnsiTheme = {
@@ -322,6 +337,15 @@ export async function startTui(): Promise<void> {
     input: process.stdin,
     output: process.stdout,
     prompt: theme.brand("tau ❯ "),
+    // Tab completion from the same catalog: one hit completes inline,
+    // multiple hits render readline's native list on a second Tab.
+    completer: (line: string): string[] => {
+      if (!line.startsWith("/") || /\s/.test(line.slice(1))) return [];
+      const partial = line.slice(1).toLowerCase();
+      return slashCommandsFor("tui")
+        .filter((def) => def.name.startsWith(partial))
+        .map((def) => slashCommandUsage(def) + (def.argsHint ? " " : ""));
+    },
   });
 
   // Single-reader session: every completed line goes to exactly ONE reader —
@@ -365,6 +389,64 @@ export async function startTui(): Promise<void> {
       draining = false;
     }
   };
+
+  // ---- "/" suggestion palette (single-reader compatible) ----
+  //
+  // The palette rides THIS readline's already-raw stdin: on a "/" typed at
+  // the start of an empty line (and only while the REPL is idle — no
+  // pending confirm, no draining plan), we pause the interface, detach
+  // readline's keypress listeners, hand stdin to the @tau/ui overlay, and
+  // restore everything afterwards. No second reader is ever created, so
+  // the guarantee above holds.
+  let paletteOpen = false;
+
+  const openPalette = async (): Promise<void> => {
+    const stdin = process.stdin;
+    // readline attached its line-editing keypress listener to THIS stream;
+    // detach it for the overlay's takeover, restore it afterwards.
+    const saved = stdin.listeners("keypress");
+    stdin.removeAllListeners("keypress");
+    rl.pause();
+    // rl.pause() pauses the underlying stream too — the overlay needs it
+    // flowing (readline had it raw + flowing all along; restoring readline
+    // below re-pauses nothing: rl.resume() resumes the stream itself).
+    stdin.resume();
+    let result: SuggestResult;
+    try {
+      result = await suggestFromList({
+        input: stdin,
+        output: process.stdout,
+        initialFilter: "/",
+        items: suggestItems(),
+        hint: "↑/↓ move · tab/enter insert · esc dismiss",
+      });
+    } finally {
+      stdin.removeAllListeners("keypress");
+      for (const listener of saved) stdin.addListener("keypress", listener);
+      rl.resume();
+    }
+    // Buffer sync happens AFTER resume — a paused interface may drop writes.
+    if (result.action === "select" && result.value !== null) {
+      // The buffer still holds the pre-palette "/"; append the rest.
+      rl.write(result.value.slice(1));
+    } else if (result.filter.length === 0) {
+      // The user backspaced the "/" away — remove it from the buffer.
+      rl.write("\b");
+    } else {
+      // Dismissed mid-filter — sync the buffer with what was typed.
+      rl.write(result.filter.slice(1));
+    }
+  };
+
+  process.stdin.on("keypress", (character) => {
+    if (paletteOpen || answerSlot !== null || draining) return;
+    if (character === "/" && rl.line === "/") {
+      paletteOpen = true;
+      void openPalette().finally(() => {
+        paletteOpen = false;
+      });
+    }
+  });
 
   rl.on("line", (line) => {
     if (answerSlot) {
