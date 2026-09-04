@@ -11,6 +11,7 @@ const emit = defineEmits<{ close: [] }>();
 const ROWS: { keys: string; action: string }[] = [
   { keys: "Enter", action: "send the intent" },
   { keys: "Shift + Enter", action: "newline in the composer" },
+  { keys: "/", action: "open the command menu (type to filter)" },
   { keys: "Ctrl/⌘ + K", action: "focus the composer" },
   { keys: "?", action: "open this panel (composer empty)" },
   { keys: "Alt + N", action: "new conversation" },

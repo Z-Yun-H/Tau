@@ -7,6 +7,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Added
 
+- **`/` command menu in the WebUI composer.** Typing a bare command token
+  (`/`, `/th`, …) opens a floating menu above the composer — `↑`/`↓` to
+  move, `Tab`/`Enter` to run, `Esc` to dismiss, mouse hover/click supported.
+  Commands execute client-side (`/new` thread, `/theme`, `/plan` `/agent`
+  mode switches, `/help`, `/settings`, rail openers) and are never sent to
+  the AI as intents. The menu reads the same shared command catalog as the
+  TUI palette, served additively via `GET /api/commands`.
 - **`/` command palette in the TUI.** Typing `/` on an empty line opens a
   filterable command palette below the prompt — keep typing to narrow,
   `↑`/`↓` to move, `Tab`/`Enter` to insert, `Esc` to dismiss. Backspace

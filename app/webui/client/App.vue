@@ -34,6 +34,7 @@ import SidePanel from "./components/SidePanel.vue";
 import StatusHeader from "./components/StatusHeader.vue";
 import { usePlanFlow } from "./composables/plan-flow.js";
 import { useSession } from "./composables/session.js";
+import type { SlashActionId } from "./lib/slash.js";
 import { useTheme } from "./lib/theme.js";
 
 const {
@@ -48,9 +49,37 @@ const {
   createThread,
 } = usePlanFlow();
 const { cyclePreference: cycleTheme } = useTheme();
+const { commands, refreshCommands } = useSession();
 
 // Composer mode (issue #97): plan (default, historical flow) | agent (goal loop).
 const agentMode = ref(false);
+
+/** Slash-menu actions (issue #133) — all client-side, never sent as intents. */
+function onSlashCommand(action: SlashActionId): void {
+  switch (action) {
+    case "new":
+      createThread();
+      break;
+    case "theme":
+      cycleTheme();
+      break;
+    case "plan":
+    case "agent":
+      agentMode.value = action === "agent";
+      break;
+    case "help":
+      shortcutsOpen.value = true;
+      break;
+    case "settings":
+      settingsOpen.value = true;
+      break;
+    default:
+      // status / skills / tools / history live in the reference rail —
+      // open it (the tab is one click away; SidePanel owns its tabs).
+      railOpen.value = true;
+      break;
+  }
+}
 
 const streamEl = ref<HTMLElement | null>(null);
 const composer = ref<InstanceType<typeof Composer> | null>(null);
@@ -104,10 +133,11 @@ function onKeydown(event: KeyboardEvent): void {
 }
 
 onMounted(() => {
-  const { refreshStatus, refreshSkills, refreshHistory } = useSession();
+  const { refreshStatus, refreshSkills, refreshHistory, refreshCommands } = useSession();
   void refreshStatus();
   void refreshSkills();
   void refreshHistory();
+  void refreshCommands();
 });
 
 // vueuse useEventListener — auto cleanup on unmount
@@ -225,8 +255,10 @@ watchDebounced(
         class="composer-dock"
         :planning="planning"
         :agent-mode="agentMode"
+        :commands="commands"
         @submit="(intent: string) => (agentMode ? submitGoal(intent) : submitIntent(intent))"
         @mode="(agent: boolean) => (agentMode = agent)"
+        @command="onSlashCommand"
       />
     </section>
 

@@ -6,6 +6,7 @@
 import { reactive, ref } from "vue";
 import {
   api,
+  type CommandInfo,
   type HistoryEntry,
   type SkillSummary,
   type StatusPayload,
@@ -17,7 +18,14 @@ const statusError = ref("");
 const skills = ref<SkillSummary[]>([]);
 const tools = ref<ToolSummary[]>([]);
 const history = ref<HistoryEntry[]>([]);
-const settled = reactive({ status: false, skills: false, tools: false, history: false });
+const commands = ref<CommandInfo[]>([]);
+const settled = reactive({
+  status: false,
+  skills: false,
+  tools: false,
+  history: false,
+  commands: false,
+});
 
 export function useSession() {
   async function refreshStatus(): Promise<void> {
@@ -61,16 +69,29 @@ export function useSession() {
     }
   }
 
+  async function refreshCommands(): Promise<void> {
+    try {
+      const payload = await api<{ commands: CommandInfo[] }>("/api/commands");
+      commands.value = payload.commands;
+    } catch {
+      commands.value = [];
+    } finally {
+      settled.commands = true;
+    }
+  }
+
   return {
     status,
     statusError,
     skills,
     tools,
     history,
+    commands,
     settled,
     refreshStatus,
     refreshSkills,
     refreshTools,
     refreshHistory,
+    refreshCommands,
   };
 }

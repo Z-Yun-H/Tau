@@ -81,6 +81,19 @@ export interface SkillSummary {
   origin: "bundled" | "user" | "workspace";
 }
 
+/** One slash-command entry of the shared catalog (server: GET /api/commands). */
+export interface CommandInfo {
+  name: string;
+  aliases?: string[];
+  description: string;
+  argsHint?: string;
+  argsKind?: "none" | "file" | "free";
+}
+
+export interface CommandsPayload {
+  commands: CommandInfo[];
+}
+
 export interface ToolParamInfo {
   name: string;
   type: "string" | "number" | "boolean" | "string[]";

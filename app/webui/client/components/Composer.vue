@@ -13,15 +13,62 @@
  * flow (plan → review → Run plan gate); `agent` = multi-round goal loop
  * (rounds stream live, medium+ rounds pause for per-round approval). The
  * toggle is a default-on-plan UI switch — the plan path is untouched.
+ *
+ * Slash menu (issue #133): typing a bare command token (`/`, `/th`, …)
+ * opens a floating menu fed by the shared command catalog (server:
+ * /api/commands). ↑/↓ move, Tab/Enter execute, Esc dismisses; commands are
+ * executed CLIENT-side (never sent as intents) and clear the composer.
  */
 import { computed, ref, watch } from "vue";
+import type { CommandInfo } from "../lib/api.js";
+import {
+  clampIndex,
+  filterCommands,
+  menuOpenFor,
+  type SlashActionId,
+  type SlashMenuItem,
+} from "../lib/slash.js";
 
-const props = defineProps<{ planning: boolean; agentMode?: boolean }>();
-const emit = defineEmits<{ submit: [intent: string]; mode: [agent: boolean] }>();
+const props = defineProps<{
+  planning: boolean;
+  agentMode?: boolean;
+  /** Shared catalog entries (webui surface) from /api/commands. */
+  commands?: CommandInfo[];
+}>();
+const emit = defineEmits<{
+  submit: [intent: string];
+  mode: [agent: boolean];
+  command: [action: SlashActionId];
+}>();
 
 const intent = ref("");
 const input = ref<HTMLTextAreaElement | null>(null);
 const focused = ref(false);
+const dismissed = ref(false);
+const menuIndex = ref(0);
+
+const menuItems = computed<SlashMenuItem[]>(() =>
+  dismissed.value ? [] : filterCommands(props.commands ?? [], intent.value),
+);
+const menuVisible = computed(() => menuOpenFor(intent.value) && menuItems.value.length > 0);
+
+watch(intent, () => {
+  dismissed.value = false;
+  menuIndex.value = 0;
+});
+
+watch(menuItems, () => {
+  menuIndex.value = clampIndex(menuIndex.value, menuItems.value.length);
+});
+
+function runCommand(item: SlashMenuItem): void {
+  intent.value = "";
+  emit("command", item.action);
+}
+
+function moveMenu(delta: number): void {
+  menuIndex.value = clampIndex(menuIndex.value + delta, menuItems.value.length);
+}
 
 function autoGrow(): void {
   const el = input.value;
@@ -40,6 +87,30 @@ function onSubmit(): void {
 }
 
 function onKeydown(event: KeyboardEvent): void {
+  if (menuVisible.value) {
+    if (event.key === "ArrowDown" || (event.ctrlKey && event.key.toLowerCase() === "n")) {
+      event.preventDefault();
+      moveMenu(1);
+      return;
+    }
+    if (event.key === "ArrowUp" || (event.ctrlKey && event.key.toLowerCase() === "p")) {
+      event.preventDefault();
+      moveMenu(-1);
+      return;
+    }
+    if (event.key === "Tab" || (event.key === "Enter" && !event.shiftKey && !event.isComposing)) {
+      event.preventDefault();
+      const item = menuItems.value[menuIndex.value];
+      if (item !== undefined) runCommand(item);
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      dismissed.value = true;
+      return;
+    }
+  }
   if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
     event.preventDefault();
     onSubmit();
@@ -63,6 +134,30 @@ defineExpose({ focus });
       @focusin="focused = true"
       @focusout="focused = false"
     >
+      <!-- slash menu floats ABOVE the beam; outside the shell's overflow clip -->
+      <div
+        v-if="menuVisible && focused"
+        class="slash-menu tau-surface"
+        role="listbox"
+        aria-label="slash commands"
+      >
+        <button
+          v-for="(item, i) in menuItems"
+          :key="item.name"
+          type="button"
+          class="slash-item"
+          :class="{ active: i === menuIndex }"
+          role="option"
+          :aria-selected="i === menuIndex"
+          @mousedown.prevent
+          @click="runCommand(item)"
+          @mousemove="menuIndex = i"
+        >
+          <span class="slash-name">/{{ item.name }}</span>
+          <span class="slash-desc">{{ item.description }}</span>
+        </button>
+        <div class="slash-hint">↑/↓ move · tab/enter run · esc dismiss</div>
+      </div>
       <div class="composer-shell">
         <textarea
           ref="input"
@@ -107,6 +202,11 @@ defineExpose({ focus });
               <span class="hint-text">focus</span>
             </span>
             <span class="hint-sep">·</span>
+            <span class="hint">
+              <kbd class="tau-kbd">/</kbd>
+              <span class="hint-text">commands</span>
+            </span>
+            <span class="hint-sep">·</span>
             <button type="button" class="hint-btn" title="press ? when focused" @click="focus">
               <kbd class="tau-kbd">?</kbd>
               <span class="hint-text">shortcuts</span>
@@ -145,6 +245,79 @@ defineExpose({ focus });
   width: 100%;
   max-width: 768px;
   margin: 0 auto;
+  position: relative;
+}
+
+/* ---- slash command menu (floats above the beam) ---- */
+
+.slash-menu {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  border-radius: 10px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: var(--tau-elev-3);
+}
+
+.slash-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  padding: 7px 10px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--tau-text);
+  transition: background var(--t-fast) var(--ease);
+}
+
+.slash-item.active {
+  background: var(--tau-raised);
+}
+
+.slash-name {
+  color: var(--tau-info);
+  flex: none;
+}
+
+.slash-item.active .slash-name {
+  font-weight: 700;
+}
+
+.slash-desc {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--tau-muted);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.slash-hint {
+  padding: 5px 10px 3px;
+  border-top: 1px solid var(--tau-line);
+  margin-top: 3px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--tau-faint);
+  user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slash-item {
+    transition: none;
+  }
 }
 
 .composer-beam {

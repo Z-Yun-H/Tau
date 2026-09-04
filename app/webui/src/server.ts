@@ -27,6 +27,7 @@ import {
   ProviderUnavailableError,
   readRecentHistory,
   runGoal,
+  slashCommandsFor,
 } from "@tau/agent";
 import { GoalRegistry } from "./goal.js";
 
@@ -219,6 +220,13 @@ export function createRequestListener(options: RequestListenerOptions = {}): htt
           // Read-only tool-layer inventory (name/description/risk/owner/params —
           // never the executables). Built on demand like the planner does.
           sendJson(res, 200, listToolSummaries());
+          return;
+        }
+        if (req.method === "GET" && url.pathname === "/api/commands") {
+          // Slash-command metadata for the composer menu — the same shared
+          // catalog the TUI palette reads, webui surface. Pure data: names,
+          // aliases, descriptions; execution stays client-side.
+          sendJson(res, 200, { commands: slashCommandsFor("webui") });
           return;
         }
         if (req.method === "GET" && url.pathname === "/api/history") {

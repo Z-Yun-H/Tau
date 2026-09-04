@@ -81,6 +81,38 @@ describe("GET API", () => {
     expect(body.some((skill: { name: string }) => skill.name === "git-helper")).toBe(true);
   });
 
+  it("serves the webui slash-command catalog as pure metadata", async () => {
+    const res = await get("/api/commands");
+    expect(res.status).toBe(200);
+    const body = JSON.parse(res.body) as { commands: Array<{ name: string; description: string }> };
+    expect(Array.isArray(body.commands)).toBe(true);
+    const names = body.commands.map((command) => command.name);
+    // webui surface: shared commands + webui-only commands
+    for (const name of [
+      "help",
+      "skills",
+      "history",
+      "status",
+      "new",
+      "theme",
+      "plan",
+      "agent",
+      "tools",
+      "settings",
+    ]) {
+      expect(names, name).toContain(name);
+    }
+    // tui-only commands must not leak
+    expect(names).not.toContain("provider");
+    expect(names).not.toContain("md");
+    expect(names).not.toContain("view");
+    // pure metadata: descriptions always present, no executable surface
+    for (const command of body.commands) {
+      expect(command.description.length).toBeGreaterThan(0);
+      expect(JSON.stringify(command)).not.toContain("run(");
+    }
+  });
+
   it("lists the tool layer as pure data (no executables)", async () => {
     const res = await get("/api/tools");
     expect(res.status).toBe(200);
