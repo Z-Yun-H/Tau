@@ -13,7 +13,7 @@
 
 1. Understand the project systemically before touching code; keep docs in sync; if a required doc is missing, create it and justify it in the PR/report.
 2. Tech selection is frozen: no new framework, library or tool without an approved Issue; state rationale and impact in the PR.
-3. Flow by change type: features / refactors / architecture → Issue first, one PR = one Issue, PR body references it (`Closes #N`); simple, unambiguous fixes may be direct commits with clear messages — but Tau's `main` is protected, so even fixes land through a PR branch; never bypass PR for reviewable changes. Compound requests spanning multiple change types or subsystems must be auto-decomposed into independently reviewable one-Issue-one-PR units BEFORE implementation, with the decomposition published first (§3). Large refactors (3+ subsystems, or a version release as the deliverable) additionally follow the **unified-merge release pattern**: unit PRs target an integration branch `release/vX.Y.Z-<slug>`, merge into it sequentially (CI-gated, rebased), a release unit bumps versions + archives the changelog last, and ONE unified PR (integration branch → main) carries the release notes and unit index — merged by a HUMAN maintainer (§3).
+3. Flow by change type: features / refactors / architecture → Issue first, one PR = one Issue, PR body references it (`Closes #N`); simple, unambiguous fixes may be direct commits with clear messages — but Tau's `main` is protected, so even fixes land through a PR branch; never bypass PR for reviewable changes. Compound requests spanning multiple change types or subsystems must be auto-decomposed into independently reviewable one-Issue-one-PR units BEFORE implementation, with the decomposition published first (§3). Large refactors (3+ subsystems, or a version release as the deliverable) additionally follow the **unified-merge release pattern**: unit PRs target an integration branch `release/vX.Y.Z-<slug>`, merge into it sequentially (CI-gated, rebased), a release unit bumps versions + archives the changelog last, and ONE unified PR (integration branch → main) carries the release notes and unit index — merged by a HUMAN maintainer (§3). As soon as the unified PR merges, run the **PR-ledger reconciliation**: close every stacked unit PR whose content reached main via the integration branch (comments citing git evidence), and re-land any unit whose content never made it through a fresh PR that `Closes` the stale one — a merged total PR with still-open unit PRs is a violation state (§3).
 4. Dependency updates are standalone PRs with add/upgrade/remove lists, `pnpm audit` results, and full test results; never change workspace/dependency strategy without maintainer approval.
 5. Docs must be synced in the same PR (both READMEs, AGENTS, docs/); state doc status in the PR body; respect root-vs-subpackage doc responsibilities.
 6. Refactors / architecture changes: `[REFACTOR]` / `[ARCHITECTURE]` tag in PR title, motivation + impact + risk + structure-impact statement, and NEVER self-merge.
@@ -81,6 +81,11 @@
 - 集成分支上必须包含一个**发布单元**（release unit）：全工作区版本号升级、`CHANGELOG.md` 版本节归档、每日 changelog 记录；该单元在全部功能单元之后最后合并。
 - 全部单元合并后，开启**一个总 PR**（集成分支 → main）：标题承载版本号，正文包含版本发布说明、全部单元 Issue/PR 索引与各单元门禁结果汇总。
 - 总 PR **必须由维护者人工合并**（§12 不因单元 PR 已合并而放宽）；总 PR 合并前，集成分支聚合态的 CI 必须全绿。
+- **总 PR 合并后的当次收口（total-PR reconciliation）**：总 PR 被人工合并后，AI **必须**立即做一次 PR 账目清点，杜绝「总 PR 已合并而单元 PR 仍 open」的悬挂状态：
+  - 内容已随集成分支进入 main 的堆叠单元 PR —— **逐一关闭**，每条关闭评论附 git 证据（祖先关系 `git merge-base --is-ancestor`、补丁等价 `git cherry`、必要时文件级比对）与总 PR 编号；
+  - 内容**未**随集成进入 main 的单元（集成冻结后提交、或遗漏 rebase 的单元）—— 不得一关了之：将其 rebase 到最新 main、消化共享文件冲突、跑全门禁后以**独立 PR 重落**汇入 main，PR 正文用 `Closes #<原单元 PR>` 承接关闭，并保留原单元的批次审计链；
+  - 「内容已进入 main」的判定以 git 证据为准，不得凭 PR 标题、合并状态或记忆推断；
+  - 清点结果（关闭清单与证据、重落 PR、验证方式）记入当日 `changelog/` 批次，保证审计路径完整。
 
 ## 4. Monorepo 与依赖管理
 
@@ -260,6 +265,7 @@ Tau 将"AI 行为准则"与"AI 可执行技能"分别存放：
 - [ ] 是否根据变更类型选择了正确的流程（简单修复免 Issue 直接 commit（分支上），功能/重构走 Issue+PR）？
 - [ ] 复合需求是否已自动分解并在实施前公示分解方案（一单元一 Issue 一 PR，见 §3）？
 - [ ] 大型重构/版本发布是否采用集成分支统一合并模式（单元 PR base = `release/vX.Y.Z-*`，发布单元最后合并，总 PR 留人工合并，见 §3）？
+- [ ] 总 PR 合并后是否完成 PR 账目清点（单元 PR 全部关闭或重落，无悬挂 open 单元 PR，判定有 git 证据，见 §3）？
 - [ ] 是否在 PR 描述或 commit 中包含 AI 标注、必要的结构影响说明？
 - [ ] commit 的 author/committer 邮箱是否均为维护者账号官方 noreply 邮箱（无编造的 `*@users.noreply.github.com`，见 §7 与 AGENTS/release.md "Commit author identity"）？
 - [ ] 是否更新了相关文档并明确了目录职责？
