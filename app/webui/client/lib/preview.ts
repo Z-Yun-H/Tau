@@ -95,8 +95,12 @@ export function attachHtmlPreviews(root: ParentNode): number {
     frame.title = "sandboxed html preview";
     body.appendChild(frame);
 
-    wrapper.append(head, body, pre);
+    // Replace FIRST, then move the pre into the wrapper — appending the pre
+    // first makes `pre.replaceWith(wrapper)` a hierarchy cycle (the new node
+    // would contain the element being replaced), which real browsers reject
+    // with HierarchyRequestError, detaching the code block from the document.
     pre.replaceWith(wrapper);
+    wrapper.append(head, body, pre);
 
     button.addEventListener("click", () => {
       const opening = body.hidden;
