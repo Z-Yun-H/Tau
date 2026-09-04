@@ -17,6 +17,10 @@ Since v0.5.0, the planning turn can stream the provider's thinking as it happens
 
 This capability currently surfaces in the **WebUI**: while planning, thinking streams live into the collapsible panel at the top of the plan card. The CLI does not expose a `--stream` flag yet — the library APIs (`planIntentStream` / `onPlanStream`) are ready for custom integrations.
 
+## Context and attachments (v0.6.0 library layer)
+
+Since v0.6.0 the planning pipeline natively carries two kinds of context: **conversation history** (`priorTurns`, folded into the planning intent) and **image attachments** (`attachments`, native wire shapes for vision providers, an honest annotation for text-only ones). `tau ask` itself stays single-turn text-only — both contexts are surfaced by the WebUI's threads and composer attachments; library consumers can pass them directly via `planIntent()` options (`priorTurns` / `attachments`).
+
 ## tau ask vs tau goal
 
 |            | tau ask                 | tau goal                              |

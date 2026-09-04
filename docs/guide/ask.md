@@ -17,6 +17,10 @@ v0.5.0 起，规划轮可以流式透出 provider 的思考过程（reasoning de
 
 这一能力目前在 **WebUI** 中呈现：规划进行时思考实时流入计划卡顶部的可折叠面板。CLI 尚未暴露 `--stream` 旗标——库层 API（`planIntentStream` / `onPlanStream`）已就绪，可供自建集成直接使用。
 
+## 上下文与附件（v0.6.0 库层）
+
+v0.6.0 起，规划管线原生携带两类上下文：**会话历史**（`priorTurns`，折叠进规划意图）与**图片附件**（`attachments`，视觉 provider 收到原生格式、纯文本 provider 得到诚实注记）。`tau ask` 仍是单轮纯文本——这两类上下文目前由 WebUI 的对话线程与图片附件呈现；库层使用者可直接通过 `planIntent()` 的 options（`priorTurns` / `attachments`）接入。
+
 ## 与 tau goal 的区别
 
 |      | tau ask        | tau goal                     |

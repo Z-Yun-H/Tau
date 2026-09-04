@@ -10,7 +10,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 - **Sandboxed HTML preview + native PDF/image viewing (generated-content
   display).** `html` fenced blocks in result/goal output gain a `preview`
   toggle that opens the code in an `<iframe sandbox="allow-scripts"
-  srcdoc=…>` — no `allow-same-origin`, so previewed scripts run in an
+srcdoc=…>` — no `allow-same-origin`, so previewed scripts run in an
   opaque origin that cannot touch the parent page, cookies or storage;
   the escape-first markdown pipeline is untouched. `file.read` of a PDF
   or an image now streams through the new read-only `GET /api/file?path=…`

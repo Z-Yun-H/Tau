@@ -52,6 +52,8 @@ tau file find "*.ts"                    # 也可以直接用工具
 | `tau alias`    | 持久化命令别名（`tau ll` → 任何命令）                                                                                                                        |
 | `tau provider` | API key 管理 + 在线模型发现：配好 key 自动刷新模型列表，交互式选型                                                                                           |
 | `tau config`   | Provider、超时、风险策略 —— 存在 `$TAU_HOME` 下                                                                                                              |
+| `tau tui`      | 全屏键盘优先 REPL（v0.6.0：`/` 弹出可过滤命令面板，与命令目录同源——展示与可执行永远一致）                                                                    |
+| `tau web`      | 本地 Web 界面（v0.6.0：输入框 `/` 命令菜单、对话线程、图片附件（服务端魔数校验）、沙箱 HTML 预览 + PDF/图片原生查看）                                        |
 
 ## 安装
 
