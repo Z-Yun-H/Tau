@@ -7,3 +7,4 @@ export * from "./skill-tools.js";
 export * from "./pipeline.js";
 export * from "./session.js";
 export * from "./loop.js";
+export * from "./commands.js";

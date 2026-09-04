@@ -5,6 +5,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+### Changed
+
+- **`tau tui`'s `/help` output is now generated from a shared slash-command
+  catalog.** Command names, aliases (`/quit`), descriptions and argument
+  hints moved from a hardcoded switch into `@tau/agent`
+  (`slashCommandCatalog()` / `slashCommandsFor()`), the single vocabulary
+  both the TUI and the WebUI composer present. Dispatch behavior is
+  unchanged — unknown or malformed `/` lines still fall through to the
+  natural-language intent pipeline.
+
 ### Removed
 
 - **Dead public exports pruned from `@tau/ai`, `@tau/plugins` and `@tau/webui`.**

@@ -8,11 +8,16 @@
  * leaving the session. The safety gate is identical to the CLI — the TUI is
  * only a different front door into @tau/agent + @tau/engine.
  *
+ * Slash commands are declared in @tau/agent's shared catalog
+ * (slashCommandsFor("tui")) — the same metadata that drives /help drives
+ * the command dispatch below and the "/" suggestion palette; execution
+ * stays surface-local (handlers here, ANSI rendering here).
+ *
  * Commands:
  *   /help      show this command list
  *   /provider  show the active provider, source, and model
  *   /skills    list loaded skills
- *   /history   show the last 10 history entries
+ *   /history   show recent history entries
  *   /status    show runtime locations and catalog sizes
  *   /md <file>     preview a markdown file (ANSI-rendered headings, code, tables)
  *   /view <file>   preview an image (Kitty/iTerm2 inline image; metadata card fallback)
@@ -34,12 +39,16 @@ import { detectGraphicsProtocol, metadataCard, readImage, renderImage } from "@t
 import { renderToAnsi, type AnsiTheme } from "@tau/markdown";
 import {
   ensureCatalog,
+  findSlashCommand,
   getActiveProvider,
   getSessionInfo,
   listSkillSummaries,
+  parseSlashInvocation,
   planAndReview,
   ProviderUnavailableError,
   readRecentHistory,
+  slashCommandsFor,
+  slashCommandUsage,
 } from "@tau/agent";
 
 const TUI_TIMEOUT_SEC = 120;
@@ -102,122 +111,145 @@ async function withSpinner<T>(label: string, fn: () => Promise<T>): Promise<T> {
 }
 
 /**
+ * /help output, generated from the shared command catalog so the listing can
+ * never drift from what dispatch (and the "/" palette) actually accepts.
+ */
+function printHelp(): void {
+  console.log(
+    [
+      theme.brand("commands"),
+      ...slashCommandsFor("tui").map((def) =>
+        theme.muted(`  ${slashCommandUsage(def).padEnd(13)}${def.description}`),
+      ),
+      theme.muted("  anything else is treated as a natural-language intent"),
+    ].join("\n"),
+  );
+}
+
+/**
+ * One TUI command handler — receives everything after the command token.
+ * Returns true when the session should end. Keyed by the catalog's primary
+ * name (aliases resolve through findSlashCommand before lookup).
+ */
+type TuiCommandHandler = (arg: string) => Promise<boolean>;
+
+const commandHandlers: Record<string, TuiCommandHandler> = {
+  help: async () => {
+    printHelp();
+    return false;
+  },
+  exit: async () => true,
+  clear: async () => {
+    process.stdout.write("\x1b[2J\x1b[H");
+    return false;
+  },
+  provider: async () => {
+    const active = getActiveProvider();
+    console.log(
+      `${theme.brand(active.label)} ${theme.muted(`(${active.source}) — model: ${active.model}`)}`,
+    );
+    return false;
+  },
+  skills: async () => {
+    const skills = listSkillSummaries();
+    if (skills.length === 0) {
+      console.log(theme.muted("no skills loaded"));
+      return false;
+    }
+    for (const skill of skills) {
+      console.log(`  ${theme.brand(skill.name)} ${theme.muted(`— ${skill.description}`)}`);
+    }
+    return false;
+  },
+  history: async () => {
+    const entries = readRecentHistory(10);
+    if (entries.length === 0) {
+      console.log(theme.muted("history is empty"));
+      return false;
+    }
+    for (const entry of entries) {
+      console.log(
+        `  ${theme.risk(entry.status === "ok" ? "low" : "high")} ${theme.muted(`[${entry.kind}]`)} ${entry.input}`,
+      );
+    }
+    return false;
+  },
+  status: async () => {
+    const info = await getSessionInfo();
+    console.log(
+      [
+        `  ${theme.muted("home:")} ${info.tauHome}`,
+        `  ${theme.muted("provider:")} ${info.provider.name} ${theme.muted(`— model: ${info.provider.model}`)}`,
+        `  ${theme.muted("skills:")} ${info.skillsCount}`,
+        `  ${theme.muted("plugins:")} ${info.pluginsCount}`,
+        `  ${theme.muted("providers:")} ${info.providers.length} registered`,
+      ].join("\n"),
+    );
+    return false;
+  },
+  md: async (arg) => {
+    const target = arg.trim();
+    if (!target) {
+      console.log(theme.muted("usage: /md <file>"));
+      return false;
+    }
+    try {
+      console.log(renderMd(await readMarkdownFile(target)));
+    } catch (error) {
+      console.log(theme.error(`cannot preview: ${(error as Error).message}`));
+    }
+    return false;
+  },
+  view: async (arg) => {
+    const target = arg.trim();
+    if (!target) {
+      console.log(theme.muted("usage: /view <file>"));
+      return false;
+    }
+    try {
+      const buffer = await readFile(target);
+      const meta = await readImage(target);
+      console.log(await renderImage(meta, buffer, detectGraphicsProtocol()));
+    } catch (error) {
+      console.log(theme.error(`cannot view: ${(error as Error).message}`));
+      if (!(error instanceof Error && error.message.startsWith("image larger"))) {
+        console.log(theme.muted(metadataCard({ path: target, format: "?", bytes: 0 })));
+      }
+    }
+    return false;
+  },
+};
+
+/**
  * Handle one REPL line. Returns true when the session should end.
  *
  * `confirmFn` injects the session's own confirm reader (same prompt and
  * normalization as @tau/ui's confirm(), but riding THIS readline) — a second
  * readline interface over the same stdin would double-echo every keystroke
  * and leak the confirm answer back into the REPL as a phantom intent.
+ *
+ * Slash dispatch is registry-driven: the invocation is matched against
+ * @tau/agent's shared catalog (aliases included); unknown or malformed
+ * slash lines fall through to the intent pipeline, exactly as before the
+ * registry existed. Exported for tests.
  */
-async function handleLine(
+export async function handleLine(
   raw: string,
   confirmFn: (question: string) => Promise<ConfirmAnswer>,
 ): Promise<boolean> {
   const line = raw.trim();
   if (!line) return false;
-  const command = line.split(/\s+/)[0] ?? "";
 
-  switch (command) {
-    case "/help": {
-      console.log(
-        [
-          theme.brand("commands"),
-          theme.muted("  /provider   active provider, source, and model"),
-          theme.muted("  /skills     list loaded skills"),
-          theme.muted("  /history    last 10 history entries"),
-          theme.muted("  /status     runtime locations and catalog sizes"),
-          theme.muted("  /md <file>  preview a markdown file (ANSI-rendered)"),
-          theme.muted("  /view <file>  preview an image (inline image or metadata card)"),
-          theme.muted("  /clear      clear the screen"),
-          theme.muted("  /exit       leave the session (also /quit)"),
-          theme.muted("  anything else is treated as a natural-language intent"),
-        ].join("\n"),
-      );
-      return false;
+  if (line.startsWith("/")) {
+    const invocation = parseSlashInvocation(line);
+    if (invocation) {
+      const def = findSlashCommand(invocation.name, "tui");
+      const handler = def === undefined ? undefined : commandHandlers[def.name];
+      if (handler !== undefined) {
+        return await handler(invocation.args);
+      }
     }
-    case "/exit":
-    case "/quit":
-      return true;
-    case "/clear":
-      process.stdout.write("\x1b[2J\x1b[H");
-      return false;
-    case "/provider": {
-      const active = getActiveProvider();
-      console.log(
-        `${theme.brand(active.label)} ${theme.muted(`(${active.source}) — model: ${active.model}`)}`,
-      );
-      return false;
-    }
-    case "/skills": {
-      const skills = listSkillSummaries();
-      if (skills.length === 0) {
-        console.log(theme.muted("no skills loaded"));
-        return false;
-      }
-      for (const skill of skills) {
-        console.log(`  ${theme.brand(skill.name)} ${theme.muted(`— ${skill.description}`)}`);
-      }
-      return false;
-    }
-    case "/history": {
-      const entries = readRecentHistory(10);
-      if (entries.length === 0) {
-        console.log(theme.muted("history is empty"));
-        return false;
-      }
-      for (const entry of entries) {
-        console.log(
-          `  ${theme.risk(entry.status === "ok" ? "low" : "high")} ${theme.muted(`[${entry.kind}]`)} ${entry.input}`,
-        );
-      }
-      return false;
-    }
-    case "/status": {
-      const info = await getSessionInfo();
-      console.log(
-        [
-          `  ${theme.muted("home:")} ${info.tauHome}`,
-          `  ${theme.muted("provider:")} ${info.provider.name} ${theme.muted(`— model: ${info.provider.model}`)}`,
-          `  ${theme.muted("skills:")} ${info.skillsCount}`,
-          `  ${theme.muted("plugins:")} ${info.pluginsCount}`,
-          `  ${theme.muted("providers:")} ${info.providers.length} registered`,
-        ].join("\n"),
-      );
-      return false;
-    }
-    case "/md": {
-      const target = line.slice(3).trim();
-      if (!target) {
-        console.log(theme.muted("usage: /md <file>"));
-        return false;
-      }
-      try {
-        console.log(renderMd(await readMarkdownFile(target)));
-      } catch (error) {
-        console.log(theme.error(`cannot preview: ${(error as Error).message}`));
-      }
-      return false;
-    }
-    case "/view": {
-      const target = line.slice(5).trim();
-      if (!target) {
-        console.log(theme.muted("usage: /view <file>"));
-        return false;
-      }
-      try {
-        const buffer = await readFile(target);
-        const meta = await readImage(target);
-        console.log(await renderImage(meta, buffer, detectGraphicsProtocol()));
-      } catch (error) {
-        console.log(theme.error(`cannot view: ${(error as Error).message}`));
-        if (!(error instanceof Error && error.message.startsWith("image larger"))) {
-          console.log(theme.muted(metadataCard({ path: target, format: "?", bytes: 0 })));
-        }
-      }
-      return false;
-    }
-    default:
-      break;
+    // unknown or malformed slash command → natural-language intent below
   }
 
   // ---- intent pipeline (same sequence as `tau ask`) ----
