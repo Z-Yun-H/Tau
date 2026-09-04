@@ -21,6 +21,7 @@
  */
 import { nextTick, onMounted, ref, watch } from "vue";
 import { useEventListener, watchDebounced } from "@vueuse/core";
+import AttachmentChips from "./components/AttachmentChips.vue";
 import Composer from "./components/Composer.vue";
 import EmptyState from "./components/EmptyState.vue";
 import ErrorCard from "./components/ErrorCard.vue";
@@ -228,7 +229,14 @@ watchDebounced(
 
           <template v-for="(card, i) in cards" :key="card.id">
             <div v-if="card.type === 'user'" class="user-row">
-              <div class="user-bubble" :title="card.ts">{{ card.text }}</div>
+              <div class="user-col">
+                <div class="user-bubble" :title="card.ts">{{ card.text }}</div>
+                <AttachmentChips
+                  v-if="card.attachments?.length"
+                  class="user-attach"
+                  :items="card.attachments"
+                />
+              </div>
             </div>
             <PlanCard
               v-else-if="card.type === 'plan'"
@@ -256,7 +264,12 @@ watchDebounced(
         :planning="planning"
         :agent-mode="agentMode"
         :commands="commands"
-        @submit="(intent: string) => (agentMode ? submitGoal(intent) : submitIntent(intent))"
+        @submit="
+          (intent: string, attachments) =>
+            agentMode
+              ? submitGoal(intent, undefined, attachments)
+              : submitIntent(intent, attachments)
+        "
         @mode="(agent: boolean) => (agentMode = agent)"
         @command="onSlashCommand"
       />
@@ -338,8 +351,21 @@ watchDebounced(
   animation: tau-enter var(--t-med) var(--ease) both;
 }
 
-.user-bubble {
+/* bubble + attachment chips stack right-aligned (issue #135) */
+.user-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
   max-width: 78%;
+}
+
+.user-attach {
+  justify-content: flex-end;
+}
+
+.user-bubble {
+  max-width: 100%;
   background: var(--tau-active); /* tau.active */
   border: 1px solid var(--tau-line-strong); /* tau.line-strong */
   color: var(--tau-text); /* tau.text */

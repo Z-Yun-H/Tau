@@ -7,6 +7,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Added
 
+- **Image attachments in the WebUI (image parsing module).** Attach images
+  to any plan or agent request via the paperclip button, clipboard paste,
+  or drag-and-drop; drafts show as removable chips with previews. The
+  server validates hard — media-type whitelist (PNG/JPEG/WebP/GIF), up to
+  4 images, per-image and total size caps, and a magic-number probe that
+  reuses `@tau/ui`'s header parser (a renamed text file cannot masquerade
+  as an image) — refusals answer as plain-JSON 4xx before any stream
+  starts. Vision-capable providers receive the payloads in their native
+  wire shape (OpenAI `image_url` data URLs, Anthropic base64 image blocks,
+  Gemini `inline_data` parts, Ollama `images` field); text-only providers
+  get an honest text annotation saying the image was dropped instead of
+  pretending to see it. Payloads ride the request only — nothing image-
+  shaped enters the NDJSON event stream or localStorage.
 - **`/` command menu in the WebUI composer.** Typing a bare command token
   (`/`, `/th`, …) opens a floating menu above the composer — `↑`/`↓` to
   move, `Tab`/`Enter` to run, `Esc` to dismiss, mouse hover/click supported.

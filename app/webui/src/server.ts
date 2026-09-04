@@ -15,8 +15,16 @@ import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { reviewPlan, runPlan } from "@tau/engine";
-import { loadConfig, redactConfig, type Plan, type PriorTurn, type SafetyReview } from "@tau/core";
+import {
+  loadConfig,
+  redactConfig,
+  type ImageAttachment,
+  type Plan,
+  type PriorTurn,
+  type SafetyReview,
+} from "@tau/core";
 import { cachedModels, formatUsage } from "@tau/ai";
+import { probeImageHeader } from "@tau/ui";
 import {
   ensureCatalog,
   getSessionInfo,
@@ -32,7 +40,14 @@ import {
 import { GoalRegistry } from "./goal.js";
 
 const WEBUI_TIMEOUT_SEC = 120;
-const BODY_CAP_BYTES = 1024 * 1024;
+/**
+ * Request-body cap. Raised from 1 MiB for the image-attachment flow
+ * (issue #135): up to 4 images x ~5.4 MiB base64 plus JSON overhead. The
+ * attachment payloads carry their own strict limits in readAttachments()
+ * (whitelist, count, per-image and total size) — this cap only bounds the
+ * raw HTTP body; the server binds to 127.0.0.1 so the exposure stays local.
+ */
+const BODY_CAP_BYTES = 24 * 1024 * 1024;
 const MIME: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -124,6 +139,114 @@ function readPriorTurns(body: Record<string, unknown>): PriorTurn[] | undefined 
     turns.push({ role, text: clean });
   }
   return turns.length > 0 ? turns : undefined;
+}
+
+/** ---- Image attachments (image parsing module, issue #135) ---- */
+
+/** Accepted image media types — everything else is rejected up front. */
+const ATTACHMENT_MEDIA_TYPES = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
+/** Max images per request. */
+const MAX_ATTACHMENTS = 4;
+/** Max base64 length per image (~4.2 MiB decoded, matching the 4 MiB raw client cap). */
+const MAX_ATTACHMENT_BASE64 = 5_600_000;
+/** Max combined base64 across all attachments of one request. */
+const MAX_ATTACHMENTS_BASE64_TOTAL = 22_000_000;
+/** Max display-name length (names are annotation/UI material, never payloads). */
+const MAX_ATTACHMENT_NAME = 120;
+
+/** mediaType -> the magic-number signature prefix probeImageHeader reports. */
+const EXPECTED_FORMAT: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpeg",
+  "image/webp": "webp",
+  "image/gif": "gif",
+};
+
+/**
+ * Result of {@link readAttachments}: either a validated attachment list or
+ * an explicit error message. Unlike conversation history (silently
+ * sanitized), attachment problems REJECT the request with 4xx — a
+ * silently-dropped multi-megabyte payload would look like the AI ignored
+ * the user's image, and a mangled one must never reach a provider.
+ */
+export type AttachmentsResult =
+  | { error: string; attachments?: undefined }
+  | { attachments: ImageAttachment[]; error?: undefined };
+
+/** Strict base64 shape: charset + length multiple of 4. */
+function isBase64(value: string): boolean {
+  return value.length % 4 === 0 && /^[A-Za-z0-9+/]*={0,2}$/.test(value);
+}
+
+/**
+ * Validate + normalize the client-provided `attachments` array (issue
+ * #135): image kind, whitelisted media type, decodable base64 within the
+ * size caps, and a magic-number probe whose detected format must MATCH the
+ * claimed media type (a renamed .exe can never masquerade as image/png).
+ * Returns the first violation as an explicit error string (callers answer
+ * 400), or the cleaned attachment list.
+ */
+export function readAttachments(body: Record<string, unknown>): AttachmentsResult {
+  const raw = body["attachments"];
+  if (raw === undefined || raw === null) return { attachments: [] };
+  if (!Array.isArray(raw)) return { error: "attachments (array) is required when present" };
+  if (raw.length === 0) return { attachments: [] };
+  if (raw.length > MAX_ATTACHMENTS) {
+    return { error: `too many attachments (max ${MAX_ATTACHMENTS})` };
+  }
+  const attachments: ImageAttachment[] = [];
+  let total = 0;
+  for (let i = 0; i < raw.length; i++) {
+    const entry = raw[i];
+    if (typeof entry !== "object" || entry === null || Array.isArray(entry)) {
+      return { error: `attachment ${i + 1}: object required` };
+    }
+    const item = entry as Record<string, unknown>;
+    if (item["kind"] !== "image") {
+      return { error: `attachment ${i + 1}: unsupported kind (only "image" is accepted)` };
+    }
+    const mediaType = typeof item["mediaType"] === "string" ? item["mediaType"].toLowerCase() : "";
+    if (!ATTACHMENT_MEDIA_TYPES.has(mediaType)) {
+      return {
+        error:
+          `attachment ${i + 1}: unsupported mediaType "${mediaType || "(missing)"}" ` +
+          `(accepted: png, jpeg, webp, gif)`,
+      };
+    }
+    const data = typeof item["dataBase64"] === "string" ? item["dataBase64"] : "";
+    if (!data) return { error: `attachment ${i + 1}: dataBase64 (string) is required` };
+    if (data.length > MAX_ATTACHMENT_BASE64) {
+      return {
+        error: `attachment ${i + 1}: image too large (max ~4 MB after base64)`,
+      };
+    }
+    if (!isBase64(data)) {
+      return { error: `attachment ${i + 1}: dataBase64 is not valid base64` };
+    }
+    total += data.length;
+    if (total > MAX_ATTACHMENTS_BASE64_TOTAL) {
+      return { error: `attachments too large in total (max ~16 MB decoded)` };
+    }
+    let name: string | undefined;
+    if (item["name"] !== undefined) {
+      if (typeof item["name"] !== "string") {
+        return { error: `attachment ${i + 1}: name must be a string when present` };
+      }
+      const trimmed = item["name"].trim();
+      if (trimmed) name = trimmed.slice(0, MAX_ATTACHMENT_NAME);
+    }
+    // Magic-number gate: the header must decode to the claimed format —
+    // reuses @tau/ui's in-house fixed-offset parser (the same one behind
+    // the TUI's /view), keeping the audit-clean dependency story.
+    const probe = probeImageHeader(Buffer.from(data, "base64"));
+    if (probe.format !== EXPECTED_FORMAT[mediaType]) {
+      return {
+        error: `attachment ${i + 1}: content does not look like ${mediaType.replace("image/", "")}`,
+      };
+    }
+    attachments.push({ kind: "image", mediaType, dataBase64: data, ...(name ? { name } : {}) });
+  }
+  return { attachments };
 }
 
 async function statusPayload(): Promise<Record<string, unknown>> {
@@ -270,8 +393,13 @@ export function createRequestListener(options: RequestListenerOptions = {}): htt
             sendJson(res, 400, { error: "intent (string) is required" });
             return;
           }
+          const attachments = readAttachments(body);
+          if (attachments.error !== undefined) {
+            sendJson(res, 400, { error: attachments.error });
+            return;
+          }
           ensureCatalog();
-          const planned = await planAndReview(intent);
+          const planned = await planAndReview(intent, { attachments: attachments.attachments });
           if (planned.usage) notes.set(res, formatUsage(planned.usage));
           sendJson(res, 200, {
             intent,
@@ -299,6 +427,11 @@ export function createRequestListener(options: RequestListenerOptions = {}): htt
             sendJson(res, 400, { error: "intent (string) is required" });
             return;
           }
+          const attachments = readAttachments(body);
+          if (attachments.error !== undefined) {
+            sendJson(res, 400, { error: attachments.error });
+            return;
+          }
           const provider = typeof body["provider"] === "string" ? body["provider"] : undefined;
           ensureCatalog();
           // Lazy stream start: headers go out with the first event. Errors
@@ -319,7 +452,11 @@ export function createRequestListener(options: RequestListenerOptions = {}): htt
           try {
             const planned = await planAndReviewStream(
               intent,
-              { provider, priorTurns: readPriorTurns(body) },
+              {
+                provider,
+                priorTurns: readPriorTurns(body),
+                attachments: attachments.attachments,
+              },
               (event) => {
                 startStream();
                 if (event.type === "usage") write({ type: "usage", usage: event.usage });
@@ -475,6 +612,11 @@ export function createRequestListener(options: RequestListenerOptions = {}): htt
               ? rawRounds
               : undefined;
           const provider = typeof body["provider"] === "string" ? body["provider"] : undefined;
+          const attachments = readAttachments(body);
+          if (attachments.error !== undefined) {
+            sendJson(res, 400, { error: attachments.error });
+            return;
+          }
           ensureCatalog();
           const goalId = goalRegistry.createGoalId();
           const controller = new AbortController();
@@ -494,6 +636,7 @@ export function createRequestListener(options: RequestListenerOptions = {}): htt
               provider,
               maxRounds,
               priorTurns: readPriorTurns(body),
+              attachments: attachments.attachments,
               assumeYes: true,
               allowMediumAutoApprove: true,
               timeoutSec: WEBUI_TIMEOUT_SEC,

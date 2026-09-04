@@ -73,6 +73,15 @@ plan`, ResultCard, ErrorCard, SidePanel with Skills/History/Tools,
   Alt+T theme cycle / Ctrl+⌘+, settings / Esc closes modal + drawer); markdown preview with
   rendered/raw toggle, copy and expand — rendered by the zero-dependency,
   escape-first `@tau/markdown`, never a sanitizer gap
+- **Image attachments** (issue #135) — paperclip button, clipboard paste
+  and drag-and-drop all feed one validated draft list in the Composer;
+  drafts render as removable chips with data-URL previews (PNG/JPEG/WebP/
+  GIF, up to 4, max 4 MB each — the server re-validates with its own
+  whitelist + magic-number probe). Sending images with no text uses an
+  explicit default intent. Payloads ride the plan/goal request only;
+  user cards keep name/type/size meta (thumbnails are session-only), and
+  text-only providers get an honest "image dropped" annotation instead
+  of pretending to see pixels
 - **Light & dark themes** — three-state preference (`light`/`dark`/
   `system`, default follows the OS) cycled from the header button or
   `Alt+T`, persisted in `tau-webui-theme-v1`, resolved before first

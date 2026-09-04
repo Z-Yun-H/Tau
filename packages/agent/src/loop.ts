@@ -20,6 +20,7 @@
 
 import type {
   AgentDecision,
+  ImageAttachment,
   Plan,
   PlanEvent,
   PriorTurn,
@@ -84,6 +85,13 @@ export interface RunGoalOptions {
    * prompt layer, all providers included.
    */
   priorTurns?: PriorTurn[];
+  /**
+   * Images attached to the goal's opening request (issue #135). They ride
+   * the ROUND-1 planning call only: reflection turns describe executed
+   * rounds (their digest is text) and never re-attach the payloads, so the
+   * snapshot context below stays attachment-free on purpose.
+   */
+  attachments?: ImageAttachment[];
   /** Goal lifecycle observer (front doors). */
   onGoalEvent?: (event: GoalEvent) => void;
   /** Per-round PlanEvent mirror (caller brackets rounds via goal events). */
@@ -183,10 +191,18 @@ export async function runGoal(intent: string, options: RunGoalOptions): Promise<
     const planned = options.onPlanStream
       ? await planIntentStream(
           intent,
-          { provider: options.provider, priorTurns: options.priorTurns },
+          {
+            provider: options.provider,
+            priorTurns: options.priorTurns,
+            attachments: options.attachments,
+          },
           (event) => options.onPlanStream?.(event, 1),
         )
-      : await planIntent(intent, { provider: options.provider, priorTurns: options.priorTurns });
+      : await planIntent(intent, {
+          provider: options.provider,
+          priorTurns: options.priorTurns,
+          attachments: options.attachments,
+        });
     const firstReview = reviewPlan(planned.plan);
     emit({ type: "round_plan", round: 1, plan: planned.plan, review: firstReview, origin: "plan" });
     // Interactive front doors pause on a non-"allow" FIRST round too — agent

@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import { renderToolCatalog, catalogSummary } from "@tau/tools";
-import type { PlanningContext, Plan, PriorTurn } from "@tau/core";
+import type { ImageAttachment, PlanningContext, Plan, PriorTurn } from "@tau/core";
 
 /**
  * Prompt construction + plan validation.
@@ -99,22 +99,40 @@ ${ctx.skillCatalog || "(none loaded)"}
 ENVIRONMENT: platform=${ctx.platform}, cwd=${ctx.cwd}`;
 }
 
-/** Compact catalog used by providers and by `tau ask --explain`. */
+/**
+ * Compact catalog used by providers and by `tau ask --explain`.
+ *
+ * `attachments` + `visionCapable` (image parsing module, issue #135): when
+ * images ride the request, a text annotation per image is folded into the
+ * user-side intent — the single choke point that gives EVERY provider
+ * (including the text-only ones) honest context about what was attached.
+ * Vision-capable providers additionally map the payloads into their wire
+ * shape from `ctx.attachments`; text-only providers see the annotation
+ * saying the image was dropped. Byte-identical output when no attachments
+ * are supplied (pinned by tests).
+ */
 export function planningContext(
   intent: string,
   skillCatalog: string,
   priorTurns?: PriorTurn[],
+  attachments?: ImageAttachment[],
+  visionCapable = false,
 ): PlanningContext {
   const presented =
     priorTurns === undefined || priorTurns.length === 0
       ? intent
       : `${renderPriorTurns(priorTurns)}\n\nCurrent request: ${intent}`;
+  const withImages =
+    attachments === undefined || attachments.length === 0
+      ? presented
+      : `${presented}\n\n${renderAttachmentNotes(attachments, visionCapable)}`;
   return {
-    intent: presented,
+    intent: withImages,
     toolCatalog: renderToolCatalog(),
     skillCatalog,
     platform: `${process.platform}`,
     cwd: process.cwd(),
+    ...(attachments && attachments.length > 0 ? { attachments } : {}),
   };
 }
 
@@ -139,3 +157,32 @@ export function renderPriorTurns(priorTurns: PriorTurn[]): string {
 
 const MAX_PRIOR_TURNS = 12;
 const MAX_TURN_CHARS = 4000;
+
+/** Display-name cap for attachment annotations (file names can be long). */
+const MAX_ATTACHMENT_NAME = 60;
+
+/**
+ * Text annotation for attached images (issue #135), folded into the
+ * planning intent by {@link planningContext}. Vision-capable providers
+ * attach the real payloads next to this note; text-only providers get the
+ * honest "image was dropped" wording so a model never believes it saw
+ * pixels it cannot see.
+ */
+export function renderAttachmentNotes(
+  attachments: ImageAttachment[],
+  visionCapable: boolean,
+): string {
+  const lines = attachments.map((attachment, index) => {
+    const rawName = typeof attachment.name === "string" ? attachment.name.trim() : "";
+    const name = rawName
+      ? rawName.length > MAX_ATTACHMENT_NAME
+        ? `${rawName.slice(0, MAX_ATTACHMENT_NAME)}…`
+        : rawName
+      : `image ${index + 1}`;
+    const note = visionCapable
+      ? "attached to this message"
+      : "this provider cannot see images — the image was dropped";
+    return `[image ${index + 1}: ${name}, ${attachment.mediaType} — ${note}]`;
+  });
+  return `<attachments>\n${lines.join("\n")}\n</attachments>`;
+}

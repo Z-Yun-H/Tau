@@ -6,7 +6,14 @@
  * the returned plan through @tau/engine's runPlan, the only execution channel.
  */
 
-import type { Plan, PriorTurn, ProviderStreamHandler, ProviderUsage, SkillMeta } from "@tau/core";
+import type {
+  ImageAttachment,
+  Plan,
+  PriorTurn,
+  ProviderStreamHandler,
+  ProviderUsage,
+  SkillMeta,
+} from "@tau/core";
 import { normalizeUsage, planningContext, resolveProvider } from "@tau/ai";
 import { registerPluginTools } from "@tau/plugins";
 import { registerCoreTools, registerTools, resetRegistry } from "@tau/tools";
@@ -32,6 +39,13 @@ export interface PlanIntentOptions {
    * the planning intent by the prompt layer, all providers included.
    */
   priorTurns?: PriorTurn[];
+  /**
+   * Images attached to this request (image parsing module, issue #135).
+   * The prompt layer folds one text annotation per image into the intent;
+   * vision-capable providers additionally map the payloads into their wire
+   * shape (AIProvider.supportsVision). Empty/absent = plain text request.
+   */
+  attachments?: ImageAttachment[];
 }
 
 export interface PlannedIntent {
@@ -58,12 +72,21 @@ export interface PlannedIntent {
 async function preparePlanning(intent: string, options: PlanIntentOptions) {
   const warnings = await registerPluginTools();
   const scan = scanSkills();
-  const ctx = planningContext(intent, renderSkillCatalog(scan.skills), options.priorTurns);
+  // Provider resolution must precede context construction: the attachment
+  // annotation wording depends on whether the resolved provider can
+  // actually see images (AIProvider.supportsVision, issue #135).
   const choice = resolveProvider(options.provider);
   const available = await choice.provider.isAvailable();
   if (!available) {
     throw new ProviderUnavailableError(choice.provider.name, choice.provider.unavailableReason?.());
   }
+  const ctx = planningContext(
+    intent,
+    renderSkillCatalog(scan.skills),
+    options.priorTurns,
+    options.attachments,
+    choice.provider.supportsVision === true,
+  );
   return { warnings, ctx, choice };
 }
 

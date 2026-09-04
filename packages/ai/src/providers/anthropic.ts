@@ -21,7 +21,7 @@ import { buildSystemPrompt, validatePlanResponse } from "../prompt.js";
 import { buildReflectPrompt, validateReflectResponse } from "../reflect.js";
 import { consumeAnthropicStream } from "../chat-stream.js";
 import { BaseHttpProvider } from "./base.js";
-import type { ProviderStreamHandler } from "@tau/core";
+import type { ImageAttachment, ProviderStreamHandler } from "@tau/core";
 import type { AgentDecision, ModelInfo, Plan, PlanningContext, ReflectContext } from "@tau/core";
 
 /** Anthropic Messages API defaults (AGENTS/ai-integration.md pattern). */
@@ -37,6 +37,8 @@ const DEFAULT_THINKING_BUDGET = 4096;
 export class AnthropicProvider extends BaseHttpProvider {
   readonly name = "anthropic";
   readonly label = "Anthropic (Claude)";
+  /** Vision-capable (issue #135): attachments map to image source blocks. */
+  readonly supportsVision = true;
 
   protected readonly config = {
     name: "anthropic",
@@ -105,6 +107,7 @@ export class AnthropicProvider extends BaseHttpProvider {
     system: string,
     user: string,
     onEvent?: ProviderStreamHandler,
+    attachments?: ImageAttachment[],
   ): Promise<string> {
     // Dynamic import avoids the registry -> provider -> models -> registry
     // ESM cycle (same convention as the other providers).
@@ -127,7 +130,7 @@ export class AnthropicProvider extends BaseHttpProvider {
           ...(thinking.thinking ? {} : { temperature: 0 }),
           ...thinking,
           system,
-          messages: [{ role: "user", content: user }],
+          messages: [{ role: "user", content: userContent(user, attachments) }],
           stream: true,
         }),
         signal: controller.signal,
@@ -149,13 +152,15 @@ export class AnthropicProvider extends BaseHttpProvider {
   }
 
   async plan(ctx: PlanningContext): Promise<Plan> {
-    return validatePlanResponse(await this.messagesTurn(buildSystemPrompt(ctx), ctx.intent));
+    return validatePlanResponse(
+      await this.messagesTurn(buildSystemPrompt(ctx), ctx.intent, undefined, ctx.attachments),
+    );
   }
 
   /** Streaming plan — same wire, deltas relayed, same validation gate. */
   async planStream(ctx: PlanningContext, onEvent?: ProviderStreamHandler): Promise<Plan> {
     return validatePlanResponse(
-      await this.messagesTurn(buildSystemPrompt(ctx), ctx.intent, onEvent),
+      await this.messagesTurn(buildSystemPrompt(ctx), ctx.intent, onEvent, ctx.attachments),
     );
   }
 
@@ -186,4 +191,29 @@ function lastRoundDigest(ctx: ReflectContext): string {
   if (!last) return ctx.intent;
   const outputs = last.outputs.map((output, i) => `step ${i + 1}: ${output}`).join("\n");
   return `Round ${last.round} finished with status ${last.status}.\nIntent: ${ctx.intent}\nOutputs:\n${outputs}`;
+}
+
+/**
+ * Messages API user content (issue #135): a plain string when no images
+ * ride along (byte-identical to the historical wire), text + one base64
+ * image source block per attachment when they do. The source's media_type
+ * is the sender-claimed value; front doors whitelist it and probe the
+ * magic number before it gets here.
+ */
+function userContent(
+  user: string,
+  attachments?: ImageAttachment[],
+): string | Array<Record<string, unknown>> {
+  if (!attachments || attachments.length === 0) return user;
+  return [
+    { type: "text", text: user },
+    ...attachments.map((attachment) => ({
+      type: "image",
+      source: {
+        type: "base64",
+        media_type: attachment.mediaType,
+        data: attachment.dataBase64,
+      },
+    })),
+  ];
 }

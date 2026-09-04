@@ -10,6 +10,7 @@ import { consumeOllamaStream } from "../chat-stream.js";
 import { chatJSON } from "./http.js";
 import type {
   AIProvider,
+  ImageAttachment,
   ModelInfo,
   Plan,
   PlanningContext,
@@ -20,6 +21,13 @@ import type {
 export class OllamaProvider implements AIProvider {
   readonly name = "ollama";
   readonly label = "Ollama (local)";
+  /**
+   * Vision-capable (issue #135): attachments map onto the user message's
+   * `images` field (raw base64 strings — Ollama's own wire convention).
+   * Whether the PULLED MODEL accepts them stays Ollama's business; an
+   * incompatible model errors on the wire and the error surfaces as-is.
+   */
+  readonly supportsVision = true;
 
   async isAvailable(): Promise<boolean> {
     try {
@@ -79,7 +87,7 @@ export class OllamaProvider implements AIProvider {
       ...this.thinkFragment(),
       messages: [
         { role: "system", content: buildSystemPrompt(ctx) },
-        { role: "user", content: ctx.intent },
+        userMessage(ctx.intent, ctx.attachments),
       ],
     };
     const raw = await chatJSON(`${this.host()}/api/chat`, {}, body);
@@ -112,7 +120,7 @@ export class OllamaProvider implements AIProvider {
           ...this.thinkFragment(),
           messages: [
             { role: "system", content: buildSystemPrompt(ctx) },
-            { role: "user", content: ctx.intent },
+            userMessage(ctx.intent, ctx.attachments),
           ],
         }),
         signal: controller.signal,
@@ -140,4 +148,22 @@ export class OllamaProvider implements AIProvider {
     if (cfg.providers["ollama"]?.["think"] !== true) return {};
     return { think: true };
   }
+}
+
+/**
+ * Ollama chat user message (issue #135): `{role, content}` when no images
+ * ride along (byte-identical to the historical wire); the `images` field —
+ * raw base64 strings, no data: prefix, exactly what Ollama's /api/chat
+ * expects — joins the message when they do.
+ */
+function userMessage(
+  intent: string,
+  attachments?: ImageAttachment[],
+): { role: "user"; content: string; images?: string[] } {
+  if (!attachments || attachments.length === 0) return { role: "user", content: intent };
+  return {
+    role: "user",
+    content: intent,
+    images: attachments.map((attachment) => attachment.dataBase64),
+  };
 }
