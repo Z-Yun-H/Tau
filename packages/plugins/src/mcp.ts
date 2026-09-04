@@ -108,10 +108,6 @@ export async function loadMcpSdk(): Promise<SdkBundle | null> {
   return cachedSdk;
 }
 
-export function resetMcpSdkCache(): void {
-  cachedSdk = undefined;
-}
-
 function timeoutSignal(ms: number): { signal: AbortSignal; cancel: () => void } {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);

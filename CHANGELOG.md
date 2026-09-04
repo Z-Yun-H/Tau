@@ -3,6 +3,20 @@
 All notable changes to Tau are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [SemVer](https://semver.org/).
 
+## Unreleased
+
+### Removed
+
+- **Dead public exports pruned from `@tau/ai`, `@tau/plugins` and `@tau/webui`.**
+  Zero-reference helpers that shipped through the `export *` barrels no longer
+  exist: `toolNames()` and the `RawPlan` type (`@tau/ai`), `resetMcpSdkCache()`
+  (`@tau/plugins`), and the goal-domain re-exports `GoalRegistry` /
+  `approvalTtlMs` / `DEFAULT_APPROVAL_TTL_MS` from the `@tau/webui` barrel
+  (the source exports in `goal.ts` are unchanged). The unused
+  `ExecuteResponse` read-model interface was dropped from the WebUI client
+  type layer. No runtime behavior changes; if you consumed one of these
+  helpers, pin the previous release or inline it.
+
 ## 0.5.0 — 2026-09-03
 
 The streaming release: the AI's thinking finally becomes visible. Seven

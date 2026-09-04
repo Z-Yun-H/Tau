@@ -37,8 +37,6 @@ const continueSchema = z
 /** Strict shape of the provider's reflection reply. */
 export const reflectSchema = z.discriminatedUnion("done", [doneSchema, continueSchema]);
 
-export type RawReflectDecision = z.infer<typeof reflectSchema>;
-
 /** Output-truncation budget per step, applied by the LOOP before feedback. */
 export const REFLECT_OUTPUT_SLICE = 4_000;
 
