@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import { renderToolCatalog, catalogSummary } from "@tau/tools";
-import type { PlanningContext, Plan } from "@tau/core";
+import type { PlanningContext, Plan, PriorTurn } from "@tau/core";
 
 /**
  * Prompt construction + plan validation.
@@ -100,12 +100,42 @@ ENVIRONMENT: platform=${ctx.platform}, cwd=${ctx.cwd}`;
 }
 
 /** Compact catalog used by providers and by `tau ask --explain`. */
-export function planningContext(intent: string, skillCatalog: string): PlanningContext {
+export function planningContext(
+  intent: string,
+  skillCatalog: string,
+  priorTurns?: PriorTurn[],
+): PlanningContext {
+  const presented =
+    priorTurns === undefined || priorTurns.length === 0
+      ? intent
+      : `${renderPriorTurns(priorTurns)}\n\nCurrent request: ${intent}`;
   return {
-    intent,
+    intent: presented,
     toolCatalog: renderToolCatalog(),
     skillCatalog,
     platform: `${process.platform}`,
     cwd: process.cwd(),
   };
 }
+
+/**
+ * Fold prior conversation turns into the user-side message (issue #134).
+ * Every provider sends `ctx.intent` as its user turn verbatim, so this one
+ * choke point gives ALL providers conversation context with zero provider
+ * changes. Byte-identical output when no turns are supplied (pinned by
+ * tests), so absent history never changes a prompt.
+ */
+export function renderPriorTurns(priorTurns: PriorTurn[]): string {
+  const turns = priorTurns.slice(-MAX_PRIOR_TURNS);
+  const body = turns
+    .map((turn) => {
+      const text =
+        turn.text.length > MAX_TURN_CHARS ? `${turn.text.slice(0, MAX_TURN_CHARS)}…` : turn.text;
+      return `${turn.role}: ${text}`;
+    })
+    .join("\n");
+  return `<conversation>\n${body}\n</conversation>`;
+}
+
+const MAX_PRIOR_TURNS = 12;
+const MAX_TURN_CHARS = 4000;

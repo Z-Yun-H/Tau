@@ -11,7 +11,7 @@
  * from /api/execute/stream — the same runPlan() channel the CLI uses.
  */
 import { computed, reactive, ref, watch } from "vue";
-import { postJson, type PlanResponse, type PlanStep } from "../lib/api.js";
+import { postJson, type PlanResponse, type PlanStep, type TurnInfo } from "../lib/api.js";
 import { postNdjson, type StreamEvent } from "../lib/stream.js";
 import { useSession } from "./session.js";
 
@@ -159,6 +159,27 @@ function loadThreads(): Thread[] {
   }
 }
 
+/**
+ * Extract the conversation turns the AI should see with the next request
+ * (conversation mode, issue #134): user messages + the assistant's final
+ * outputs, in thread order, newest-capped. The server re-sanitizes; this
+ * pass keeps the payload small and honest (failed runs are skipped).
+ * MAX 12 turns / 2000 chars each — server caps are the hard ceiling.
+ */
+function priorTurnsOf(cards: CardState[]): TurnInfo[] {
+  const turns: TurnInfo[] = [];
+  for (const card of cards) {
+    if (card.type === "user") {
+      turns.push({ role: "user", text: card.text });
+    } else if (card.type === "result" && card.status === "ok" && card.output.trim()) {
+      turns.push({ role: "assistant", text: card.output.trim().slice(0, 2000) });
+    } else if (card.type === "goal" && card.status === "ok" && card.answer?.trim()) {
+      turns.push({ role: "assistant", text: card.answer.trim().slice(0, 2000) });
+    }
+  }
+  return turns.slice(-12);
+}
+
 function persist(threads: Thread[]): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(threads));
@@ -290,6 +311,7 @@ export function usePlanFlow() {
   function submitIntent(intent: string): void {
     const thread = currentThread.value;
     if (!thread) return;
+    const history = priorTurnsOf(thread.cards);
     thread.cards.push({ type: "user", id: nextId++, text: intent, ts: now() });
     thread.title = threadTitle(thread.cards);
     touch(thread);
@@ -315,7 +337,7 @@ export function usePlanFlow() {
     const startedAt = Date.now();
     void (async () => {
       try {
-        await postNdjson("/api/plan/stream", { intent }, (event: StreamEvent) => {
+        await postNdjson("/api/plan/stream", { intent, history }, (event: StreamEvent) => {
           const type = event["type"];
           if (type === "reasoning_delta" && typeof event["text"] === "string") {
             card.thinking += event["text"];
@@ -472,6 +494,7 @@ export function usePlanFlow() {
   function submitGoal(intent: string, provider?: string): void {
     const thread = currentThread.value;
     if (!thread) return;
+    const history = priorTurnsOf(thread.cards);
     thread.cards.push({ type: "user", id: nextId++, text: intent, ts: now() });
     thread.title = threadTitle(thread.cards);
     touch(thread);
@@ -502,7 +525,7 @@ export function usePlanFlow() {
       try {
         await postNdjson(
           "/api/goal/stream",
-          { intent, ...(provider ? { provider } : {}) },
+          { intent, history, ...(provider ? { provider } : {}) },
           (event: StreamEvent) => {
             const type = event["type"];
             if (type === "goal_registered" && typeof event["goalId"] === "string") {

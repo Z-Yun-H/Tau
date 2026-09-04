@@ -178,6 +178,16 @@ export interface ModelInfo {
   ownedBy?: string;
 }
 
+/**
+ * One prior conversation turn presented to the provider for context
+ * (conversation mode, issue #134). UIs send the last N turns of the active
+ * thread; the prompt layer folds them into the planning intent.
+ */
+export interface PriorTurn {
+  role: "user" | "assistant";
+  text: string;
+}
+
 /** Context handed to a provider so it can plan against the real tool catalog. */
 export interface PlanningContext {
   intent: string;

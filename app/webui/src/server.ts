@@ -15,7 +15,7 @@ import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { reviewPlan, runPlan } from "@tau/engine";
-import { loadConfig, redactConfig, type Plan, type SafetyReview } from "@tau/core";
+import { loadConfig, redactConfig, type Plan, type PriorTurn, type SafetyReview } from "@tau/core";
 import { cachedModels, formatUsage } from "@tau/ai";
 import {
   ensureCatalog,
@@ -33,7 +33,6 @@ import { GoalRegistry } from "./goal.js";
 
 const WEBUI_TIMEOUT_SEC = 120;
 const BODY_CAP_BYTES = 1024 * 1024;
-
 const MIME: Record<string, string> = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
@@ -103,6 +102,28 @@ function readJsonBody(req: http.IncomingMessage): Promise<Record<string, unknown
     });
     req.on("error", reject);
   });
+}
+
+/**
+ * Sanitize the client-provided conversation history (conversation mode,
+ * issue #134): last 12 turns, roles whitelist, text trimmed and capped.
+ * Malformed entries are skipped, never fatal. Undefined when nothing
+ * usable remains — callers then behave exactly as before.
+ */
+function readPriorTurns(body: Record<string, unknown>): PriorTurn[] | undefined {
+  const raw = body["history"];
+  if (!Array.isArray(raw)) return undefined;
+  const turns: PriorTurn[] = [];
+  for (const entry of raw.slice(-12)) {
+    if (typeof entry !== "object" || entry === null) continue;
+    const role = (entry as { role?: unknown }).role;
+    const text = (entry as { text?: unknown }).text;
+    if ((role !== "user" && role !== "assistant") || typeof text !== "string") continue;
+    const clean = text.trim().slice(0, 4000);
+    if (!clean) continue;
+    turns.push({ role, text: clean });
+  }
+  return turns.length > 0 ? turns : undefined;
 }
 
 async function statusPayload(): Promise<Record<string, unknown>> {
@@ -296,11 +317,15 @@ export function createRequestListener(options: RequestListenerOptions = {}): htt
             if (!res.writableEnded) res.write(JSON.stringify(event) + "\n");
           };
           try {
-            const planned = await planAndReviewStream(intent, { provider }, (event) => {
-              startStream();
-              if (event.type === "usage") write({ type: "usage", usage: event.usage });
-              else write(event); // reasoning_delta / text_delta verbatim
-            });
+            const planned = await planAndReviewStream(
+              intent,
+              { provider, priorTurns: readPriorTurns(body) },
+              (event) => {
+                startStream();
+                if (event.type === "usage") write({ type: "usage", usage: event.usage });
+                else write(event); // reasoning_delta / text_delta verbatim
+              },
+            );
             if (planned.usage) notes.set(res, formatUsage(planned.usage));
             startStream();
             write({
@@ -468,6 +493,7 @@ export function createRequestListener(options: RequestListenerOptions = {}): htt
             const result = await runGoal(intent, {
               provider,
               maxRounds,
+              priorTurns: readPriorTurns(body),
               assumeYes: true,
               allowMediumAutoApprove: true,
               timeoutSec: WEBUI_TIMEOUT_SEC,

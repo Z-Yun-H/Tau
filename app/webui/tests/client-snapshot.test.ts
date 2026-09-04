@@ -106,7 +106,11 @@ const normalizeDom = (html: string): string =>
     .replaceAll(/\d{4}-\d{2}-\d{2}T[\d:.]+Z/g, "<ts>")
     // Thinking summary: "Thought" while the duration is still settling,
     // "Thought for Ns" once known — same element either way.
-    .replaceAll(/Thought( for \d+s)?/g, "<think-summary>");
+    .replaceAll(/Thought( for \d+s)?/g, "<think-summary>")
+    // Vue SFC scoped-style hashes change whenever a component's source
+    // changes — they carry no structural meaning, so pin them to a stable
+    // token and keep the snapshots about STRUCTURE, not build metadata.
+    .replaceAll(/data-v-[a-f0-9]{8}/g, "data-v-HASH");
 
 const streamHtml = async (): Promise<string> =>
   normalizeDom(await page.locator(".stream-inner").innerHTML());

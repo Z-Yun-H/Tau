@@ -6,7 +6,7 @@
  * the returned plan through @tau/engine's runPlan, the only execution channel.
  */
 
-import type { Plan, ProviderStreamHandler, ProviderUsage, SkillMeta } from "@tau/core";
+import type { Plan, PriorTurn, ProviderStreamHandler, ProviderUsage, SkillMeta } from "@tau/core";
 import { normalizeUsage, planningContext, resolveProvider } from "@tau/ai";
 import { registerPluginTools } from "@tau/plugins";
 import { registerCoreTools, registerTools, resetRegistry } from "@tau/tools";
@@ -27,6 +27,11 @@ export class ProviderUnavailableError extends Error {
 export interface PlanIntentOptions {
   /** Explicit provider override; falls back to config's provider. */
   provider?: string;
+  /**
+   * Prior conversation turns (conversation mode, issue #134) — folded into
+   * the planning intent by the prompt layer, all providers included.
+   */
+  priorTurns?: PriorTurn[];
 }
 
 export interface PlannedIntent {
@@ -53,7 +58,7 @@ export interface PlannedIntent {
 async function preparePlanning(intent: string, options: PlanIntentOptions) {
   const warnings = await registerPluginTools();
   const scan = scanSkills();
-  const ctx = planningContext(intent, renderSkillCatalog(scan.skills));
+  const ctx = planningContext(intent, renderSkillCatalog(scan.skills), options.priorTurns);
   const choice = resolveProvider(options.provider);
   const available = await choice.provider.isAvailable();
   if (!available) {
