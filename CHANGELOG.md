@@ -25,6 +25,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
   thinking state. Both commands enter the shared slash catalog (so
   `/help`, the palette and Tab completion list them automatically) and
   go through new UI-agnostic session services in `@tau/agent`.
+- **WebUI model & thinking selection (issue #164).** The settings
+  panel's provider section becomes selectable: a catalog-backed model
+  dropdown (`GET /api/models` with a refresh button) and capability-
+  driven thinking mode/effort mini-pickers — providers without a knob
+  render an honest "no thinking knobs" note instead of dead controls.
+  New validated write endpoints `POST /api/config/model` and `POST
+/api/config/thinking` share the CLI's config channel; the gate and
+  risk policy remain immutable from the browser.
 
 ## 0.6.1 — 2026-09-05
 

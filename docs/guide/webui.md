@@ -36,9 +36,18 @@ agent 轮次里的工具步骤渲染为结构化卡片：工具名、风险徽�
 
 对话线程持久化在浏览器 localStorage（键 `tau-webui-threads-v1`，上限 50 条），服务端 history 才是持久记录；卡片 schema 只增不改。设置面板展示**脱敏后**的有效配置（API key 永远是掩码）。
 
+## 模型与思考选择（v0.6.2）
+
+设置面板的 **provider** 区块升级为可选：模型行是目录驱动的下拉
+（`GET /api/models`，含刷新按钮），经 `POST /api/config/model` 写入；
+**thinking** 行按服务端能力表渲染 mode（on/off）与 effort（low/medium/high）
+分段控件——无旋钮的 provider 如实显示「无思考旋钮」提示，而非死控件。
+两项写入与 CLI 同一条 `setConfigValue` 通道；gate 与风险策略依然不可从
+浏览器修改。
+
 ## Provider 配置（v0.6.1）
 
-设置面板新增 **provider setup** 区块——唯一的可写配置面：
+设置面板的 **provider setup** 区块——凭据写入面：
 
 - **模型链接查询**：选择 provider 后端点自动带出（来自服务端下发的 provider 目录，与注册表奇偶校验锁定一致），无需手输 URL；高级折叠项可自定义端点（OpenAI 系写 `providers.<name>.baseUrl`，Ollama 写 `host`）。
 - **只粘贴 key**：从控制台链接取 key（每条目录附 "get a … key ↗"），粘贴即存；保存走 `POST /api/config/provider`——与 CLI `tau provider set-key` 同一条 `setConfigValue` 通道（0600 配置文件），保存后自动刷新模型目录，并可一键把该 provider 设为当前活跃（keyless 的 mock/ollama/zai 无需 key）。
