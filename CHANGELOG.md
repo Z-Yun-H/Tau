@@ -18,6 +18,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ### Changed
 
+- **WebUI client refactor: the conversation stream and the overlay
+  switch are their own components.** `ConversationStream` now owns the
+  chat content column (user bubbles, the plan/result/goal/error card
+  rail, empty state, autoscroll) and `ModalLayer` + `useUiState()` own
+  the shortcuts/settings overlay switching — `App.vue` shrinks to pure
+  composition. No rendering or behavior change (pinned by the existing
+  byte-level DOM snapshots), and the extracted logic ships with its own
+  unit and DOM tests.
 - **WebUI internal cleanup (no behavior change).** Removed four unused
   global CSS classes from the client theme (`.tau-chrome-text`,
   `.tau-chrome-text-hover`, `.tau-surface-raised`,

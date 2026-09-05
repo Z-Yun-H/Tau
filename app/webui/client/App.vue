@@ -20,38 +20,24 @@
  * threads are a UI grouping over the same /api/plan → /api/execute pipeline,
  * never an independent execution path.
  */
-import { nextTick, onMounted, ref, watch } from "vue";
-import { useEventListener, watchDebounced } from "@vueuse/core";
-import AttachmentChips from "./components/AttachmentChips.vue";
+import { onMounted, ref } from "vue";
+import { useEventListener } from "@vueuse/core";
 import Composer from "./components/Composer.vue";
-import EmptyState from "./components/EmptyState.vue";
-import ErrorCard from "./components/ErrorCard.vue";
-import GoalCard from "./components/GoalCard.vue";
-import PlanCard from "./components/PlanCard.vue";
-import ResultCard from "./components/ResultCard.vue";
+import ConversationStream from "./components/ConversationStream.vue";
+import ModalLayer from "./components/ModalLayer.vue";
 import SessionSidebar from "./components/SessionSidebar.vue";
-import ShortcutsModal from "./components/ShortcutsModal.vue";
-import SettingsPanel from "./components/SettingsPanel.vue";
 import SidePanel from "./components/SidePanel.vue";
 import StatusHeader from "./components/StatusHeader.vue";
 import { usePlanFlow } from "./composables/plan-flow.js";
 import { useSession } from "./composables/session.js";
 import type { SlashActionId } from "./lib/slash.js";
 import { useTheme } from "./lib/theme.js";
+import { useUiState } from "./composables/ui-state.js";
 
-const {
-  cards,
-  planning,
-  submitIntent,
-  runPlan,
-  submitGoal,
-  approveGoal,
-  cancelGoal,
-  discard,
-  createThread,
-} = usePlanFlow();
+const { planning, submitIntent, submitGoal, createThread } = usePlanFlow();
 const { cyclePreference: cycleTheme } = useTheme();
-const { commands, refreshCommands } = useSession();
+const { commands } = useSession();
+const { shortcutsOpen, settingsOpen, closeOverlays } = useUiState();
 
 // Composer mode (issue #97): plan (default, historical flow) | agent (goal loop).
 const agentMode = ref(false);
@@ -83,10 +69,7 @@ function onSlashCommand(action: SlashActionId): void {
   }
 }
 
-const streamEl = ref<HTMLElement | null>(null);
 const composer = ref<InstanceType<typeof Composer> | null>(null);
-const shortcutsOpen = ref(false);
-const settingsOpen = ref(false);
 const railOpen = ref(true);
 const sidebarOpen = ref(false);
 
@@ -103,8 +86,7 @@ function onKeydown(event: KeyboardEvent): void {
     return;
   }
   if (event.key === "Escape") {
-    if (shortcutsOpen.value) shortcutsOpen.value = false;
-    if (settingsOpen.value) settingsOpen.value = false;
+    closeOverlays();
     if (sidebarOpen.value) sidebarOpen.value = false;
     return;
   }
@@ -144,41 +126,6 @@ onMounted(() => {
 
 // vueuse useEventListener — auto cleanup on unmount
 useEventListener(window, "keydown", onKeydown);
-
-// Keep the newest card in view, but never steal scroll while the user reads up.
-function scrollToEnd(): void {
-  void nextTick(() => {
-    streamEl.value?.scrollTo({ top: streamEl.value.scrollHeight, behavior: "smooth" });
-  });
-}
-
-watch(
-  () => cards.value.length,
-  () => scrollToEnd(),
-);
-
-// Streaming autoscroll: follow live output growth (debounced so per-chunk
-// updates do not thrash smooth scrolling) — never steals scroll position
-// faster than the content grows. Goal streams count too (step outputs +
-// round growth are the agent-mode live content).
-watchDebounced(
-  () =>
-    cards.value.reduce((n, c) => {
-      if (c.type === "result") return n + c.output.length;
-      if (c.type === "goal") {
-        return (
-          n +
-          c.rounds.reduce(
-            (sum, round) => sum + round.steps.reduce((acc, step) => acc + step.output.length, 0),
-            0,
-          )
-        );
-      }
-      return n;
-    }, 0),
-  () => scrollToEnd(),
-  { debounce: 150, maxWait: 600 },
-);
 </script>
 
 <template>
@@ -201,8 +148,7 @@ watchDebounced(
       @navigate="sidebarOpen = false"
     />
 
-    <!-- conversation stream: flex-1 on narrow so the stream (not the
-         page) scrolls; the class is inert in lg's grid layout -->
+    <!-- conversation stream + composer: the center column -->
     <section class="flex flex-col flex-1 min-h-0">
       <!-- narrow-screen top bar: drawer toggle + rail toggle -->
       <div class="flex items-center gap-2 px-3 py-2 lg:hidden flex-none">
@@ -225,40 +171,7 @@ watchDebounced(
 
       <hr class="tau-divider flex-none lg:hidden" />
 
-      <div ref="streamEl" aria-live="polite" class="stream-scroll flex-1 min-h-0 overflow-y-auto">
-        <div class="stream-inner">
-          <EmptyState v-if="cards.length === 0" />
-
-          <template v-for="(card, i) in cards" :key="card.id">
-            <div v-if="card.type === 'user'" class="user-row">
-              <div class="user-col">
-                <div class="user-bubble" :title="card.ts">{{ card.text }}</div>
-                <AttachmentChips
-                  v-if="card.attachments?.length"
-                  class="user-attach"
-                  :items="card.attachments"
-                />
-              </div>
-            </div>
-            <PlanCard
-              v-else-if="card.type === 'plan'"
-              :card="card"
-              :enter-index="i"
-              @run="runPlan"
-              @discard="discard"
-            />
-            <ResultCard v-else-if="card.type === 'result'" :card="card" :enter-index="i" />
-            <GoalCard
-              v-else-if="card.type === 'goal'"
-              :card="card"
-              :enter-index="i"
-              @approve="approveGoal"
-              @stop="cancelGoal"
-            />
-            <ErrorCard v-else :card="card" :enter-index="i" />
-          </template>
-        </div>
-      </div>
+      <ConversationStream />
 
       <Composer
         ref="composer"
@@ -281,8 +194,8 @@ watchDebounced(
     <SidePanel v-if="railOpen" class="max-h-[45vh] lg:max-h-none" />
   </main>
 
-  <ShortcutsModal v-if="shortcutsOpen" @close="shortcutsOpen = false" />
-  <SettingsPanel v-if="settingsOpen" @close="settingsOpen = false" />
+  <!-- overlay switch: shortcuts modal / settings panel -->
+  <ModalLayer />
 </template>
 
 <style scoped>
@@ -297,29 +210,6 @@ watchDebounced(
     padding: 12px;
     gap: 12px;
     max-width: 1600px;
-  }
-}
-
-.stream-scroll {
-  /* The conversation column scrolls independently on lg+; on smaller it
-     is the main page scroll. */
-  scroll-behavior: smooth;
-}
-
-.stream-inner {
-  /* Center the conversation content with a max width matching the composer
-     so the active turn reads as the focal column. */
-  width: 100%;
-  max-width: 768px;
-  margin: 0 auto;
-  padding: 16px 16px 8px;
-  display: flex;
-  flex-direction: column;
-}
-
-@media (min-width: 1024px) {
-  .stream-inner {
-    padding: 20px 20px 8px;
   }
 }
 
@@ -341,39 +231,5 @@ watchDebounced(
     background: var(--tau-bg); /* tau.bg — opaque over the stream edge */
     z-index: 10;
   }
-}
-
-.user-row {
-  display: flex;
-  justify-content: flex-end;
-  margin: 12px 0 4px;
-  animation: tau-enter var(--t-med) var(--ease) both;
-}
-
-/* bubble + attachment chips stack right-aligned (issue #135) */
-.user-col {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-  max-width: 78%;
-}
-
-.user-attach {
-  justify-content: flex-end;
-}
-
-.user-bubble {
-  max-width: 100%;
-  background: var(--tau-active); /* tau.active */
-  border: 1px solid var(--tau-line-strong); /* tau.line-strong */
-  color: var(--tau-text); /* tau.text */
-  border-radius: 12px;
-  border-bottom-right-radius: 4px;
-  padding: 8px 12px;
-  font-size: 13px;
-  line-height: 1.55;
-  white-space: pre-wrap;
-  word-break: break-word;
 }
 </style>

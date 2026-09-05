@@ -260,6 +260,29 @@ function now(): string {
   return new Date().toISOString();
 }
 
+/**
+ * Autoscroll follow-volume (issue #151 extraction): how much live stream
+ * content the cards currently hold — ConversationStream watches this
+ * (debounced) to follow the newest output while it grows. Pure function
+ * over the card state so the follow behavior is unit-testable without a
+ * DOM (result output + goal round step outputs are the live content).
+ */
+export function streamVolume(cards: CardState[]): number {
+  return cards.reduce((n, c) => {
+    if (c.type === "result") return n + c.output.length;
+    if (c.type === "goal") {
+      return (
+        n +
+        c.rounds.reduce(
+          (sum, round) => sum + round.steps.reduce((acc, step) => acc + step.output.length, 0),
+          0,
+        )
+      );
+    }
+    return n;
+  }, 0);
+}
+
 function touch(thread: Thread): void {
   thread.updatedAt = now();
 }

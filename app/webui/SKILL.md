@@ -148,6 +148,14 @@ chords like Ctrl+T/W/N).
   action full-width at top; thread rows (active = tau.active);
   two-step inline delete (arm, then confirm — no `window.confirm`);
   drawer on narrow screens; footer kbd hint.
+- `ConversationStream` — the chat content column: user bubbles +
+  attachment chips + the card rail (Plan/Result/Goal/Error) + empty
+  state, plus both autoscroll watchers (new cards; debounced live
+  output growth via `streamVolume()`). State from the usePlanFlow
+  singleton — no props.
+- `ModalLayer` — the overlay switch (issue #151): renders the
+  shortcuts modal / settings panel from the `useUiState()` singleton
+  (`composables/ui-state.ts`); Esc closes via `closeOverlays()`.
 - `ShortcutsModal` — the keyboard contract overlay (Esc/backdrop
   closes).
 - `SettingsPanel` — read-only settings modal (`Ctrl/⌘+,` or the header
@@ -289,8 +297,7 @@ localStorage: keys `tau-webui-threads-v1` (threads, pinned) and
       `tau web`, check ≥1024 / 640–1023 / <640)
 - [ ] `pnpm --filter @tau/webui build` clean (zero unmatched-utility
       warnings)?
-- [ ] `pnpm test app/webui` green (5 files — byte-level snapshots
-      preserved)?
+- [ ] `pnpm test app/webui` green (byte-level snapshots preserved)?
 - [ ] Server payload changed? → `lib/api.ts` types + server tests
       updated
 - [ ] `Run plan` button text and `file.find in` output prefix
