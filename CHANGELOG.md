@@ -5,6 +5,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+## 0.7.0 — 2026-09-05
+
+Provider setup moves into the WebUI settings — pick a provider and the
+endpoint is looked up for you, paste a key, save (masked on display and
+self-remasking while you type) — while the app shell locks to the
+viewport at every breakpoint and the chat client splits into composable,
+individually tested components.
+
 ### Added
 
 - **Provider setup in the WebUI settings — model link lookup, paste-only
