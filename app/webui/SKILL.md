@@ -159,12 +159,17 @@ chords like Ctrl+T/W/N).
 - `ShortcutsModal` — the keyboard contract overlay (Esc/backdrop
   closes).
 - `SettingsPanel` — the settings modal (`Ctrl/⌘+,` or the header
-  `⚙ settings` button): **provider setup (the ONE writable slice —
-  `ProviderSetup.vue`, issue #152)** + provider/availability/model-catalog,
-  risk policy (+ `tau config` hint), theme picker (same `useTheme()` state
-  as the header button), local session stats. Read views come from
-  `GET /api/config` — the redacted effective config; the gate/risk policy
-  stays GET-only.
+  `⚙ settings` button): **provider setup (`ProviderSetup.vue`, issue
+  #152) + model & thinking selection (issue #164)** — the per-provider
+  request knobs are the writable slices — plus provider/availability/
+  model-catalog, risk policy (+ `tau config` hint), theme picker (same
+  `useTheme()` state as the header button), local session stats. Read
+  views come from `GET /api/config` — the redacted effective config
+  (thinking block included); the gate/risk policy stays GET-only. The
+  model select is backed by `GET /api/models` (refresh button); thinking
+  mode/effort mini-pickers render straight from the payload's capability
+  table (providers without knobs get an honest "no thinking knobs" note)
+  and write via `POST /api/config/model` / `POST /api/config/thinking`.
 - `ProviderSetup` — pick a provider (chips with availability + `·key`
   markers), the endpoint PREFILLS from the server-sent catalog (advanced
   disclosure to override), paste the API key into a `password` input (show
