@@ -1,6 +1,6 @@
 {
   "name": "@tau/docs",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "private": true,
   "description": "Tau documentation site — VitePress, zh (default) + en locales, content decomposed from the project's own feature map",
   "license": "MIT",

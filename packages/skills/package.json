@@ -1,6 +1,6 @@
 {
   "name": "@tau/skills",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Tau skills — SKILL.md schema, three-tier loader, bundled skills/templates",
   "license": "MIT",
   "author": "Z-Yun-H",
