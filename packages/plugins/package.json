@@ -1,6 +1,6 @@
 {
   "name": "@tau/plugins",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Tau plugin system — MCP servers as tool providers (dsh, vsvcode, ...)",
   "license": "MIT",
   "author": "Z-Yun-H",

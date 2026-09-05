@@ -1,6 +1,6 @@
 {
   "name": "@tau/core",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Tau foundation layer — domain types, config store, history, runtime paths",
   "license": "MIT",
   "author": "Z-Yun-H",
