@@ -29,7 +29,8 @@
     "build": "vite build && vite build -c vite.server.config.ts",
     "shots": "tsx --conditions=development scripts/screenshot.mjs",
     "shots:v060": "tsx --conditions=development scripts/shot-v060.mjs",
-    "shots:v061": "tsx --conditions=development scripts/shot-v061.mjs"
+    "shots:v061": "tsx --conditions=development scripts/shot-v061.mjs",
+    "shots:v062": "tsx --conditions=development scripts/shot-v062.mjs"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "catalog:",
