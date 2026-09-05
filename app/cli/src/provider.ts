@@ -98,6 +98,27 @@ export function registerProviderCommands(program: Command): void {
         process.exitCode = 1;
       }
     });
+
+  provider
+    .command("thinking")
+    .description(
+      "Show or set the provider's thinking mode and effort " +
+        "(the knobs the TUI /thinking and the WebUI settings render)",
+    )
+    .argument("<provider>", "provider name (see: tau provider list)")
+    .argument("[mode]", "thinking mode: on | off (omit to show the current state)")
+    .argument(
+      "[effort]",
+      "thinking effort: low | medium | high (providers without effort refuse it)",
+    )
+    .action(async (name: string, mode: string | undefined, effort: string | undefined) => {
+      try {
+        await thinking(name, mode, effort);
+      } catch (error) {
+        console.error(theme.error(error instanceof Error ? error.message : String(error)));
+        process.exitCode = 1;
+      }
+    });
 }
 
 /* ------------------------------------------------------------------ *
@@ -219,6 +240,7 @@ async function refreshAndReport(
 
 async function printProviderList(json: boolean): Promise<void> {
   const { getProvider, providerNames, apiKeySource, cachedModels, providerEnvKey } = await ai();
+  const { describeThinking, hasThinkingConfig } = await ai();
   const config = loadConfig();
   const rows = providerNames().map((name) => {
     const label = getProvider(name)?.label ?? name;
@@ -233,6 +255,7 @@ async function printProviderList(json: boolean): Promise<void> {
       model: currentModel(name),
       cachedModels: cache.models.length,
       refreshedAt: cache.refreshedAt,
+      ...(hasThinkingConfig(name) ? { thinking: describeThinking(name) } : {}),
     };
   });
 
@@ -254,8 +277,9 @@ async function printProviderList(json: boolean): Promise<void> {
       row.cachedModels > 0
         ? theme.muted(`models: ${row.cachedModels}, ${humanAge(row.refreshedAt)}`)
         : theme.muted("models: not cached yet (set a key or run tau provider models <name>)");
+    const thinking = "thinking" in row ? theme.muted(`  thinking: ${String(row.thinking)}`) : "";
     console.log(
-      `${marker} ${row.provider.padEnd(width)} ${key}  ${theme.muted(`model: ${row.model}`)}  ${catalog}`,
+      `${marker} ${row.provider.padEnd(width)} ${key}  ${theme.muted(`model: ${row.model}`)}  ${catalog}${thinking}`,
     );
   }
   console.log(
@@ -346,6 +370,64 @@ async function printModels(
     console.error(theme.error(error instanceof Error ? error.message : String(error)));
     process.exitCode = 1;
   }
+}
+
+/**
+ * tau provider thinking — the normalized thinking-mode / effort surface
+ * (issue #162). No mode: show the current state and what the provider
+ * supports. With a mode (optionally an effort): validated write through
+ * setThinkingConfig — unsupported knobs are refused with the reason.
+ */
+async function thinking(name: string, mode: string | undefined, effort: string | undefined) {
+  await requireProvider(name);
+  const { getThinkingConfig, setThinkingConfig, thinkingCapability } = await ai();
+
+  if (mode === undefined) {
+    const state = getThinkingConfig(name);
+    const capability = thinkingCapability(name);
+    console.log(`Provider "${name}" thinking: ${describeState(state)}.`);
+    const knobs = [
+      capability.mode ? "mode (on|off)" : null,
+      capability.effort ? "effort (low|medium|high)" : null,
+      capability.budget ? "budget (tokens)" : null,
+    ].filter(Boolean);
+    console.log(
+      theme.muted(
+        knobs.length > 0
+          ? `Supported knobs: ${knobs.join(", ")} — set with: tau provider thinking ${name} on [low|medium|high]`
+          : "This provider exposes no thinking knobs.",
+      ),
+    );
+    return;
+  }
+
+  if (mode !== "on" && mode !== "off") {
+    throw new Error(`thinking mode must be "on" or "off" (got "${mode}")`);
+  }
+  const allowedEfforts = new Set(["low", "medium", "high"]);
+  if (effort !== undefined && !allowedEfforts.has(effort)) {
+    throw new Error(`thinking effort must be low, medium or high (got "${effort}")`);
+  }
+  const next = setThinkingConfig(name, {
+    mode,
+    ...(effort !== undefined ? { effort: effort as "low" | "medium" | "high" } : {}),
+  });
+  console.log(theme.ok(`Thinking for "${name}" set: ${describeState(next)}.`));
+}
+
+function describeState(state: {
+  mode?: "on" | "off";
+  effort?: "low" | "medium" | "high";
+  budget?: number;
+}): string {
+  if (state.mode === "on") {
+    const intensity = state.budget !== undefined ? `${state.budget} tokens` : state.effort;
+    return intensity ? `on (${intensity})` : "on";
+  }
+  if (state.mode === "off") return "off";
+  if (state.effort !== undefined) return `effort ${state.effort}`;
+  if (state.budget !== undefined) return `budget ${state.budget} tokens`;
+  return "provider default";
 }
 
 async function use(name: string, model: string | undefined): Promise<void> {

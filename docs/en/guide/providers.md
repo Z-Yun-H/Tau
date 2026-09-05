@@ -26,7 +26,35 @@ tau config set providers.anthropic.thinkingBudget 4096
 tau config set provider gemini
 ```
 
-The configurable field whitelist: `apiKey`, `baseUrl`, `host`, `model`, `timeoutMs`, plus the v0.5.0 thinking toggles (`think` / `thinking` / `thinkingBudget`). `DEFAULT_CONFIG.providers` deliberately carries no model defaults — model choice is always your explicit decision.
+The configurable field whitelist: `apiKey`, `baseUrl`, `host`, `model`, `timeoutMs`, plus the thinking knobs (`thinking` / `thinkingEffort` / `thinkingBudget`; ollama's legacy `think` key still works). `DEFAULT_CONFIG.providers` deliberately carries no model defaults — model choice is always your explicit decision.
+
+## Thinking mode & effort (v0.6.2)
+
+Thinking knobs are selectable consistently across all three front doors: the CLI (`tau provider thinking`), the TUI (`/thinking`), and the WebUI settings panel. Normalized keys:
+
+- `providers.<name>.thinking` — `"on" | "off"` (legacy booleans `true` / `false` still read);
+- `providers.<name>.thinkingEffort` — `"low" | "medium" | "high"` (thinking intensity);
+- `providers.<name>.thinkingBudget` — explicit token budget (anthropic/gemini), wins over effort presets.
+
+Providers expose different knobs (UIs render straight from the capability matrix — unsupported controls never appear):
+
+| Provider  | mode on/off | effort low/medium/high | explicit budget | wire mapping                                                           |
+| --------- | ----------- | ---------------------- | --------------- | ---------------------------------------------------------------------- |
+| anthropic | yes         | yes                    | yes             | `thinking.enabled` + budget_tokens (effort presets 2048/8192/16384)    |
+| gemini    | yes         | yes                    | yes             | `thinkingBudget` (off→0; on without budget→dynamic −1; effort presets) |
+| openai    | –           | yes                    | –               | `reasoning_effort` (sent only when explicitly set)                     |
+| deepseek  | yes         | –                      | –               | `thinking: {type: enabled/disabled}` (sent only when explicitly set)   |
+| ollama    | yes         | –                      | –               | `think: true/false`                                                    |
+| mock/zai  | –           | –                      | –               | no thinking knobs                                                      |
+
+Every knob is **opt-in**: with none configured, request bodies stay byte-identical to before.
+
+```bash
+tau provider thinking anthropic          # show the current state and supported knobs
+tau provider thinking anthropic on high  # extended thinking + high effort
+tau provider thinking deepseek on        # thinking: enabled
+tau provider thinking anthropic off      # turn it off
+```
 
 ## Selection precedence
 

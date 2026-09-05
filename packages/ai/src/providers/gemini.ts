@@ -20,6 +20,7 @@ import { loadConfig } from "@tau/core";
 import { buildSystemPrompt, validatePlanResponse } from "../prompt.js";
 import { buildReflectPrompt, validateReflectResponse } from "../reflect.js";
 import { consumeGeminiStream } from "../chat-stream.js";
+import { EFFORT_BUDGETS, getThinkingConfig } from "../thinking.js";
 import { BaseHttpProvider } from "./base.js";
 import type { ImageAttachment, ProviderStreamHandler } from "@tau/core";
 import type { AgentDecision, ModelInfo, Plan, PlanningContext, ReflectContext } from "@tau/core";
@@ -28,6 +29,8 @@ const DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 const DEFAULT_TIMEOUT_MS = 120_000;
 /** Default thinking budget when `providers.gemini.thinkingBudget` is set. */
 const MIN_THINKING_BUDGET = 128;
+/** Gemini's dynamic-thinking marker (model decides) for mode "on". */
+const DYNAMIC_THINKING_BUDGET = -1;
 
 export class GeminiProvider extends BaseHttpProvider {
   readonly name = "gemini";
@@ -58,17 +61,32 @@ export class GeminiProvider extends BaseHttpProvider {
   }
 
   /**
-   * Thinking budget fragment when configured (default omitted — Gemini 2.5
-   * models apply their own dynamic thinking; `thought` parts still stream
-   * back and relay as reasoning events).
+   * Thinking fragment when configured (default omitted — Gemini 2.5 models
+   * apply their own dynamic thinking; `thought` parts still stream back and
+   * relay as reasoning events). Reads the normalized thinking layer
+   * (issue #162): mode "off" pins the budget to 0 (explicitly disabled);
+   * mode "on" uses the explicit `thinkingBudget`, else the effort preset,
+   * else -1 (dynamic). A bare legacy `thinkingBudget` keeps its standalone
+   * behavior (no mode key involved).
    */
   private thinkingBudgetFragment(): {
     thinkingConfig?: { thinkingBudget: number };
   } {
-    const entry = loadConfig().providers[this.name];
-    const raw = Number(entry?.["thinkingBudget"]);
-    if (!Number.isFinite(raw) || raw < MIN_THINKING_BUDGET) return {};
-    return { thinkingConfig: { thinkingBudget: Math.trunc(raw) } };
+    const normalized = getThinkingConfig(this.name);
+    const explicitRaw = Number(loadConfig().providers[this.name]?.["thinkingBudget"]);
+    const explicit =
+      Number.isFinite(explicitRaw) && explicitRaw >= MIN_THINKING_BUDGET
+        ? Math.trunc(explicitRaw)
+        : undefined;
+    if (normalized.mode === "off") {
+      return { thinkingConfig: { thinkingBudget: 0 } };
+    }
+    const budget =
+      explicit ??
+      (normalized.effort ? EFFORT_BUDGETS[normalized.effort] : undefined) ??
+      (normalized.mode === "on" ? DYNAMIC_THINKING_BUDGET : undefined);
+    if (budget === undefined) return {};
+    return { thinkingConfig: { thinkingBudget: budget } };
   }
 
   /** Live model discovery: GET {baseUrl}/models (Generative Language shape). */

@@ -11,6 +11,7 @@ export * from "./usage.js";
 export * from "./chat-stream.js";
 export * from "./registry.js";
 export * from "./models.js";
+export * from "./thinking.js";
 export * from "./providers/http.js";
 export * from "./providers/base.js";
 export * from "./providers/mock.js";

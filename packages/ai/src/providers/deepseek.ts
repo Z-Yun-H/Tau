@@ -8,6 +8,7 @@
 import { createRequire } from "node:module";
 import { buildSystemPrompt, validatePlanResponse } from "../prompt.js";
 import { normalizeUsage } from "../usage.js";
+import { getThinkingConfig } from "../thinking.js";
 import { BaseHttpProvider } from "./base.js";
 import type { ModelInfo, Plan, PlanningContext, ProviderStreamHandler } from "@tau/core";
 // Type-only imports from the optional @deepseek-ai/dsh-llm package: the
@@ -558,6 +559,24 @@ function userTextMessage(text: string): Message {
 export interface HarnessConnection {
   baseUrl: () => string;
   apiKey: () => string | undefined;
+  /**
+   * Extra request-body fields (the normalized thinking fragment, issue
+   * #162) — spread into the chat-completions body only when the user
+   * configured a thinking knob, so the default wire stays byte-identical.
+   */
+  extraBody?: () => Record<string, unknown>;
+}
+
+/**
+ * Normalized thinking mode → the DeepSeek wire's `thinking` object
+ * (issue #162). Sent ONLY when explicitly configured; effort levels are
+ * not part of DeepSeek's contract, so they are never sent.
+ */
+export function deepseekThinkingFragment(): { thinking?: { type: "enabled" | "disabled" } } {
+  const mode = getThinkingConfig("deepseek").mode;
+  if (mode === "on") return { thinking: { type: "enabled" } };
+  if (mode === "off") return { thinking: { type: "disabled" } };
+  return {};
 }
 
 /**
@@ -589,6 +608,7 @@ export function createDeepSeekHarnessAdapter(
         ...(options.maxTokens !== undefined ? { max_tokens: options.maxTokens } : {}),
         ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
         ...(options.stop?.length ? { stop: options.stop } : {}),
+        ...(connection.extraBody?.() ?? {}),
       };
       const apiKey = connection.apiKey() ?? "";
       const headers: Record<string, string> = {
@@ -761,6 +781,7 @@ export class DeepSeekProvider extends BaseHttpProvider {
     const adapter = createDeepSeekHarnessAdapter(llm, {
       baseUrl: () => this.baseUrl(),
       apiKey: () => apiKey,
+      extraBody: deepseekThinkingFragment,
     });
     const assembler = new llm.BlockAssembler();
     try {
@@ -844,6 +865,7 @@ export class DeepSeekProvider extends BaseHttpProvider {
           stream: true,
           stream_options: { include_usage: true },
           max_tokens: PLAN_MAX_TOKENS,
+          ...deepseekThinkingFragment(),
         }),
         signal: controller.signal,
       });

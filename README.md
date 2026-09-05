@@ -154,6 +154,13 @@ from plan text and are surfaced in the WebUI while the same
 `--provider` flag > `TAU_PROVIDER` env > `config.provider`.
 Unknown → safe fallback to `mock`.
 
+Thinking is selectable everywhere (v0.6.2): `tau provider thinking
+<p> [on|off] [low|medium|high]`, `/thinking` in the TUI and a settings
+panel control in the WebUI — one normalized config layer
+(`providers.<name>.thinking` / `thinkingEffort`, legacy keys still
+read) mapped onto each provider's wire; see docs/guide/providers.md.
+Keep every knob opt-in: unset means byte-identical requests.
+
 API keys resolve in the order **config (`providers.<name>.apiKey`) → environment
 variable** — so `tau provider set-key` sticks even when an env var is exported
 for other tools, and CI setups can keep using env-only.

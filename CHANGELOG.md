@@ -5,6 +5,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+### Added
+
+- **Thinking mode & effort, selectable everywhere (issue #162).** One
+  normalized config layer (`providers.<name>.thinking: "on"/"off"`,
+  `providers.<name>.thinkingEffort: "low"/"medium"/"high"`, legacy keys
+  still read) now drives every provider's wire format: Anthropic
+  extended thinking with effort-derived budgets, Gemini
+  `thinkingBudget` (off → 0, on → dynamic, effort → presets), OpenAI
+  `reasoning_effort`, DeepSeek `thinking: {type}`, Ollama `think`.
+  Pick knobs from the CLI (`tau provider thinking <provider> [on|off]
+[low|medium|high]`), the TUI (`/thinking`) or the WebUI settings —
+  each surface renders only what the active provider actually
+  supports. Every knob is opt-in: unset means byte-identical requests.
+
 ## 0.6.1 — 2026-09-05
 
 Provider setup moves into the WebUI settings — pick a provider and the
