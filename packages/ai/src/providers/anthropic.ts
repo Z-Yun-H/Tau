@@ -16,7 +16,6 @@
  * thinking is enabled (the API rejects temperature != 1 in that mode).
  */
 
-import { loadConfig } from "@tau/core";
 import { buildSystemPrompt, validatePlanResponse } from "../prompt.js";
 import { buildReflectPrompt, validateReflectResponse } from "../reflect.js";
 import { consumeAnthropicStream } from "../chat-stream.js";

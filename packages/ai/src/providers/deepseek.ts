@@ -608,7 +608,7 @@ export function createDeepSeekHarnessAdapter(
         ...(options.maxTokens !== undefined ? { max_tokens: options.maxTokens } : {}),
         ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
         ...(options.stop?.length ? { stop: options.stop } : {}),
-        ...(connection.extraBody?.() ?? {}),
+        ...connection.extraBody?.(),
       };
       const apiKey = connection.apiKey() ?? "";
       const headers: Record<string, string> = {
