@@ -168,6 +168,9 @@ tau provider models [--refresh|--offline]
 tau provider use deepseek [model]        # TTY 下方向键交互选型
 ```
 
+同一份目录也驱动两个交互界面（v0.6.2）：TUI 的 `/model` 打开选择器
+（也可直接跟模型 id），WebUI 设置面板列出缓存目录并支持一键刷新。
+
 Tau **不内置任何默认模型** —— 模型永远来自这份实时目录或你的显式配置。当目录中
 只有一个模型时，Tau 自动选中并持久化；有多个时，`tau ask` 会快速失败并给出
 可操作的提示（而不是瞎猜），用 `tau provider use` 选一个即可。

@@ -179,6 +179,10 @@ tau provider models [--refresh|--offline]
 tau provider use deepseek [model]        # interactive arrow-key picker on a TTY
 ```
 
+The same catalog drives the interactive front doors (v0.6.2): `/model`
+in the TUI opens the picker (or takes a model id directly), and the
+WebUI settings panel lists the cached catalog with a refresh button.
+
 Tau ships **no hardcoded default models** — a model always comes from this
 live catalog or your explicit config. When the catalog offers exactly one
 model, Tau auto-selects it and persists the choice; with several, `tau ask`

@@ -13,12 +13,16 @@ import {
   ensureCatalog,
   getActiveProvider,
   getSessionInfo,
+  listModelCatalog,
   listProviderAvailability,
   listSkillSummaries,
   listToolSummaries,
   planAndReview,
   readRecentHistory,
   readTauVersion,
+  setProviderModel,
+  thinkingState,
+  updateThinking,
 } from "../src/session.js";
 import { appendHistory } from "@tau/core";
 
@@ -143,5 +147,49 @@ describe("session services", () => {
       "params",
       "risk",
     ]);
+  });
+});
+
+describe("selection services (issue #163)", () => {
+  it("serves the offline catalog from the cache (mock has nothing cached)", async () => {
+    // mock has no listModels and no cached entry → an empty offline catalog,
+    // zero network. (The "unsupported" source is the live path's verdict.)
+    const catalog = await listModelCatalog("mock", { offline: true });
+    expect(catalog.provider).toBe("mock");
+    expect(catalog.source).toBe("cache");
+    expect(catalog.models).toEqual([]);
+  });
+
+  it("refuses catalogs for unknown providers", async () => {
+    await expect(listModelCatalog("nope")).rejects.toThrow(/Unknown provider/);
+    expect(() => setProviderModel("nope", "m")).toThrow(/Unknown provider/);
+    expect(() => thinkingState("nope")).toThrow(/Unknown provider/);
+    expect(() => updateThinking("nope", { mode: "on" })).toThrow(/Unknown provider/);
+  });
+
+  it("validates and persists a model choice through setProviderModel", () => {
+    expect(() => setProviderModel("mock", "   ")).toThrow(/must not be empty/);
+    setProviderModel("mock", "mock-flash");
+    expect(getActiveProvider().model).toBe("mock-flash");
+  });
+
+  it("reports thinking state with capability and summary", () => {
+    const state = thinkingState();
+    expect(state.provider).toBe("mock");
+    expect(state.capability.mode).toBe(false);
+    expect(state.summary).toBe("provider default");
+    const anthropic = thinkingState("anthropic");
+    expect(anthropic.capability).toEqual({ mode: true, effort: true, budget: true });
+    expect(anthropic.summary).toBe("provider default");
+  });
+
+  it("writes thinking through updateThinking and returns the fresh state", () => {
+    const next = updateThinking("anthropic", { mode: "on", effort: "high" });
+    expect(next.config).toEqual({ mode: "on", effort: "high" });
+    expect(next.summary).toBe("on (high)");
+    // Capability refusals bubble up with the actionable message.
+    expect(() => updateThinking("mock", { mode: "on" })).toThrow(
+      /does not support a thinking mode toggle/,
+    );
   });
 });

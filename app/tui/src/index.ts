@@ -34,31 +34,44 @@ import { readFile } from "node:fs/promises";
 import { realpathSync } from "node:fs";
 import { loadConfig } from "@tau/core";
 import { renderPlan, renderReview, runPlan } from "@tau/engine";
+import { suggestFromList, theme, type ConfirmAnswer, type SuggestItem } from "@tau/ui";
 import {
-  suggestFromList,
-  theme,
-  type ConfirmAnswer,
-  type SuggestItem,
-  type SuggestResult,
+  detectGraphicsProtocol,
+  metadataCard,
+  readImage,
+  renderImage,
+  selectFromList,
 } from "@tau/ui";
-import { detectGraphicsProtocol, metadataCard, readImage, renderImage } from "@tau/ui";
 import { renderToAnsi, type AnsiTheme } from "@tau/markdown";
 import {
   ensureCatalog,
   findSlashCommand,
   getActiveProvider,
   getSessionInfo,
+  listModelCatalog,
   listSkillSummaries,
   parseSlashInvocation,
   planAndReview,
   ProviderUnavailableError,
   readRecentHistory,
+  setProviderModel,
   slashCommandsFor,
   slashCommandUsage,
+  thinkingState,
+  updateThinking,
 } from "@tau/agent";
 
 const TUI_TIMEOUT_SEC = 120;
 const MD_MAX_BYTES = 512 * 1024;
+
+/**
+ * Interactive-overlay seam for command handlers (issue #163): startTui
+ * injects the single-reader-safe takeover (pause the session readline,
+ * detach its keypress listeners, run on raw stdin, restore). When null —
+ * tests, non-TTY runs — interactive pickers degrade to a listing that
+ * never touches stdin, so the session can never hang.
+ */
+let overlayRunner: (<T>(fn: (stdin: NodeJS.ReadStream) => Promise<T>) => Promise<T>) | null = null;
 
 /** Palette entries from the shared catalog — one item per TUI command. */
 function suggestItems(): SuggestItem[] {
@@ -163,6 +176,126 @@ const commandHandlers: Record<string, TuiCommandHandler> = {
     console.log(
       `${theme.brand(active.label)} ${theme.muted(`(${active.source}) — model: ${active.model}`)}`,
     );
+    const state = thinkingState();
+    console.log(theme.muted(`thinking: ${state.summary}`));
+    return false;
+  },
+  model: async (arg) => {
+    const target = arg.trim();
+    const active = getActiveProvider();
+
+    // Explicit model id — set directly, warn when unknown to the cache
+    // (same semantics as `tau provider use <p> <model>`).
+    if (target) {
+      let known = false;
+      try {
+        const cache = await listModelCatalog(active.name, { offline: true });
+        known = cache.models.some((model) => model.id === target);
+      } catch {
+        /* no cache — keep the set, the warning below explains */
+      }
+      setProviderModel(active.name, target);
+      console.log(theme.ok(`Model set to "${target}".`));
+      if (!known) {
+        console.log(
+          theme.muted(
+            `"${target}" is not in the cached ${active.name} catalog — kept anyway (custom deployments are allowed).`,
+          ),
+        );
+      }
+      return false;
+    }
+
+    // No argument — pick from the catalog (fresh when possible, cached
+    // when offline, honest when neither).
+    try {
+      const catalog = await withSpinner("refreshing model catalog…", () =>
+        listModelCatalog(active.name),
+      );
+      if (catalog.warning) console.log(theme.warn(catalog.warning));
+      if (catalog.source === "unsupported" || catalog.models.length === 0) {
+        console.log(
+          theme.muted(
+            `No catalog available for "${active.name}" — set a model explicitly: /model <model-id>`,
+          ),
+        );
+        return false;
+      }
+      if (!process.stdin.isTTY || !overlayRunner) {
+        console.log(theme.muted(`Models for "${active.name}" (${catalog.source}):`));
+        for (const model of catalog.models.slice(0, 15)) console.log(`  ${model.id}`);
+        console.log(theme.muted("Non-interactive session — set one explicitly: /model <model-id>"));
+        return false;
+      }
+      const current = active.model;
+      const activeIndex = catalog.models.findIndex((model) => model.id === current);
+      const picked = await overlayRunner((stdin) =>
+        selectFromList({
+          title: `Pick a model for "${active.name}" (enter selects, esc keeps "${current}"):`,
+          items: catalog.models.map((model) =>
+            model.ownedBy ? `${model.id} (${model.ownedBy})` : model.id,
+          ),
+          ...(activeIndex >= 0 ? { activeIndex } : {}),
+          input: stdin,
+        }),
+      );
+      const chosen = picked === null ? undefined : catalog.models[picked]?.id;
+      if (picked === null || !chosen) {
+        console.log(theme.muted(`Kept model "${current}".`));
+        return false;
+      }
+      setProviderModel(active.name, chosen);
+      console.log(theme.ok(`Model set to "${chosen}".`));
+    } catch (error) {
+      console.log(
+        theme.error(
+          `model catalog unavailable: ${error instanceof Error ? error.message : String(error)}`,
+        ),
+      );
+      console.log(theme.muted(`Inspect later with: tau provider models ${active.name}`));
+    }
+    return false;
+  },
+  thinking: async (arg) => {
+    const parts = arg.split(/\s+/).filter(Boolean);
+    const state = thinkingState();
+
+    if (parts.length === 0) {
+      console.log(`Thinking for "${state.provider}": ${state.summary}.`);
+      const knobs = [
+        state.capability.mode ? "on|off" : null,
+        state.capability.effort ? "low|medium|high" : null,
+      ].filter(Boolean);
+      console.log(
+        theme.muted(
+          knobs.length > 0
+            ? `Supported: ${knobs.join(", ")} — set with: /thinking ${knobs[0]}`
+            : "This provider exposes no thinking knobs.",
+        ),
+      );
+      return false;
+    }
+
+    const [mode, effort] = parts;
+    if (mode !== "on" && mode !== "off") {
+      console.log(theme.error(`thinking mode must be "on" or "off" (got "${mode}")`));
+      console.log(theme.muted("usage: /thinking [on|off] [low|medium|high]"));
+      return false;
+    }
+    if (effort !== undefined && !["low", "medium", "high"].includes(effort)) {
+      console.log(theme.error(`thinking effort must be low, medium or high (got "${effort}")`));
+      console.log(theme.muted("usage: /thinking [on|off] [low|medium|high]"));
+      return false;
+    }
+    try {
+      const next = updateThinking(state.provider, {
+        mode,
+        ...(effort !== undefined ? { effort: effort as "low" | "medium" | "high" } : {}),
+      });
+      console.log(theme.ok(`Thinking for "${state.provider}" set: ${next.summary}.`));
+    } catch (error) {
+      console.log(theme.error(error instanceof Error ? error.message : String(error)));
+    }
     return false;
   },
   skills: async () => {
@@ -400,7 +533,13 @@ export async function startTui(): Promise<void> {
   // the guarantee above holds.
   let paletteOpen = false;
 
-  const openPalette = async (): Promise<void> => {
+  /**
+   * Single-reader-safe overlay takeover — the exact dance the palette
+   * pioneered, extracted so command handlers (the /model picker, issue
+   * #163) can run full-screen prompts mid-session without ever creating
+   * a competing stdin reader.
+   */
+  const withOverlay = async <T>(fn: (stdin: NodeJS.ReadStream) => Promise<T>): Promise<T> => {
     const stdin = process.stdin;
     // readline attached its line-editing keypress listener to THIS stream;
     // detach it for the overlay's takeover, restore it afterwards.
@@ -411,20 +550,28 @@ export async function startTui(): Promise<void> {
     // flowing (readline had it raw + flowing all along; restoring readline
     // below re-pauses nothing: rl.resume() resumes the stream itself).
     stdin.resume();
-    let result: SuggestResult;
     try {
-      result = await suggestFromList({
-        input: stdin,
-        output: process.stdout,
-        initialFilter: "/",
-        items: suggestItems(),
-        hint: "↑/↓ move · tab/enter insert · esc dismiss",
-      });
+      return await fn(stdin);
     } finally {
       stdin.removeAllListeners("keypress");
       for (const listener of saved) stdin.addListener("keypress", listener);
       rl.resume();
     }
+  };
+  // Command handlers see the seam only inside a live session — imported
+  // handleLine() in tests keeps the non-interactive degradation.
+  overlayRunner = withOverlay;
+
+  const openPalette = async (): Promise<void> => {
+    const result = await withOverlay((stdin) =>
+      suggestFromList({
+        input: stdin,
+        output: process.stdout,
+        initialFilter: "/",
+        items: suggestItems(),
+        hint: "↑/↓ move · tab/enter insert · esc dismiss",
+      }),
+    );
     // Buffer sync happens AFTER resume — a paused interface may drop writes.
     if (result.action === "select" && result.value !== null) {
       // The buffer still holds the pre-palette "/"; append the rest.
@@ -466,6 +613,9 @@ export async function startTui(): Promise<void> {
   rl.prompt();
   return new Promise((resolve) => {
     rl.on("close", () => {
+      // The session is over — command handlers drop back to the
+      // non-interactive degradation (no session, no overlay).
+      overlayRunner = null;
       // EOF / Ctrl+D while a confirm is open — settle as "no", never approve.
       if (answerSlot) {
         const settle = answerSlot;
