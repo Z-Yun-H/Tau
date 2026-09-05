@@ -161,7 +161,12 @@ html {
 
 body {
   margin: 0;
-  min-height: 100dvh;
+  /* Viewport-locked app shell: the page's total height is ALWAYS the
+     viewport, never the sum of its parts — inner columns scroll instead
+     (DESIGN.md §layout). Overflow hidden keeps a single scrolling owner
+     per column at every breakpoint. */
+  height: 100dvh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   background: var(--tau-bg);
@@ -178,7 +183,8 @@ body {
 #app {
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
+  height: 100%;
+  min-height: 0;
 }
 
 ::selection {
@@ -280,9 +286,9 @@ body {
  * .tau-surface — the standard raised panel: gradient edge via the
  * padding-box/border-box trick + elevation-1 shadow. Replaces the old
  * `border border-tau-line` flat treatment on major surfaces (cards,
- * sidebar dock, modal, composer shell). Elements that need to sit above
- * the page use .tau-surface-raised (elev-2) and .tau-surface-floating
- * (elev-3, modals/menus).
+ * sidebar dock, modal, composer shell). Elements needing more height
+ * above the page apply `--tau-elev-2` / `--tau-elev-3` directly (the
+ * elevation tokens), as the composer and its menus do.
  */
 .tau-surface {
   border: 1px solid transparent;
@@ -290,22 +296,6 @@ body {
     linear-gradient(var(--tau-panel), var(--tau-panel)) padding-box,
     var(--tau-edge-gradient) border-box;
   box-shadow: var(--tau-elev-1);
-}
-
-.tau-surface-raised {
-  border: 1px solid transparent;
-  background:
-    linear-gradient(var(--tau-panel), var(--tau-panel)) padding-box,
-    var(--tau-edge-gradient) border-box;
-  box-shadow: var(--tau-elev-2);
-}
-
-.tau-surface-floating {
-  border: 1px solid transparent;
-  background:
-    linear-gradient(var(--tau-raised), var(--tau-raised)) padding-box,
-    var(--tau-edge-gradient) border-box;
-  box-shadow: var(--tau-elev-3);
 }
 
 /* Gradient divider — a soft fade, not a bare 1px line. */
@@ -337,30 +327,88 @@ body {
   line-height: 1.5;
 }
 
-/* ---- Chrome sweep text + bg ----------------------------------------- */
+/* ---- Settings layout primitives (issue #152) ------------------------- */
 
-/* The brand mark `τ` and the Run plan primary action share this sweep.
-   Text via background-clip:text; buttons via plain background-image. */
-.tau-chrome-text {
-  background-image: linear-gradient(
-    90deg,
-    var(--tau-chrome-1) 0%,
-    var(--tau-chrome-3) 30%,
-    var(--tau-chrome-5) 50%,
-    var(--tau-chrome-3) 70%,
-    var(--tau-chrome-1) 100%
-  );
-  background-size: 200% 100%;
-  background-position: 0% 50%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  transition: background-position var(--t-slow) var(--ease);
+/*
+ * Shared by SettingsPanel and its ProviderSetup child — global because
+ * Vue scoped styles do not cross component boundaries. A settings section
+ * opens with a gradient divider (never a bare hairline); rows are
+ * key/value with mono data.
+ */
+.settings-section {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 0;
+  background-image: linear-gradient(90deg, transparent, var(--tau-line), transparent);
+  background-repeat: no-repeat;
+  background-size: 100% 1px;
+  background-position: top;
 }
 
-.tau-chrome-text-hover:hover {
-  background-position: 100% 50%;
+.section-title {
+  margin: 0 0 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tau-faint);
 }
+
+.section-hint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--tau-faint);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.row-key {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--tau-muted);
+}
+
+.row-value {
+  font-size: 12.5px;
+  color: var(--tau-text);
+  text-align: right;
+}
+
+.row-value.mono {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+
+.row-value.truncate {
+  overflow: hidden;
+  max-width: 280px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-meta {
+  color: var(--tau-faint);
+  font-size: 11px;
+}
+
+/* ---- Chrome sweep bg ------------------------------------------------- */
+
+/* The Run plan primary action carries this sweep (plain background-image;
+   the brand mark's smaller τ uses StatusHeader's own metallic fill with a
+   vertical sheen, so no global chrome text class is needed). */
 
 .tau-chrome-bg {
   background-image: linear-gradient(

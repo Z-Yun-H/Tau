@@ -54,6 +54,20 @@ export interface RedactedProviderEntry {
   [field: string]: unknown;
 }
 
+/**
+ * One entry of the server-sent provider catalog (issue #152): the lookup
+ * that prefills the endpoint so users never type model API URLs by hand.
+ * Mirrors app/webui/src/provider-catalog.ts (the server is the contract).
+ */
+export interface ProviderCatalogEntry {
+  name: string;
+  label: string;
+  defaultBaseUrl?: string;
+  consoleUrl?: string;
+  keyless?: boolean;
+  note?: string;
+}
+
 /** Mirror of the server's `GET /api/config` payload (all of it read-only). */
 export interface ConfigPayload {
   version: string;
@@ -70,6 +84,8 @@ export interface ConfigPayload {
   };
   provider: { name: string; label: string; source: string; model: string };
   providers: { name: string; available: boolean }[];
+  /** Server-sent provider catalog: endpoints + key-console links (setup form). */
+  providerCatalog: ProviderCatalogEntry[];
   modelCatalog: { count: number; refreshedAt?: string };
 }
 
@@ -88,10 +104,6 @@ export interface CommandInfo {
   description: string;
   argsHint?: string;
   argsKind?: "none" | "file" | "free";
-}
-
-export interface CommandsPayload {
-  commands: CommandInfo[];
 }
 
 /**

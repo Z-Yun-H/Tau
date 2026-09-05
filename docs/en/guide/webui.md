@@ -34,4 +34,12 @@ The paperclip button, clipboard paste and drag-and-drop all feed one validated d
 
 ## Local sessions
 
-Conversation threads persist in browser localStorage (key `tau-webui-threads-v1`, cap 50); the server history is the durable record; the card schema is additive-only. The settings panel shows the **redacted** effective config (API keys are always masked) — config modification stays in the CLI, the browser is never a second write path into safety-relevant configuration.
+Conversation threads persist in browser localStorage (key `tau-webui-threads-v1`, cap 50); the server history is the durable record; the card schema is additive-only. The settings panel shows the **redacted** effective config (API keys are always masked).
+
+## Provider setup (v0.6.1)
+
+The settings panel gains a **provider setup** block — the ONE writable config slice:
+
+- **Model link lookup**: picking a provider prefills the endpoint (from a server-sent catalog that is parity-checked against the live provider registry) — no URL typing; an advanced disclosure allows a custom endpoint (OpenAI-shaped providers write `providers.<name>.baseUrl`, Ollama writes `host`).
+- **Paste-only key**: follow the per-provider console link, paste the key, save — through `POST /api/config/provider`, the same `setConfigValue` channel `tau provider set-key` uses (chmod-0600 config file). Saving also refreshes the model catalog and can activate the provider in one step (keyless mock/ollama/zai need no key).
+- **Privacy masking**: the key input is a `password` field; the "show" toggle re-masks itself after 8 seconds; a saved key renders only as the server's mask (`sk-***last4`) — plaintext exists only in the localhost request body and the 0600 config file, never echoed, never logged. The gate and risk policy remain **immutable** from the browser.

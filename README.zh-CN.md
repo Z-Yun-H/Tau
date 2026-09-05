@@ -5,7 +5,7 @@
 [![CI](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml/badge.svg)](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-636%20passing-success)](vitest.config.ts)
+[![Tests](https://img.shields.io/badge/tests-667%20passing-success)](vitest.config.ts)
 [![pnpm](https://img.shields.io/badge/pnpm-monorepo-F69220)](pnpm-workspace.yaml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 
@@ -38,22 +38,22 @@ tau file find "*.ts"                    # 也可以直接用工具
 
 ## 功能总览
 
-| 命令族         | 能力                                                                                                                                                         |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `tau ask`      | 自然语言 → Provider 计划 → 安全审查 → 确认 UI → 执行 → 历史（v0.5.0：WebUI 规划时实时展示 AI 思考）                                                          |
-| `tau goal`     | 多轮 Agent 循环：计划 → 执行 → 反思 → 循环（轮数上限、每轮安全审查、确认门完全一致）                                                                         |
-| `tau file`     | glob 查找（自动跳过 node_modules）、目录树、stat、行号读取（offset/limit）、单目录清单、正则批量重命名（默认 dry-run）、文本写入（工作区收容，默认 dry-run） |
-| `tau sys`      | 系统/CPU/内存信息、磁盘用量、CPU 排行进程、日期时间（本地/ISO/epoch/时区）、which、环境变量查询（单名，medium 风险）                                         |
-| `tau net`      | TCP 端口检测、ping、防 SSRF 的 fetch、本机 IP                                                                                                                |
-| `tau text`     | 正则搜索、全项目替换（默认 dry-run）、行/词统计、sha256/sha1 哈希                                                                                            |
-| `tau skill`    | SKILL.md 命令包：list/show/new/validate                                                                                                                      |
-| `tau plugin`   | MCP 工具服务器接入：dsh、VS Code、文件系统……（list/add/remove/tools）                                                                                        |
-| `tau history`  | 所有执行都有记录：查看、重放、清空                                                                                                                           |
-| `tau alias`    | 持久化命令别名（`tau ll` → 任何命令）                                                                                                                        |
-| `tau provider` | API key 管理 + 在线模型发现：配好 key 自动刷新模型列表，交互式选型                                                                                           |
-| `tau config`   | Provider、超时、风险策略 —— 存在 `$TAU_HOME` 下                                                                                                              |
-| `tau tui`      | 全屏键盘优先 REPL（v0.6.0：`/` 弹出可过滤命令面板，与命令目录同源——展示与可执行永远一致）                                                                    |
-| `tau web`      | 本地 Web 界面（v0.6.0：输入框 `/` 命令菜单、对话线程、图片附件（服务端魔数校验）、沙箱 HTML 预览 + PDF/图片原生查看）                                        |
+| 命令族         | 能力                                                                                                                                                                                           |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tau ask`      | 自然语言 → Provider 计划 → 安全审查 → 确认 UI → 执行 → 历史（v0.5.0：WebUI 规划时实时展示 AI 思考）                                                                                            |
+| `tau goal`     | 多轮 Agent 循环：计划 → 执行 → 反思 → 循环（轮数上限、每轮安全审查、确认门完全一致）                                                                                                           |
+| `tau file`     | glob 查找（自动跳过 node_modules）、目录树、stat、行号读取（offset/limit）、单目录清单、正则批量重命名（默认 dry-run）、文本写入（工作区收容，默认 dry-run）                                   |
+| `tau sys`      | 系统/CPU/内存信息、磁盘用量、CPU 排行进程、日期时间（本地/ISO/epoch/时区）、which、环境变量查询（单名，medium 风险）                                                                           |
+| `tau net`      | TCP 端口检测、ping、防 SSRF 的 fetch、本机 IP                                                                                                                                                  |
+| `tau text`     | 正则搜索、全项目替换（默认 dry-run）、行/词统计、sha256/sha1 哈希                                                                                                                              |
+| `tau skill`    | SKILL.md 命令包：list/show/new/validate                                                                                                                                                        |
+| `tau plugin`   | MCP 工具服务器接入：dsh、VS Code、文件系统……（list/add/remove/tools）                                                                                                                          |
+| `tau history`  | 所有执行都有记录：查看、重放、清空                                                                                                                                                             |
+| `tau alias`    | 持久化命令别名（`tau ll` → 任何命令）                                                                                                                                                          |
+| `tau provider` | API key 管理 + 在线模型发现：配好 key 自动刷新模型列表，交互式选型                                                                                                                             |
+| `tau config`   | Provider、超时、风险策略 —— 存在 `$TAU_HOME` 下                                                                                                                                                |
+| `tau tui`      | 全屏键盘优先 REPL（v0.6.0：`/` 弹出可过滤命令面板，与命令目录同源——展示与可执行永远一致）                                                                                                      |
+| `tau web`      | 本地 Web 界面（v0.6.0：输入框 `/` 命令菜单、对话线程、图片附件（服务端魔数校验）、沙箱 HTML 预览 + PDF/图片原生查看；v0.6.1：设置面板 provider 配置——模型链接查询、仅粘贴 API key + 防窥掩码） |
 
 ## 安装
 

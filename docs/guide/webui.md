@@ -34,4 +34,12 @@ agent 轮次里的工具步骤渲染为结构化卡片：工具名、风险徽�
 
 ## 本地会话
 
-对话线程持久化在浏览器 localStorage（键 `tau-webui-threads-v1`，上限 50 条），服务端 history 才是持久记录；卡片 schema 只增不改。设置面板展示**脱敏后**的有效配置（API key 永远是掩码）——配置修改只留在 CLI，浏览器永远不是安全相关配置的第二写入路径。
+对话线程持久化在浏览器 localStorage（键 `tau-webui-threads-v1`，上限 50 条），服务端 history 才是持久记录；卡片 schema 只增不改。设置面板展示**脱敏后**的有效配置（API key 永远是掩码）。
+
+## Provider 配置（v0.6.1）
+
+设置面板新增 **provider setup** 区块——唯一的可写配置面：
+
+- **模型链接查询**：选择 provider 后端点自动带出（来自服务端下发的 provider 目录，与注册表奇偶校验锁定一致），无需手输 URL；高级折叠项可自定义端点（OpenAI 系写 `providers.<name>.baseUrl`，Ollama 写 `host`）。
+- **只粘贴 key**：从控制台链接取 key（每条目录附 "get a … key ↗"），粘贴即存；保存走 `POST /api/config/provider`——与 CLI `tau provider set-key` 同一条 `setConfigValue` 通道（0600 配置文件），保存后自动刷新模型目录，并可一键把该 provider 设为当前活跃（keyless 的 mock/ollama/zai 无需 key）。
+- **防窥掩码**：key 输入框默认 `password` 型，"show" 显形 8 秒后自动重新掩码；已保存的 key 只以服务端掩码（`sk-***last4`）回显——明文只存在于本机请求体与 0600 配置文件，从不回显、从不进日志。gate/风险策略等安全相关配置仍然**不可**从浏览器修改。

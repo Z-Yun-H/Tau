@@ -99,9 +99,11 @@ is the _only_ gradient in the system; everything else is matte.
   (`minmax(0,1fr)`, composer max-w-768 centered) + reference rail
   (`320px`, `Alt+S`-toggleable), each independently scrollable,
   viewport-locked (`h-dvh` app shell).
-- `<1024px`: one scrolling flow — chat, sticky composer, reference rail
-  below (max 45vh). The thread list becomes an overlay drawer behind the
-  `≡ chats` button (backdrop click / selecting a thread / Esc closes it).
+- `<1024px`: still viewport-locked — the conversation stream is the ONE
+  scrolling column, the composer stays visible below it, and the
+  reference rail sits underneath (max 45vh, scrolling internally). The
+  thread list becomes an overlay drawer behind the `≡ chats` button
+  (backdrop click / selecting a thread / Esc closes it).
 - `<640px` (`sm:` and below): header drops the tauHome chip and the
   skills/plugins count chip; empty-state serif headline shrinks 28→22px.
 - Page content is centered with `max-w-[1600px]`.
@@ -146,13 +148,29 @@ chords like Ctrl+T/W/N).
   action full-width at top; thread rows (active = tau.active);
   two-step inline delete (arm, then confirm — no `window.confirm`);
   drawer on narrow screens; footer kbd hint.
+- `ConversationStream` — the chat content column: user bubbles +
+  attachment chips + the card rail (Plan/Result/Goal/Error) + empty
+  state, plus both autoscroll watchers (new cards; debounced live
+  output growth via `streamVolume()`). State from the usePlanFlow
+  singleton — no props.
+- `ModalLayer` — the overlay switch (issue #151): renders the
+  shortcuts modal / settings panel from the `useUiState()` singleton
+  (`composables/ui-state.ts`); Esc closes via `closeOverlays()`.
 - `ShortcutsModal` — the keyboard contract overlay (Esc/backdrop
   closes).
-- `SettingsPanel` — read-only settings modal (`Ctrl/⌘+,` or the header
-  `⚙ settings` button): provider/availability/model-catalog, risk policy
-  (+ `tau config` hint), theme picker (same `useTheme()` state as the
-  header button), local session stats. Data from `GET /api/config` —
-  the redacted effective config; NO write path by design.
+- `SettingsPanel` — the settings modal (`Ctrl/⌘+,` or the header
+  `⚙ settings` button): **provider setup (the ONE writable slice —
+  `ProviderSetup.vue`, issue #152)** + provider/availability/model-catalog,
+  risk policy (+ `tau config` hint), theme picker (same `useTheme()` state
+  as the header button), local session stats. Read views come from
+  `GET /api/config` — the redacted effective config; the gate/risk policy
+  stays GET-only.
+- `ProviderSetup` — pick a provider (chips with availability + `·key`
+  markers), the endpoint PREFILLS from the server-sent catalog (advanced
+  disclosure to override), paste the API key into a `password` input (show
+  toggle auto re-masks after 8s), save via `POST /api/config/provider`.
+  Saved keys render only as the server mask (`sk-***last4`); keyless
+  providers (mock/ollama/zai) hide the key input and show their note.
 - `EmptyState` — serif headline ("What can Tau do for you?") + contract
   prose + pipeline mono + kbd hints.
 - `AttachmentChips` (v0.6.0) — image attachment chips (preview thumb /
@@ -255,10 +273,16 @@ sandbox="allow-scripts" srcdoc` and NOTHING else — no allow-same-origin.
 `POST /api/plan[/stream]` + `/api/goal/stream` (v0.6.0) additionally
 accept `attachments` (≤4 images, png/jpeg/webp/gif, magic-number
 verified); refusals answer 400 as plain JSON before any stream starts.
-`GET /api/config` is read-only: the `config` field is exactly
+`GET /api/config` carries the `config` field exactly as
 `redactConfig(loadConfig())` (keys masked `sk-***last4`, never plaintext;
-same output as `tau config list`), and no method other than GET exists on
-the path — config changes stay in the CLI.
+same output as `tau config list`) plus the `providerCatalog` (endpoints +
+console links, parity-checked against the registry). It has ONE write
+sibling (issue #152): `POST /api/config/provider {provider, apiKey?,
+baseUrl?, activate?}` — provider credentials only, the same
+`setConfigValue` channel `tau provider set-key` uses (0600 file),
+plaintext never echoed (the response is the standard redacted payload)
+and the model catalog refresh rides along. Keyless providers refuse keys.
+Config changes OTHER than provider credentials stay in the CLI.
 `/api/tools` body must never contain the literal `"run"`.
 
 localStorage: keys `tau-webui-threads-v1` (threads, pinned) and
@@ -287,8 +311,7 @@ localStorage: keys `tau-webui-threads-v1` (threads, pinned) and
       `tau web`, check ≥1024 / 640–1023 / <640)
 - [ ] `pnpm --filter @tau/webui build` clean (zero unmatched-utility
       warnings)?
-- [ ] `pnpm test app/webui` green (5 files — byte-level snapshots
-      preserved)?
+- [ ] `pnpm test app/webui` green (byte-level snapshots preserved)?
 - [ ] Server payload changed? → `lib/api.ts` types + server tests
       updated
 - [ ] `Run plan` button text and `file.find in` output prefix

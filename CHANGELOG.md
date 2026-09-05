@@ -5,6 +5,59 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+## 0.6.1 — 2026-09-05
+
+Provider setup moves into the WebUI settings — pick a provider and the
+endpoint is looked up for you, paste a key, save (masked on display and
+self-remasking while you type) — while the app shell locks to the
+viewport at every breakpoint and the chat client splits into composable,
+individually tested components.
+
+### Added
+
+- **Provider setup in the WebUI settings — model link lookup, paste-only
+  API key, privacy masking.** Picking a provider now prefills its API
+  endpoint from a server-sent catalog (parity-checked against the
+  provider registry), so no one types model API URLs by hand; each entry
+  links the provider's key console. Paste the key, save — through
+  `POST /api/config/provider`, the same config channel
+  `tau provider set-key` uses (owner-only 0600 file), with an optional
+  one-step activation and a best-effort model-catalog refresh. The key
+  input is a password field whose show toggle re-masks itself after 8
+  seconds; saved keys render only as the server's mask (`sk-***last4`)
+  and plaintext is never echoed or logged. This is the settings panel's
+  single writable slice — the gate and risk policy remain immutable from
+  the browser.
+
+### Fixed
+
+- **WebUI page height is now viewport-locked at every breakpoint.** The
+  page's total height no longer grows with its content: the app shell is
+  exactly the viewport (`height: 100dvh`, `overflow: hidden` on the
+  body) and only inner columns scroll — the conversation stream on all
+  screen sizes, the reference rail beneath it on narrow screens. Long
+  conversations no longer produce a page-level scrollbar alongside the
+  inner one, and the composer stays visible on small screens without
+  sticky positioning.
+
+### Changed
+
+- **WebUI client refactor: the conversation stream and the overlay
+  switch are their own components.** `ConversationStream` now owns the
+  chat content column (user bubbles, the plan/result/goal/error card
+  rail, empty state, autoscroll) and `ModalLayer` + `useUiState()` own
+  the shortcuts/settings overlay switching — `App.vue` shrinks to pure
+  composition. No rendering or behavior change (pinned by the existing
+  byte-level DOM snapshots), and the extracted logic ships with its own
+  unit and DOM tests.
+- **WebUI internal cleanup (no behavior change).** Removed four unused
+  global CSS classes from the client theme (`.tau-chrome-text`,
+  `.tau-chrome-text-hover`, `.tau-surface-raised`,
+  `.tau-surface-floating` — the brand mark and elevated surfaces style
+  themselves locally) and one unused client payload type
+  (`CommandsPayload`). DESIGN.md now matches what the client actually
+  ships.
+
 ## 0.6.0 — 2026-09-04
 
 Slash commands in both front doors, conversation continuity, image

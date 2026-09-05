@@ -101,8 +101,8 @@ bright canvas:
 
 A bare 1px hairline on a flat background is a **design bug** in both
 themes. Every major surface (cards, sidebar dock, composer shell,
-modal) carries the `.tau-surface` / `.tau-surface-raised` /
-`.tau-surface-floating` treatment from `theme.css`:
+modal) carries the `.tau-surface` treatment from `theme.css`; surfaces
+that must sit higher apply the elevation tokens directly:
 
 - **Elevation shadows** — `--tau-elev-1` (resting card), `--tau-elev-2`
   (composer), `--tau-elev-3` (focused composer, modal). Soft, wide,
@@ -238,12 +238,17 @@ Three breakpoints, mobile-first.
 - Sidebar becomes an overlay drawer (`fixed inset-y-0 left-0 w-[280px]`,
   `-translate-x-full` when closed), backdrop `bg-black/55`.
 - A `chats` button (top-left of the chat column) opens the drawer.
-- SidePanel moves below the chat, `max-h-[45vh]`.
-- Composer is sticky at the bottom of the chat column
-  (`position: sticky; bottom: 0; bg-tau-bg`).
+- SidePanel moves below the chat, `max-h-[45vh]` (scrolling
+  internally).
+- The page shell stays viewport-locked: the conversation stream is the
+  one scrolling column and the composer is its last flex child, so it
+  stays visible (`bg-tau-bg` over the stream edge) without page-level
+  scrolling.
 
-### <640px (`sm:` and below) — single flow
+### <640px (`sm:` and below) — single column, still viewport-locked
 
+- Same viewport-locked narrow layout as 640–1023px (stream scrolls,
+  composer visible, rail below) — single column, no grid.
 - Sidebar drawer stays (now full-width 280px).
 - StatusHeader drops the `tauHome` chip and the skills/plugins count
   chip; only brand + provider + version remain.
@@ -266,7 +271,8 @@ zones:
  chrome brand  info accent       meta (md+)              meta     meta (sm+)  theme btn
 ```
 
-- Brand: `τ` in chrome-text (background-clip), `tau` in `tau.text` 18px
+- Brand: `τ` in a metallic fill (`brand-chrome`, background-clip with a
+  vertical sheen), `tau` in `tau.text` 18px
   mono 500. Hovering the brand does nothing — it is identity, not a
   control.
 - Provider chip: `tau-chip` with provider name in `tau.info` and model
@@ -353,8 +359,10 @@ beam on focus.
     state: `tau.raised` bg, `tau.faint` text. Enabled state: chrome
     sweep bg, dark `▶` icon. Hover: brighten the sweep
     (`background-position` shift).
-- **Sticky on narrow screens**: `position: sticky; bottom: 0;
-bg-tau-bg` so it stays visible while the conversation scrolls.
+- **Always visible on narrow screens**: the composer is the last flex
+  child of the viewport-locked stream column (`bg-tau-bg` over the
+  stream edge), so it never scrolls away — no sticky positioning
+  needed.
 
 The Send button is _not_ labeled "Plan" — the old label conflated the
 composer's submit with the plan card's Run plan. The composer _sends an
@@ -579,17 +587,24 @@ per-theme tuning of tint vs border belongs to the token layer. The
 `review` mapping (info blue) keeps the streaming `streaming…` state in
 ResultCard reading as "in flight" rather than "dead".
 
-### 6.12 SettingsPanel — the read-only settings surface
+### 6.12 SettingsPanel — settings with ONE writable slice
 
 One floating modal (`Ctrl/⌘+,`, or the `⚙ settings` button at the
 header's right end; `Esc`/backdrop closes), reusing the ShortcutsModal
 skeleton: `.tau-surface rounded-12px` panel at `max-w-520px`, scrim
-`var(--tau-backdrop)`, `tau-enter` fade + rise. Four sections, separated
-by gradient dividers:
+`var(--tau-backdrop)`, `tau-enter` fade + rise. Five sections, separated
+by gradient dividers (the layout primitives live in `theme.css` so the
+ProviderSetup child shares them):
 
 ```
-SETTINGS  [read-only]                                    [esc]
+SETTINGS  [provider setup · rest read-only]              [esc]
 ────────────────────────────────────────────────────────────
+PROVIDER      chips: openai✓ ·key | anthropic✕ | ollama✓ …
+              endpoint  https://api.deepseek.com  ← LOOKED UP
+              (advanced — custom endpoint disclosure)
+              saved     sk-***1234          ← server mask only
+              api key   [············] (show)  ← password, re-masks 8s
+              [x] make deepseek the active provider    [save]
 PROVIDER      active    Mock (offline demo) via config
               model     (auto)          · availability chips
               catalog   N cached · refreshed <relTime>
@@ -598,17 +613,25 @@ RISK POLICY   allowMediumAutoApprove / timeout / shell / aliases
 APPEARANCE    [ system | light | dark ]  ← one state, three views
 SESSIONS      threads N/50 · history N loaded · tau home
 ────────────────────────────────────────────────────────────
-provider keys stay masked (sk-***last4) — nothing here can change the config
+provider keys stay masked (sk-***last4) — provider setup is the only
+writable section; the gate never moves into the browser
 ```
 
 - **Data source**: a single `GET /api/config` fetched on mount — the
   redacted effective config (the same `redactConfig` `tau config list`
-  prints), live provider availability, and the active provider's
-  model-catalog cache state. Loading and error states are honest
-  (`loading config…` pulse / `config unavailable — <reason>`).
-- **Read-only by design**: there is NO write path — config changes stay
-  in the CLI (`tau config set …`). The browser never becomes a second
-  way into the safety-relevant configuration; the footer says so.
+  prints), live provider availability, the server-sent provider catalog
+  (endpoints + console links, registry-parity-checked), and the active
+  provider's model-catalog cache state. Loading and error states are
+  honest (`loading config…` pulse / `config unavailable — <reason>`).
+- **One write path, deliberately narrow (issue #152)**: provider
+  credentials only (`provider` / `apiKey` / `baseUrl` / `activate`) via
+  `POST /api/config/provider` — the same `setConfigValue` channel
+  `tau provider set-key` uses. Plaintext keys are never echoed back, never
+  logged; the saved state renders the server's mask only. The gate and
+  risk policy stay read-only in the browser; the footer says so.
+- **防窥 masking**: the key input is a `password` field; the `show`
+  toggle reveals it for 8 seconds and re-masks itself (no lingering
+  plaintext for shoulder-surfers); the input clears on save.
 - **Appearance picker**: a three-option segmented control (`role=radiogroup`)
   bound to the SAME `useTheme()` singleton as the header button —
   `system` active state carries the `tau.ok` accent; both views stay in
