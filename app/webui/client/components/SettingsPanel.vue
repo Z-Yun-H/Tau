@@ -1,15 +1,17 @@
 <script setup lang="ts">
 /**
- * SettingsPanel — the read-only settings surface (Issue #86, unit 4/5).
- * One modal, four sections: provider (who answers), risk policy (what the
- * gate auto-approves), appearance (theme), sessions (local thread state).
+ * SettingsPanel — the settings surface (Issue #86 unit 4/5; provider
+ * setup added by issue #152). One modal, five sections: provider setup
+ * (the ONE writable slice — ProviderSetup.vue), provider (who answers),
+ * risk policy (what the gate auto-approves, read-only), appearance
+ * (theme), sessions (local thread state).
  *
- * Everything here is a VIEW of `GET /api/config` — the redacted effective
- * config, produced by the same `redactConfig` `tau config list` uses, so
- * keys arrive as "sk-***last4", never plaintext. There is deliberately NO
- * write path: config changes stay in the CLI (`tau config set …`) — the
- * browser never becomes a second way into the safety-relevant
- * configuration. Reuses the ShortcutsModal skeleton (overlay / panel /
+ * The read sections are a VIEW of `GET /api/config` — the redacted
+ * effective config, produced by the same `redactConfig` `tau config list`
+ * uses, so keys arrive as "sk-***last4", never plaintext. The single
+ * write path is POST /api/config/provider (provider/apiKey/baseUrl only)
+ * — the gate and risk policy never move into the browser. Reuses the
+ * ShortcutsModal skeleton (overlay / panel /
  * esc) and the theme singleton from lib/theme.ts, so the segmented control
  * and the StatusHeader cycle button are two views of one state.
  */
@@ -19,6 +21,7 @@ import { relTime } from "../lib/format.js";
 import { MAX_THREADS, usePlanFlow } from "../composables/plan-flow.js";
 import { useSession } from "../composables/session.js";
 import { useTheme, type ThemePreference } from "../lib/theme.js";
+import ProviderSetup from "./ProviderSetup.vue";
 import RiskBadge from "./RiskBadge.vue";
 
 const emit = defineEmits<{ close: [] }>();
@@ -36,13 +39,24 @@ const THEME_OPTIONS: { value: ThemePreference; label: string }[] = [
 const config = ref<ConfigPayload | null>(null);
 const loadError = ref("");
 
-onMounted(async () => {
+const { refreshStatus } = useSession();
+
+async function load(): Promise<void> {
   try {
     config.value = await api<ConfigPayload>("/api/config");
   } catch (error) {
     loadError.value = (error as Error).message;
   }
-});
+}
+
+onMounted(load);
+
+/** After a provider save: re-render from the server's redacted payload
+ * and refresh the header chip (the active provider may have changed). */
+function onSaved(next: ConfigPayload): void {
+  config.value = next;
+  void refreshStatus();
+}
 </script>
 
 <template>
@@ -50,7 +64,7 @@ onMounted(async () => {
     <div class="modal-panel tau-surface rounded-12px" role="dialog" aria-label="settings">
       <div class="modal-head">
         <span class="eyebrow-label">settings</span>
-        <RiskBadge level="low" label="read-only" />
+        <RiskBadge level="low" label="provider setup · rest read-only" />
         <span class="flex-1" />
         <button class="tau-btn !px-2.5 !py-1 text-[11px]" @click="emit('close')">esc</button>
       </div>
@@ -58,6 +72,9 @@ onMounted(async () => {
       <p v-if="loadError" class="panel-state">config unavailable — {{ loadError }}</p>
 
       <template v-else-if="config">
+        <!-- Provider setup — the ONE writable slice (issue #152). -->
+        <ProviderSetup :config="config" @saved="onSaved" />
+
         <!-- Provider — who answers, and can this machine reach them? -->
         <section class="settings-section">
           <h3 class="section-title">provider</h3>
@@ -177,7 +194,8 @@ onMounted(async () => {
       <p v-else class="panel-state pulse">loading config…</p>
 
       <p class="modal-foot">
-        provider keys stay masked (sk-***last4) — nothing here can change the config
+        provider keys stay masked (sk-***last4) — provider setup is the only writable section; the
+        gate never moves into the browser
       </p>
     </div>
   </div>
@@ -237,68 +255,10 @@ onMounted(async () => {
   animation: tau-pulse 1.1s ease-in-out infinite;
 }
 
-.settings-section {
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 0;
-  background-image: linear-gradient(90deg, transparent, var(--tau-line), transparent);
-  background-repeat: no-repeat;
-  background-size: 100% 1px;
-  background-position: top;
-}
-
-.section-title {
-  margin: 0 0 8px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--tau-faint);
-}
-
-.rows {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.row-key {
-  flex: none;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--tau-muted);
-}
-
-.row-value {
-  font-size: 12.5px;
-  color: var(--tau-text);
-  text-align: right;
-}
-
-.row-value.mono {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-}
-
-.row-value.truncate {
-  overflow: hidden;
-  max-width: 280px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.row-meta {
-  color: var(--tau-faint);
-  font-size: 11px;
-}
+/* settings-section / section-title / rows / row-key / row-value /
+   row-meta / section-hint live in theme.css as GLOBAL primitives —
+   ProviderSetup renders inside this panel and scoped styles would not
+   reach it. Panel-specific chrome only below. */
 
 .availability {
   display: inline-flex;

@@ -327,6 +327,83 @@ body {
   line-height: 1.5;
 }
 
+/* ---- Settings layout primitives (issue #152) ------------------------- */
+
+/*
+ * Shared by SettingsPanel and its ProviderSetup child — global because
+ * Vue scoped styles do not cross component boundaries. A settings section
+ * opens with a gradient divider (never a bare hairline); rows are
+ * key/value with mono data.
+ */
+.settings-section {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 0;
+  background-image: linear-gradient(90deg, transparent, var(--tau-line), transparent);
+  background-repeat: no-repeat;
+  background-size: 100% 1px;
+  background-position: top;
+}
+
+.section-title {
+  margin: 0 0 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tau-faint);
+}
+
+.section-hint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--tau-faint);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.row-key {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--tau-muted);
+}
+
+.row-value {
+  font-size: 12.5px;
+  color: var(--tau-text);
+  text-align: right;
+}
+
+.row-value.mono {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+
+.row-value.truncate {
+  overflow: hidden;
+  max-width: 280px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-meta {
+  color: var(--tau-faint);
+  font-size: 11px;
+}
+
 /* ---- Chrome sweep bg ------------------------------------------------- */
 
 /* The Run plan primary action carries this sweep (plain background-image;

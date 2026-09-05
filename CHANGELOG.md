@@ -5,6 +5,22 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+### Added
+
+- **Provider setup in the WebUI settings — model link lookup, paste-only
+  API key, privacy masking.** Picking a provider now prefills its API
+  endpoint from a server-sent catalog (parity-checked against the
+  provider registry), so no one types model API URLs by hand; each entry
+  links the provider's key console. Paste the key, save — through
+  `POST /api/config/provider`, the same config channel
+  `tau provider set-key` uses (owner-only 0600 file), with an optional
+  one-step activation and a best-effort model-catalog refresh. The key
+  input is a password field whose show toggle re-masks itself after 8
+  seconds; saved keys render only as the server's mask (`sk-***last4`)
+  and plaintext is never echoed or logged. This is the settings panel's
+  single writable slice — the gate and risk policy remain immutable from
+  the browser.
+
 ### Fixed
 
 - **WebUI page height is now viewport-locked at every breakpoint.** The

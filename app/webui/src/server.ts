@@ -18,12 +18,13 @@ import { reviewPlan, runPlan } from "@tau/engine";
 import {
   loadConfig,
   redactConfig,
+  setConfigValue,
   type ImageAttachment,
   type Plan,
   type PriorTurn,
   type SafetyReview,
 } from "@tau/core";
-import { cachedModels, formatUsage } from "@tau/ai";
+import { cachedModels, formatUsage, getProvider, refreshProviderModels } from "@tau/ai";
 import { escapesWorkspace, isSystemWritePath } from "@tau/tools";
 import { probeImageHeader } from "@tau/ui";
 import {
@@ -39,6 +40,7 @@ import {
   slashCommandsFor,
 } from "@tau/agent";
 import { GoalRegistry } from "./goal.js";
+import { PROVIDER_CATALOG, baseUrlField, catalogEntry } from "./provider-catalog.js";
 
 const WEBUI_TIMEOUT_SEC = 120;
 /**
@@ -294,9 +296,13 @@ async function statusPayload(): Promise<Record<string, unknown>> {
  * field is the EFFECTIVE config exactly as `tau config list` prints it —
  * through the same `redactConfig` (every `providers.<name>.apiKey` masked,
  * never plaintext) — plus live provider availability and the active
- * provider's model-catalog cache state. Deliberately GET-only: config
- * modification stays in the CLI (`tau config set …`), so the browser never
- * becomes a second write path into the safety-relevant configuration.
+ * provider's model-catalog cache state.
+ *
+ * Write surface (issue #152): provider credentials are the ONE writable
+ * slice, via POST /api/config/provider — the same `setConfigValue` channel
+ * `tau provider set-key` uses. Everything else (gate/risk policy) stays
+ * GET-only: the browser never becomes a second way into the safety-relevant
+ * configuration.
  */
 async function configPayload(): Promise<Record<string, unknown>> {
   const info = await getSessionInfo();
@@ -312,11 +318,86 @@ async function configPayload(): Promise<Record<string, unknown>> {
       model: info.provider.model,
     },
     providers: info.providers,
+    providerCatalog: PROVIDER_CATALOG,
     modelCatalog: {
       count: catalog.models.length,
       ...(catalog.refreshedAt ? { refreshedAt: catalog.refreshedAt } : {}),
     },
   };
+}
+
+/**
+ * Fields accepted by POST /api/config/provider — the smallest honest
+ * surface: which provider, the pasted key, an optional custom endpoint,
+ * and whether to make it the active provider. Anything else is a 400,
+ * not a silent ignore.
+ */
+const PROVIDER_SAVE_FIELDS = new Set(["provider", "apiKey", "baseUrl", "activate"]);
+
+/**
+ * Provider credential save (issue #152). Validation order is deliberate:
+ * unknown provider / unknown fields / empty key are refused BEFORE any
+ * config mutation, and the plaintext key is never logged, never echoed —
+ * the response is the standard redacted configPayload. Catalog refresh is
+ * best-effort (an offline provider still gets its key saved, exactly like
+ * `tau provider set-key` does).
+ */
+async function saveProviderConfig(body: Record<string, unknown>): Promise<Record<string, unknown>> {
+  for (const key of Object.keys(body)) {
+    if (!PROVIDER_SAVE_FIELDS.has(key)) {
+      throw new Error(`unknown field "${key}" (accepted: provider, apiKey, baseUrl, activate)`);
+    }
+  }
+  const name = typeof body["provider"] === "string" ? body["provider"].trim() : "";
+  if (!name) {
+    throw new Error("provider (string) is required");
+  }
+  if (!getProvider(name)) {
+    throw new Error(`unknown provider "${name}"`);
+  }
+
+  const apiKey = body["apiKey"];
+  if (apiKey !== undefined && (typeof apiKey !== "string" || apiKey.trim().length === 0)) {
+    throw new Error("apiKey must not be empty");
+  }
+  const entry = catalogEntry(name);
+  if (apiKey !== undefined && entry?.keyless) {
+    // Mirror the CLI's KEYLESS refusal (app/cli/src/provider.ts).
+    throw new Error(`${name} is keyless — ${entry.note ?? "this provider needs no API key"}`);
+  }
+  const baseUrl = body["baseUrl"];
+  if (
+    baseUrl !== undefined &&
+    (typeof baseUrl !== "string" || !/^https?:\/\/\S+$/.test(baseUrl.trim()))
+  ) {
+    throw new Error("baseUrl must be an http(s) URL");
+  }
+  const activate = body["activate"];
+  if (activate !== undefined && typeof activate !== "boolean") {
+    throw new Error("activate must be a boolean");
+  }
+
+  if (apiKey !== undefined) {
+    setConfigValue(`providers.${name}.apiKey`, apiKey.trim());
+  }
+  if (baseUrl !== undefined) {
+    // Ollama's endpoint field is `host`; every other provider uses baseUrl.
+    setConfigValue(`providers.${name}.${baseUrlField(name)}`, baseUrl.trim());
+  }
+  if (activate === true) {
+    setConfigValue("provider", name);
+  }
+
+  // Best-effort catalog refresh — same spirit as the CLI's set-key
+  // auto-refresh, but NOT awaited: a save must stay snappy even when the
+  // endpoint is unreachable (the CLI awaits because it prints the
+  // catalog; the WebUI's next GET /api/config reflects it whenever it
+  // lands). Failures (offline, unsupported discovery) keep the save.
+  void refreshProviderModels(name, { force: true }).catch(() => {
+    /* advisory only — the credential save already landed */
+  });
+
+  return configPayload();
 }
 
 /**
@@ -407,6 +488,20 @@ export function createRequestListener(options: RequestListenerOptions = {}): htt
         }
         if (req.method === "GET" && url.pathname === "/api/config") {
           sendJson(res, 200, await configPayload());
+          return;
+        }
+        if (req.method === "POST" && url.pathname === "/api/config/provider") {
+          // The ONE writable config slice (issue #152): provider credentials.
+          // Validation errors answer 400 as plain JSON before any mutation;
+          // the response is the standard redacted payload (keys masked).
+          try {
+            const body = await readJsonBody(req);
+            sendJson(res, 200, await saveProviderConfig(body));
+          } catch (error) {
+            sendJson(res, 400, {
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
           return;
         }
         if (req.method === "GET" && url.pathname === "/api/file") {

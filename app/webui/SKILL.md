@@ -158,11 +158,19 @@ chords like Ctrl+T/W/N).
   (`composables/ui-state.ts`); Esc closes via `closeOverlays()`.
 - `ShortcutsModal` — the keyboard contract overlay (Esc/backdrop
   closes).
-- `SettingsPanel` — read-only settings modal (`Ctrl/⌘+,` or the header
-  `⚙ settings` button): provider/availability/model-catalog, risk policy
-  (+ `tau config` hint), theme picker (same `useTheme()` state as the
-  header button), local session stats. Data from `GET /api/config` —
-  the redacted effective config; NO write path by design.
+- `SettingsPanel` — the settings modal (`Ctrl/⌘+,` or the header
+  `⚙ settings` button): **provider setup (the ONE writable slice —
+  `ProviderSetup.vue`, issue #152)** + provider/availability/model-catalog,
+  risk policy (+ `tau config` hint), theme picker (same `useTheme()` state
+  as the header button), local session stats. Read views come from
+  `GET /api/config` — the redacted effective config; the gate/risk policy
+  stays GET-only.
+- `ProviderSetup` — pick a provider (chips with availability + `·key`
+  markers), the endpoint PREFILLS from the server-sent catalog (advanced
+  disclosure to override), paste the API key into a `password` input (show
+  toggle auto re-masks after 8s), save via `POST /api/config/provider`.
+  Saved keys render only as the server mask (`sk-***last4`); keyless
+  providers (mock/ollama/zai) hide the key input and show their note.
 - `EmptyState` — serif headline ("What can Tau do for you?") + contract
   prose + pipeline mono + kbd hints.
 - `AttachmentChips` (v0.6.0) — image attachment chips (preview thumb /
@@ -265,10 +273,16 @@ sandbox="allow-scripts" srcdoc` and NOTHING else — no allow-same-origin.
 `POST /api/plan[/stream]` + `/api/goal/stream` (v0.6.0) additionally
 accept `attachments` (≤4 images, png/jpeg/webp/gif, magic-number
 verified); refusals answer 400 as plain JSON before any stream starts.
-`GET /api/config` is read-only: the `config` field is exactly
+`GET /api/config` carries the `config` field exactly as
 `redactConfig(loadConfig())` (keys masked `sk-***last4`, never plaintext;
-same output as `tau config list`), and no method other than GET exists on
-the path — config changes stay in the CLI.
+same output as `tau config list`) plus the `providerCatalog` (endpoints +
+console links, parity-checked against the registry). It has ONE write
+sibling (issue #152): `POST /api/config/provider {provider, apiKey?,
+baseUrl?, activate?}` — provider credentials only, the same
+`setConfigValue` channel `tau provider set-key` uses (0600 file),
+plaintext never echoed (the response is the standard redacted payload)
+and the model catalog refresh rides along. Keyless providers refuse keys.
+Config changes OTHER than provider credentials stay in the CLI.
 `/api/tools` body must never contain the literal `"run"`.
 
 localStorage: keys `tau-webui-threads-v1` (threads, pinned) and

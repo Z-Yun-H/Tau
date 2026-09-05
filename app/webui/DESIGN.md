@@ -587,17 +587,24 @@ per-theme tuning of tint vs border belongs to the token layer. The
 `review` mapping (info blue) keeps the streaming `streaming…` state in
 ResultCard reading as "in flight" rather than "dead".
 
-### 6.12 SettingsPanel — the read-only settings surface
+### 6.12 SettingsPanel — settings with ONE writable slice
 
 One floating modal (`Ctrl/⌘+,`, or the `⚙ settings` button at the
 header's right end; `Esc`/backdrop closes), reusing the ShortcutsModal
 skeleton: `.tau-surface rounded-12px` panel at `max-w-520px`, scrim
-`var(--tau-backdrop)`, `tau-enter` fade + rise. Four sections, separated
-by gradient dividers:
+`var(--tau-backdrop)`, `tau-enter` fade + rise. Five sections, separated
+by gradient dividers (the layout primitives live in `theme.css` so the
+ProviderSetup child shares them):
 
 ```
-SETTINGS  [read-only]                                    [esc]
+SETTINGS  [provider setup · rest read-only]              [esc]
 ────────────────────────────────────────────────────────────
+PROVIDER      chips: openai✓ ·key | anthropic✕ | ollama✓ …
+              endpoint  https://api.deepseek.com  ← LOOKED UP
+              (advanced — custom endpoint disclosure)
+              saved     sk-***1234          ← server mask only
+              api key   [············] (show)  ← password, re-masks 8s
+              [x] make deepseek the active provider    [save]
 PROVIDER      active    Mock (offline demo) via config
               model     (auto)          · availability chips
               catalog   N cached · refreshed <relTime>
@@ -606,17 +613,25 @@ RISK POLICY   allowMediumAutoApprove / timeout / shell / aliases
 APPEARANCE    [ system | light | dark ]  ← one state, three views
 SESSIONS      threads N/50 · history N loaded · tau home
 ────────────────────────────────────────────────────────────
-provider keys stay masked (sk-***last4) — nothing here can change the config
+provider keys stay masked (sk-***last4) — provider setup is the only
+writable section; the gate never moves into the browser
 ```
 
 - **Data source**: a single `GET /api/config` fetched on mount — the
   redacted effective config (the same `redactConfig` `tau config list`
-  prints), live provider availability, and the active provider's
-  model-catalog cache state. Loading and error states are honest
-  (`loading config…` pulse / `config unavailable — <reason>`).
-- **Read-only by design**: there is NO write path — config changes stay
-  in the CLI (`tau config set …`). The browser never becomes a second
-  way into the safety-relevant configuration; the footer says so.
+  prints), live provider availability, the server-sent provider catalog
+  (endpoints + console links, registry-parity-checked), and the active
+  provider's model-catalog cache state. Loading and error states are
+  honest (`loading config…` pulse / `config unavailable — <reason>`).
+- **One write path, deliberately narrow (issue #152)**: provider
+  credentials only (`provider` / `apiKey` / `baseUrl` / `activate`) via
+  `POST /api/config/provider` — the same `setConfigValue` channel
+  `tau provider set-key` uses. Plaintext keys are never echoed back, never
+  logged; the saved state renders the server's mask only. The gate and
+  risk policy stay read-only in the browser; the footer says so.
+- **防窥 masking**: the key input is a `password` field; the `show`
+  toggle reveals it for 8 seconds and re-masks itself (no lingering
+  plaintext for shoulder-surfers); the input clears on save.
 - **Appearance picker**: a three-option segmented control (`role=radiogroup`)
   bound to the SAME `useTheme()` singleton as the header button —
   `system` active state carries the `tau.ok` accent; both views stay in
