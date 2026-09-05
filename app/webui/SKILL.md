@@ -99,9 +99,11 @@ is the _only_ gradient in the system; everything else is matte.
   (`minmax(0,1fr)`, composer max-w-768 centered) + reference rail
   (`320px`, `Alt+S`-toggleable), each independently scrollable,
   viewport-locked (`h-dvh` app shell).
-- `<1024px`: one scrolling flow — chat, sticky composer, reference rail
-  below (max 45vh). The thread list becomes an overlay drawer behind the
-  `≡ chats` button (backdrop click / selecting a thread / Esc closes it).
+- `<1024px`: still viewport-locked — the conversation stream is the ONE
+  scrolling column, the composer stays visible below it, and the
+  reference rail sits underneath (max 45vh, scrolling internally). The
+  thread list becomes an overlay drawer behind the `≡ chats` button
+  (backdrop click / selecting a thread / Esc closes it).
 - `<640px` (`sm:` and below): header drops the tauHome chip and the
   skills/plugins count chip; empty-state serif headline shrinks 28→22px.
 - Page content is centered with `max-w-[1600px]`.

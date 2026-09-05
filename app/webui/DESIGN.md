@@ -238,12 +238,17 @@ Three breakpoints, mobile-first.
 - Sidebar becomes an overlay drawer (`fixed inset-y-0 left-0 w-[280px]`,
   `-translate-x-full` when closed), backdrop `bg-black/55`.
 - A `chats` button (top-left of the chat column) opens the drawer.
-- SidePanel moves below the chat, `max-h-[45vh]`.
-- Composer is sticky at the bottom of the chat column
-  (`position: sticky; bottom: 0; bg-tau-bg`).
+- SidePanel moves below the chat, `max-h-[45vh]` (scrolling
+  internally).
+- The page shell stays viewport-locked: the conversation stream is the
+  one scrolling column and the composer is its last flex child, so it
+  stays visible (`bg-tau-bg` over the stream edge) without page-level
+  scrolling.
 
-### <640px (`sm:` and below) — single flow
+### <640px (`sm:` and below) — single column, still viewport-locked
 
+- Same viewport-locked narrow layout as 640–1023px (stream scrolls,
+  composer visible, rail below) — single column, no grid.
 - Sidebar drawer stays (now full-width 280px).
 - StatusHeader drops the `tauHome` chip and the skills/plugins count
   chip; only brand + provider + version remain.
@@ -354,8 +359,10 @@ beam on focus.
     state: `tau.raised` bg, `tau.faint` text. Enabled state: chrome
     sweep bg, dark `▶` icon. Hover: brighten the sweep
     (`background-position` shift).
-- **Sticky on narrow screens**: `position: sticky; bottom: 0;
-bg-tau-bg` so it stays visible while the conversation scrolls.
+- **Always visible on narrow screens**: the composer is the last flex
+  child of the viewport-locked stream column (`bg-tau-bg` over the
+  stream edge), so it never scrolls away — no sticky positioning
+  needed.
 
 The Send button is _not_ labeled "Plan" — the old label conflated the
 composer's submit with the plan card's Run plan. The composer _sends an

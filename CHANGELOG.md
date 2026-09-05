@@ -5,6 +5,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+### Fixed
+
+- **WebUI page height is now viewport-locked at every breakpoint.** The
+  page's total height no longer grows with its content: the app shell is
+  exactly the viewport (`height: 100dvh`, `overflow: hidden` on the
+  body) and only inner columns scroll — the conversation stream on all
+  screen sizes, the reference rail beneath it on narrow screens. Long
+  conversations no longer produce a page-level scrollbar alongside the
+  inner one, and the composer stays visible on small screens without
+  sticky positioning.
+
 ### Changed
 
 - **WebUI internal cleanup (no behavior change).** Removed four unused

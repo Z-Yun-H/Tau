@@ -7,10 +7,11 @@
  *            composer max-w-768 centered) | reference rail (right, 320px,
  *            Alt+S toggleable) — each column scrolls independently,
  *            viewport-locked (h-dvh).
- *   <1024px  single scrolling flow — the thread list becomes an overlay
- *            drawer behind the ☰ chats button; the reference rail moves
- *            below the chat (max-h 45vh); the composer is sticky at the
- *            bottom.
+ *   <1024px  the page shell stays viewport-locked too: the conversation
+ *            stream is the one scrolling column, the composer stays
+ *            visible below it, and the reference rail sits underneath
+ *            (max-h 45vh, scrolling internally). The thread list is an
+ *            overlay drawer behind the ☰ chats button.
  *
  * Keyboard contract (see ShortcutsModal): Enter send · Shift+Enter newline ·
  * Ctrl/⌘+K focus composer · ? shortcuts · Alt+N new thread · Alt+S rail.
@@ -200,8 +201,9 @@ watchDebounced(
       @navigate="sidebarOpen = false"
     />
 
-    <!-- conversation stream -->
-    <section class="flex flex-col min-h-0">
+    <!-- conversation stream: flex-1 on narrow so the stream (not the
+         page) scrolls; the class is inert in lg's grid layout -->
+    <section class="flex flex-col flex-1 min-h-0">
       <!-- narrow-screen top bar: drawer toggle + rail toggle -->
       <div class="flex items-center gap-2 px-3 py-2 lg:hidden flex-none">
         <button
@@ -321,9 +323,9 @@ watchDebounced(
   }
 }
 
-/* Composer dock: on narrow screens, sticky at the bottom so it stays
-   visible while the conversation scrolls. On lg+, it docks in the flex
-   column naturally. */
+/* Composer dock: the last flex child of the stream column, so it stays
+   visible at every breakpoint — below the scrolling stream on narrow
+   screens, docked at the column bottom on lg+. */
 .composer-dock {
   padding: 0 16px 12px;
 }
@@ -336,10 +338,7 @@ watchDebounced(
 
 @media (max-width: 1023px) {
   .composer-dock {
-    position: sticky;
-    bottom: 0;
-    background: var(--tau-bg); /* tau.bg */
-    padding-bottom: 12px;
+    background: var(--tau-bg); /* tau.bg — opaque over the stream edge */
     z-index: 10;
   }
 }
