@@ -1,6 +1,6 @@
 {
   "name": "@tau/engine",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Tau plan engine — safety review, step execution, runPlan pipeline",
   "license": "MIT",
   "author": "Z-Yun-H",

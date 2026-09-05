@@ -77,11 +77,21 @@ the composer stays pinned**
 
 ![webui viewport lock](./docs/screenshots/viewport-lock.png)
 
+**model & thinking selection (v0.6.2) — the settings provider section
+becomes selectable: a catalog-backed model dropdown with refresh, and
+thinking mode/effort pickers rendered straight from the server's
+capability table (knob-less providers get an honest note)**
+
+![webui model picker](./docs/screenshots/model-picker.png)
+
+![webui thinking controls](./docs/screenshots/thinking-controls.png)
+
 More: `command-menu-filter.png` (typed filter), `attachments-sent.png`
 (chips on the sent card + plan review), `image-view.png` /
 `image-viewer-card.png` (native image view), `provider-setup-key.png`
 (masked paste) / `provider-setup-reveal.png` (explicit peek) /
-`provider-setup-card.png` (the setup section, element-cropped).
+`provider-setup-card.png` (the setup section, element-cropped),
+`thinking-controls-mock.png` (the honest knob-less note).
 
 ## Observability (v0.4.0)
 

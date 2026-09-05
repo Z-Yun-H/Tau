@@ -1,6 +1,6 @@
 {
   "name": "tau-tool",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "private": true,
   "description": "Tau — AI-powered unified terminal assistant. Natural language in, safe commands out.",
   "license": "MIT",

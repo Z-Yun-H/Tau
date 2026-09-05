@@ -1,6 +1,6 @@
 {
   "name": "@tau/webui",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Tau local web interface — node HTTP API + Vue 3 / UnoCSS client (bin: tau-web)",
   "license": "MIT",
   "author": "Z-Yun-H",
@@ -29,7 +29,8 @@
     "build": "vite build && vite build -c vite.server.config.ts",
     "shots": "tsx --conditions=development scripts/screenshot.mjs",
     "shots:v060": "tsx --conditions=development scripts/shot-v060.mjs",
-    "shots:v061": "tsx --conditions=development scripts/shot-v061.mjs"
+    "shots:v061": "tsx --conditions=development scripts/shot-v061.mjs",
+    "shots:v062": "tsx --conditions=development scripts/shot-v062.mjs"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "catalog:",

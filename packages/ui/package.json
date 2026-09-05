@@ -1,7 +1,7 @@
 {
   "name": "@tau/ui",
-  "version": "0.6.1",
-  "description": "Terminal UI primitives shared by Tau apps \u2014 theme, confirm, picker",
+  "version": "0.6.2",
+  "description": "Terminal UI primitives shared by Tau apps — theme, confirm, picker",
   "license": "MIT",
   "author": "Z-Yun-H",
   "type": "module",

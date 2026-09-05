@@ -5,6 +5,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+## 0.6.2 — 2026-09-05
+
+Model and thinking selection land everywhere at once. Every front door —
+CLI, TUI and WebUI — now picks a model from the provider's live catalog
+and toggles thinking mode (on/off) and thinking effort
+(low/medium/high) through one normalized config layer; each surface
+renders only what the active provider actually supports, and every knob
+is opt-in (unset means byte-identical requests).
+
 ### Added
 
 - **Thinking mode & effort, selectable everywhere (issue #162).** One
