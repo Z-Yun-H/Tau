@@ -587,7 +587,7 @@ per-theme tuning of tint vs border belongs to the token layer. The
 `review` mapping (info blue) keeps the streaming `streaming…` state in
 ResultCard reading as "in flight" rather than "dead".
 
-### 6.12 SettingsPanel — settings with ONE writable slice
+### 6.12 SettingsPanel — settings with narrow writable slices
 
 One floating modal (`Ctrl/⌘+,`, or the `⚙ settings` button at the
 header's right end; `Esc`/backdrop closes), reusing the ShortcutsModal
@@ -606,8 +606,10 @@ PROVIDER      chips: openai✓ ·key | anthropic✕ | ollama✓ …
               api key   [············] (show)  ← password, re-masks 8s
               [x] make deepseek the active provider    [save]
 PROVIDER      active    Mock (offline demo) via config
-              model     (auto)          · availability chips
-              catalog   N cached · refreshed <relTime>
+              model     [mock-reasoner ▾] [⟳]   ← catalog-backed select
+              availability chips · catalog N cached · refreshed <relTime>
+              thinking  [ on | off ] [ low | medium | high ]
+              ← capability-driven; knob-less providers: honest note
 RISK POLICY   allowMediumAutoApprove / timeout / shell / aliases
               "read-only — change with tau config set <key> <value>"
 APPEARANCE    [ system | light | dark ]  ← one state, three views
@@ -623,12 +625,20 @@ writable section; the gate never moves into the browser
   (endpoints + console links, registry-parity-checked), and the active
   provider's model-catalog cache state. Loading and error states are
   honest (`loading config…` pulse / `config unavailable — <reason>`).
-- **One write path, deliberately narrow (issue #152)**: provider
-  credentials only (`provider` / `apiKey` / `baseUrl` / `activate`) via
+- **Write paths, deliberately narrow (issues #152/#164)**: provider
+  credentials (`provider` / `apiKey` / `baseUrl` / `activate`) via
   `POST /api/config/provider` — the same `setConfigValue` channel
-  `tau provider set-key` uses. Plaintext keys are never echoed back, never
+  `tau provider set-key` uses — plus the model choice (`POST
+/api/config/model`) and thinking mode/effort (`POST
+/api/config/thinking`, issue #164): per-provider REQUEST knobs, all
+  validated before mutation. Plaintext keys are never echoed back, never
   logged; the saved state renders the server's mask only. The gate and
   risk policy stay read-only in the browser; the footer says so.
+- **Capability-driven thinking controls (issue #164)**: the mode and
+  effort mini-pickers render straight from the payload's capability
+  table — providers without a knob render the honest
+  "provider default — <name> exposes no thinking knobs" note instead of
+  dead controls.
 - **防窥 masking**: the key input is a `password` field; the `show`
   toggle reveals it for 8 seconds and re-masks itself (no lingering
   plaintext for shoulder-surfers); the input clears on save.

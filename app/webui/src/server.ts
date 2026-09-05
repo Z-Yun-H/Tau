@@ -25,11 +25,13 @@ import {
   type SafetyReview,
 } from "@tau/core";
 import { cachedModels, formatUsage, getProvider, refreshProviderModels } from "@tau/ai";
+import type { ThinkingMode, ThinkingEffort } from "@tau/ai";
 import { escapesWorkspace, isSystemWritePath } from "@tau/tools";
 import { probeImageHeader } from "@tau/ui";
 import {
   ensureCatalog,
   getSessionInfo,
+  listModelCatalog,
   listSkillSummaries,
   listToolSummaries,
   planAndReview,
@@ -37,7 +39,10 @@ import {
   ProviderUnavailableError,
   readRecentHistory,
   runGoal,
+  setProviderModel,
   slashCommandsFor,
+  thinkingState,
+  updateThinking,
 } from "@tau/agent";
 import { GoalRegistry } from "./goal.js";
 import { PROVIDER_CATALOG, baseUrlField, catalogEntry } from "./provider-catalog.js";
@@ -307,6 +312,7 @@ async function statusPayload(): Promise<Record<string, unknown>> {
 async function configPayload(): Promise<Record<string, unknown>> {
   const info = await getSessionInfo();
   const catalog = cachedModels(info.provider.name);
+  const thinking = thinkingState(info.provider.name);
   return {
     version: info.version,
     tauHome: info.tauHome,
@@ -323,7 +329,96 @@ async function configPayload(): Promise<Record<string, unknown>> {
       count: catalog.models.length,
       ...(catalog.refreshedAt ? { refreshedAt: catalog.refreshedAt } : {}),
     },
+    // Thinking state + capability of the ACTIVE provider (issue #164) —
+    // the settings panel renders its controls straight from this.
+    thinking: {
+      provider: thinking.provider,
+      capability: thinking.capability,
+      config: thinking.config,
+      summary: thinking.summary,
+    },
   };
+}
+
+/**
+ * Model-catalog read for the settings panel (issue #164) — the same
+ * catalog service the CLI's `tau provider models` serves: fresh cache
+ * first, live refresh when asked (or when stale), cached + warning when
+ * the provider is unreachable. Read-only; the provider must be registered.
+ */
+async function modelsPayload(
+  provider: string | undefined,
+  refresh: boolean,
+): Promise<Record<string, unknown>> {
+  const name = provider?.trim() || (await getSessionInfo()).provider.name;
+  if (!getProvider(name)) {
+    throw new Error(`unknown provider "${name}"`);
+  }
+  const catalog = await listModelCatalog(name, { refresh });
+  return {
+    provider: catalog.provider,
+    source: catalog.source,
+    ...(catalog.refreshedAt ? { refreshedAt: catalog.refreshedAt } : {}),
+    ...(catalog.warning ? { warning: catalog.warning } : {}),
+    models: catalog.models,
+    activeModel:
+      typeof loadConfig().providers[name]?.["model"] === "string"
+        ? (loadConfig().providers[name]!["model"] as string)
+        : undefined,
+  };
+}
+
+/**
+ * Model-choice write (issue #164) — the smallest honest surface: which
+ * provider, which model id. Validation before mutation; the response is
+ * the standard redacted configPayload (same contract as the credential save).
+ */
+async function saveModelChoice(body: Record<string, unknown>): Promise<Record<string, unknown>> {
+  for (const key of Object.keys(body)) {
+    if (key !== "provider" && key !== "model") {
+      throw new Error(`unknown field "${key}" (accepted: provider, model)`);
+    }
+  }
+  const name = typeof body["provider"] === "string" ? body["provider"].trim() : "";
+  if (!name) throw new Error("provider (string) is required");
+  if (!getProvider(name)) throw new Error(`unknown provider "${name}"`);
+  const model = typeof body["model"] === "string" ? body["model"].trim() : "";
+  if (!model) throw new Error("model (string) is required");
+  setProviderModel(name, model);
+  return configPayload();
+}
+
+/**
+ * Thinking write (issue #164) — mode and/or effort through the normalized
+ * layer; knobs the provider does not support are refused by the same
+ * capability table the UI renders from. The response is the standard
+ * redacted configPayload.
+ */
+async function saveThinkingChoice(body: Record<string, unknown>): Promise<Record<string, unknown>> {
+  for (const key of Object.keys(body)) {
+    if (key !== "provider" && key !== "mode" && key !== "effort") {
+      throw new Error(`unknown field "${key}" (accepted: provider, mode, effort)`);
+    }
+  }
+  const name = typeof body["provider"] === "string" ? body["provider"].trim() : "";
+  if (!name) throw new Error("provider (string) is required");
+  if (!getProvider(name)) throw new Error(`unknown provider "${name}"`);
+  const mode = body["mode"];
+  if (mode !== undefined && mode !== "on" && mode !== "off") {
+    throw new Error('mode must be "on" or "off"');
+  }
+  const effort = body["effort"];
+  if (effort !== undefined && effort !== "low" && effort !== "medium" && effort !== "high") {
+    throw new Error('effort must be "low", "medium" or "high"');
+  }
+  if (mode === undefined && effort === undefined) {
+    throw new Error("nothing to set — pass mode and/or effort");
+  }
+  updateThinking(name, {
+    ...(mode !== undefined ? { mode: mode as ThinkingMode } : {}),
+    ...(effort !== undefined ? { effort: effort as ThinkingEffort } : {}),
+  });
+  return configPayload();
 }
 
 /**
@@ -497,6 +592,48 @@ export function createRequestListener(options: RequestListenerOptions = {}): htt
           try {
             const body = await readJsonBody(req);
             sendJson(res, 200, await saveProviderConfig(body));
+          } catch (error) {
+            sendJson(res, 400, {
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+          return;
+        }
+        if (req.method === "GET" && url.pathname === "/api/models") {
+          // Model-catalog read for the settings panel (issue #164):
+          // ?provider= (default: active) + ?refresh=1 forces a live fetch;
+          // failures with a cache degrade to cached + warning.
+          try {
+            const provider = url.searchParams.get("provider") ?? undefined;
+            const refresh = url.searchParams.get("refresh") === "1";
+            sendJson(res, 200, await modelsPayload(provider, refresh));
+          } catch (error) {
+            sendJson(res, 400, {
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+          return;
+        }
+        if (req.method === "POST" && url.pathname === "/api/config/model") {
+          // Model-choice write (issue #164) — validation errors answer 400
+          // as plain JSON before any mutation; response is the standard
+          // redacted payload (keys masked).
+          try {
+            const body = await readJsonBody(req);
+            sendJson(res, 200, await saveModelChoice(body));
+          } catch (error) {
+            sendJson(res, 400, {
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+          return;
+        }
+        if (req.method === "POST" && url.pathname === "/api/config/thinking") {
+          // Thinking write (issue #164) — mode/effort through the same
+          // normalized layer the CLI and TUI use.
+          try {
+            const body = await readJsonBody(req);
+            sendJson(res, 200, await saveThinkingChoice(body));
           } catch (error) {
             sendJson(res, 400, {
               error: error instanceof Error ? error.message : String(error),

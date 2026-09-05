@@ -15,6 +15,7 @@ import { buildSystemPrompt, validatePlanResponse } from "../prompt.js";
 import { buildReflectPrompt, validateReflectResponse } from "../reflect.js";
 import { normalizeUsage } from "../usage.js";
 import { consumeOpenAiCompatibleStream } from "../chat-stream.js";
+import { getThinkingConfig } from "../thinking.js";
 import { chatJSON } from "./http.js";
 import { BaseHttpProvider } from "./base.js";
 import type {
@@ -42,6 +43,18 @@ export class OpenAIProvider extends BaseHttpProvider {
   };
 
   /**
+   * Thinking-effort fragment (issue #162): a configured
+   * `providers.openai.thinkingEffort` rides as `reasoning_effort` (the
+   * OpenAI reasoning-model intensity knob). Sent ONLY when explicitly set —
+   * OpenAI-shaped endpoints behind non-reasoning models are never bothered
+   * with a field they may reject, so the default request stays byte-identical.
+   */
+  private effortFragment(): { reasoning_effort?: string } {
+    const effort = getThinkingConfig(this.name).effort;
+    return effort ? { reasoning_effort: effort } : {};
+  }
+
+  /**
    * One strict-JSON chat completion (system + user pair) — the shared wire
    * path for plan() and reflect(). Model resolution stays dynamic per
    * request via the catalog service; the request body is byte-identical
@@ -66,6 +79,7 @@ export class OpenAIProvider extends BaseHttpProvider {
         model,
         temperature: 0,
         response_format: { type: "json_object" },
+        ...this.effortFragment(),
         messages: [
           { role: "system", content: system },
           { role: "user", content: userContent(user, attachments) },
@@ -125,6 +139,7 @@ export class OpenAIProvider extends BaseHttpProvider {
           model,
           temperature: 0,
           response_format: { type: "json_object" },
+          ...this.effortFragment(),
           stream: true,
           stream_options: { include_usage: true },
           messages: [

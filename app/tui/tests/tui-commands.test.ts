@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ensureCatalog } from "@tau/agent";
+import { loadConfig, setConfigValue, updateProviderEntry } from "@tau/core";
 import { handleLine } from "../src/index.js";
 
 /**
@@ -122,5 +123,100 @@ describe("tui slash dispatch (registry-driven)", () => {
 
   it("ignores empty lines", async () => {
     await expect(handleLine("   ", neverConfirm)).resolves.toBe(false);
+  });
+});
+
+describe("tui model & thinking commands (issue #163)", () => {
+  it("lists /model and /thinking from the shared catalog", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    await handleLine("/help", neverConfirm);
+    const output = log.mock.calls.map((call) => call.join(" ")).join("\n");
+    expect(output).toContain("/model [model]");
+    expect(output).toContain("/thinking [on|off] [low|medium|high]");
+  });
+
+  it("sets an explicit model with /model <id> and warns when it is unknown", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    await handleLine("/model tau-test-model", neverConfirm);
+    const output = log.mock.calls.map((call) => call.join(" ")).join("\n");
+    expect(output).toContain('Model set to "tau-test-model"');
+    expect(output).toContain("not in the cached mock catalog");
+    // The write went through the same channel `tau provider use` uses.
+    expect(loadConfig().providers["mock"]?.["model"]).toBe("tau-test-model");
+  });
+
+  it("keeps the cache-quiet path silent for a known model", async () => {
+    updateProviderEntry("mock", { availableModels: ["mock-flash", "mock-pro"] });
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    await handleLine("/model mock-pro", neverConfirm);
+    const output = log.mock.calls.map((call) => call.join(" ")).join("\n");
+    expect(output).toContain('Model set to "mock-pro"');
+    expect(output).not.toContain("not in the cached");
+  });
+
+  it("degrades /model to a listing outside interactive sessions", async () => {
+    // mock serves a deterministic live catalog (mock-chat, mock-reasoner) —
+    // the listing path proves stdin is never touched outside a TTY session.
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    await handleLine("/model", neverConfirm);
+    const output = log.mock.calls.map((call) => call.join(" ")).join("\n");
+    expect(output).toContain("Models for");
+    expect(output).toContain("mock-chat");
+    expect(output).toContain("Non-interactive session");
+  });
+
+  it("explains the missing catalog instead of hanging", async () => {
+    // zai exposes no discovery at all → the honest "no catalog" path.
+    setConfigValue("provider", "zai");
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    await handleLine("/model", neverConfirm);
+    const output = log.mock.calls.map((call) => call.join(" ")).join("\n");
+    expect(output).toContain("No catalog available");
+    expect(output).toContain("/model <model-id>");
+  });
+
+  it("shows thinking state and capability on /thinking", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    await handleLine("/thinking", neverConfirm);
+    const output = log.mock.calls.map((call) => call.join(" ")).join("\n");
+    expect(output).toContain('Thinking for "mock": provider default.');
+    expect(output).toContain("no thinking knobs");
+  });
+
+  it("refuses thinking writes for knob-less providers with the reason", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    await handleLine("/thinking on high", neverConfirm);
+    const output = log.mock.calls.map((call) => call.join(" ")).join("\n");
+    expect(output).toContain("does not support");
+    expect(loadConfig().providers["mock"]?.["thinking"]).toBeUndefined();
+  });
+
+  it("validates the mode and effort arguments", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    await handleLine("/thinking maybe", neverConfirm);
+    await handleLine("/thinking on extreme", neverConfirm);
+    const output = log.mock.calls.map((call) => call.join(" ")).join("\n");
+    expect(output).toContain('must be "on" or "off"');
+    expect(output).toContain("must be low, medium or high");
+  });
+
+  it("writes thinking through the normalized layer for a capable provider", async () => {
+    setConfigValue("provider", "anthropic");
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    await handleLine("/thinking on high", neverConfirm);
+    const output = log.mock.calls.map((call) => call.join(" ")).join("\n");
+    expect(output).toContain('Thinking for "anthropic" set: on (high).');
+    const entry = loadConfig().providers["anthropic"];
+    expect(entry?.["thinking"]).toBe("on");
+    expect(entry?.["thinkingEffort"]).toBe("high");
+  });
+
+  it("shows the thinking line on /provider", async () => {
+    updateProviderEntry("mock", { thinking: "on", thinkingEffort: "high" });
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    await handleLine("/provider", neverConfirm);
+    const output = log.mock.calls.map((call) => call.join(" ")).join("\n");
+    expect(output).toContain("model:");
+    expect(output).toContain("thinking: on (high)");
   });
 });

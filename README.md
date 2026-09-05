@@ -5,7 +5,7 @@
 [![CI](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml/badge.svg)](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-667%20passing-success)](vitest.config.ts)
+[![Tests](https://img.shields.io/badge/tests-716%20passing-success)](vitest.config.ts)
 [![pnpm](https://img.shields.io/badge/pnpm-monorepo-F69220)](pnpm-workspace.yaml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 [![中文文档](https://img.shields.io/badge/docs-中文-red)](README.zh-CN.md)
@@ -154,6 +154,13 @@ from plan text and are surfaced in the WebUI while the same
 `--provider` flag > `TAU_PROVIDER` env > `config.provider`.
 Unknown → safe fallback to `mock`.
 
+Thinking is selectable everywhere (v0.6.2): `tau provider thinking
+<p> [on|off] [low|medium|high]`, `/thinking` in the TUI and a settings
+panel control in the WebUI — one normalized config layer
+(`providers.<name>.thinking` / `thinkingEffort`, legacy keys still
+read) mapped onto each provider's wire; see docs/guide/providers.md.
+Keep every knob opt-in: unset means byte-identical requests.
+
 API keys resolve in the order **config (`providers.<name>.apiKey`) → environment
 variable** — so `tau provider set-key` sticks even when an env var is exported
 for other tools, and CI setups can keep using env-only.
@@ -171,6 +178,10 @@ tau provider set-key deepseek sk-...     # stores key -> auto-refreshes catalog
 tau provider models [--refresh|--offline]
 tau provider use deepseek [model]        # interactive arrow-key picker on a TTY
 ```
+
+The same catalog drives the interactive front doors (v0.6.2): `/model`
+in the TUI opens the picker (or takes a model id directly), and the
+WebUI settings panel lists the cached catalog with a refresh button.
 
 Tau ships **no hardcoded default models** — a model always comes from this
 live catalog or your explicit config. When the catalog offers exactly one

@@ -68,6 +68,39 @@ export interface ProviderCatalogEntry {
   note?: string;
 }
 
+/** ---------- Model & thinking selection (issue #164) ---------- */
+
+/** Thinking knobs a provider supports — the server's capability table. */
+export interface ThinkingCapability {
+  mode: boolean;
+  effort: boolean;
+  budget: boolean;
+}
+
+/** Normalized thinking state of the active provider. */
+export interface ThinkingStatePayload {
+  provider: string;
+  capability: ThinkingCapability;
+  config: {
+    mode?: "on" | "off";
+    effort?: "low" | "medium" | "high";
+    budget?: number;
+  };
+  /** One-line human summary, e.g. "on (high)" / "off" / "provider default". */
+  summary: string;
+}
+
+/** Mirror of GET /api/models — the catalog service's read shape. */
+export interface ModelCatalogPayload {
+  provider: string;
+  source: "live" | "cache" | "unsupported";
+  refreshedAt?: string;
+  warning?: string;
+  models: { id: string; ownedBy?: string }[];
+  /** The configured model id, when one is set. */
+  activeModel?: string;
+}
+
 /** Mirror of the server's `GET /api/config` payload (all of it read-only). */
 export interface ConfigPayload {
   version: string;
@@ -87,6 +120,8 @@ export interface ConfigPayload {
   /** Server-sent provider catalog: endpoints + key-console links (setup form). */
   providerCatalog: ProviderCatalogEntry[];
   modelCatalog: { count: number; refreshedAt?: string };
+  /** Thinking state + capability of the ACTIVE provider (issue #164). */
+  thinking: ThinkingStatePayload;
 }
 
 export interface SkillSummary {

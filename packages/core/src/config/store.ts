@@ -111,9 +111,10 @@ export const PROVIDER_FIELDS = [
   "model",
   "timeoutMs",
   // v0.5.0 streaming/thinking capability toggles (provider-specific):
-  "think", // ollama — request thinking from thinking-capable local models
-  "thinking", // anthropic — extended thinking on/off
-  "thinkingBudget", // anthropic/gemini — thinking token budget
+  "think", // ollama — legacy request-thinking toggle (normalized: thinking)
+  "thinking", // normalized thinking mode: "on" | "off" (legacy booleans read too)
+  "thinkingEffort", // normalized thinking intensity: "low" | "medium" | "high"
+  "thinkingBudget", // anthropic/gemini — explicit thinking token budget
 ] as const;
 
 /** Merge a patch into one provider entry and persist (model cache, apiKey, ...). */

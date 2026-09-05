@@ -1,6 +1,6 @@
 {
   "name": "@tau/agent",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Tau orchestration — catalog preparation and the intent-to-plan pipeline",
   "license": "MIT",
   "author": "Z-Yun-H",

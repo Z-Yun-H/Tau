@@ -5,6 +5,44 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+## 0.6.2 — 2026-09-05
+
+Model and thinking selection land everywhere at once. Every front door —
+CLI, TUI and WebUI — now picks a model from the provider's live catalog
+and toggles thinking mode (on/off) and thinking effort
+(low/medium/high) through one normalized config layer; each surface
+renders only what the active provider actually supports, and every knob
+is opt-in (unset means byte-identical requests).
+
+### Added
+
+- **Thinking mode & effort, selectable everywhere (issue #162).** One
+  normalized config layer (`providers.<name>.thinking: "on"/"off"`,
+  `providers.<name>.thinkingEffort: "low"/"medium"/"high"`, legacy keys
+  still read) now drives every provider's wire format: Anthropic
+  extended thinking with effort-derived budgets, Gemini
+  `thinkingBudget` (off → 0, on → dynamic, effort → presets), OpenAI
+  `reasoning_effort`, DeepSeek `thinking: {type}`, Ollama `think`.
+  Pick knobs from the CLI (`tau provider thinking <provider> [on|off]
+[low|medium|high]`), the TUI (`/thinking`) or the WebUI settings —
+  each surface renders only what the active provider actually
+  supports. Every knob is opt-in: unset means byte-identical requests.
+- **TUI model & thinking selection (issue #163).** `/model` picks the
+  active provider's model from its live/cached catalog — an interactive
+  picker on a TTY that never hangs outside one — and `/thinking` shows
+  or sets thinking mode and effort; `/provider` now also reports the
+  thinking state. Both commands enter the shared slash catalog (so
+  `/help`, the palette and Tab completion list them automatically) and
+  go through new UI-agnostic session services in `@tau/agent`.
+- **WebUI model & thinking selection (issue #164).** The settings
+  panel's provider section becomes selectable: a catalog-backed model
+  dropdown (`GET /api/models` with a refresh button) and capability-
+  driven thinking mode/effort mini-pickers — providers without a knob
+  render an honest "no thinking knobs" note instead of dead controls.
+  New validated write endpoints `POST /api/config/model` and `POST
+/api/config/thinking` share the CLI's config channel; the gate and
+  risk policy remain immutable from the browser.
+
 ## 0.6.1 — 2026-09-05
 
 Provider setup moves into the WebUI settings — pick a provider and the

@@ -46,6 +46,20 @@ const CATALOG: readonly SlashCommandDef[] = [
     surfaces: ["tui"],
   },
   {
+    name: "model",
+    argsHint: "[model]",
+    argsKind: "free",
+    description: "pick the provider's model from its catalog (or set one directly)",
+    surfaces: ["tui"],
+  },
+  {
+    name: "thinking",
+    argsHint: "[on|off] [low|medium|high]",
+    argsKind: "free",
+    description: "show or set thinking mode and effort",
+    surfaces: ["tui"],
+  },
+  {
     name: "skills",
     description: "list loaded skills",
     surfaces: ["tui", "webui"],

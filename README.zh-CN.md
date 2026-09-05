@@ -5,7 +5,7 @@
 [![CI](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml/badge.svg)](https://github.com/Z-Yun-H/Tau/actions/workflows/ci.yml)
 [![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)](tsconfig.json)
-[![Tests](https://img.shields.io/badge/tests-667%20passing-success)](vitest.config.ts)
+[![Tests](https://img.shields.io/badge/tests-716%20passing-success)](vitest.config.ts)
 [![pnpm](https://img.shields.io/badge/pnpm-monorepo-F69220)](pnpm-workspace.yaml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow)](LICENSE)
 
@@ -145,6 +145,12 @@ pwsh，POSIX 行为保持不变）。
 `--provider` 参数 > `TAU_PROVIDER` 环境变量 > `config.provider`。
 未知值 → 安全回落到 `mock`。
 
+思考选择三端一致（v0.6.2）：`tau provider thinking
+<p> [on|off] [low|medium|high]`、TUI 的 `/thinking`、WebUI 设置面板控件——
+同一归一化配置层（`providers.<name>.thinking` / `thinkingEffort`，
+旧键仍然兼容）映射到各家 wire；见 docs/guide/providers.md。
+所有旋钮均为 opt-in：不配置即请求字节级不变。
+
 API key 解析顺序为 **配置文件（`providers.<name>.apiKey`）→ 环境变量**：
 `tau provider set-key` 写入的 key 优先于为其他工具导出的同名环境变量，
 CI 场景也可以继续只用环境变量。
@@ -161,6 +167,9 @@ tau provider set-key deepseek sk-...     # 存 key -> 自动刷新目录
 tau provider models [--refresh|--offline]
 tau provider use deepseek [model]        # TTY 下方向键交互选型
 ```
+
+同一份目录也驱动两个交互界面（v0.6.2）：TUI 的 `/model` 打开选择器
+（也可直接跟模型 id），WebUI 设置面板列出缓存目录并支持一键刷新。
 
 Tau **不内置任何默认模型** —— 模型永远来自这份实时目录或你的显式配置。当目录中
 只有一个模型时，Tau 自动选中并持久化；有多个时，`tau ask` 会快速失败并给出

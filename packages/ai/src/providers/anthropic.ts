@@ -16,10 +16,10 @@
  * thinking is enabled (the API rejects temperature != 1 in that mode).
  */
 
-import { loadConfig } from "@tau/core";
 import { buildSystemPrompt, validatePlanResponse } from "../prompt.js";
 import { buildReflectPrompt, validateReflectResponse } from "../reflect.js";
 import { consumeAnthropicStream } from "../chat-stream.js";
+import { EFFORT_BUDGETS, getThinkingConfig } from "../thinking.js";
 import { BaseHttpProvider } from "./base.js";
 import type { ImageAttachment, ProviderStreamHandler } from "@tau/core";
 import type { AgentDecision, ModelInfo, Plan, PlanningContext, ReflectContext } from "@tau/core";
@@ -57,12 +57,18 @@ export class AnthropicProvider extends BaseHttpProvider {
     };
   }
 
-  /** Extended-thinking request fragment when configured (default off). */
+  /**
+   * Extended-thinking request fragment when configured (default off).
+   * Reads the normalized thinking layer (issue #162): mode "on" enables;
+   * the budget is the explicit `thinkingBudget`, else the effort preset,
+   * else the provider default. Legacy `thinking: true` still reads as on.
+   */
   private thinkingFragment(): { thinking?: { type: "enabled"; budget_tokens: number } } {
-    const entry = loadConfig().providers[this.name];
-    if (entry?.["thinking"] !== true) return {};
-    const raw = Number(entry["thinkingBudget"]);
-    const budget = Number.isFinite(raw) && raw > 0 ? Math.trunc(raw) : DEFAULT_THINKING_BUDGET;
+    const normalized = getThinkingConfig(this.name);
+    if (normalized.mode !== "on") return {};
+    const budget =
+      normalized.budget ??
+      (normalized.effort ? EFFORT_BUDGETS[normalized.effort] : DEFAULT_THINKING_BUDGET);
     return { thinking: { type: "enabled", budget_tokens: budget } };
   }
 

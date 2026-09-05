@@ -7,6 +7,7 @@
 import { loadConfig } from "@tau/core";
 import { buildSystemPrompt, validatePlanResponse } from "../prompt.js";
 import { consumeOllamaStream } from "../chat-stream.js";
+import { getThinkingConfig } from "../thinking.js";
 import { chatJSON } from "./http.js";
 import type {
   AIProvider,
@@ -142,11 +143,17 @@ export class OllamaProvider implements AIProvider {
     }
   }
 
-  /** `providers.ollama.think: true` → request thinking (additive opt-in). */
+  /**
+   * Thinking toggle (additive opt-in). Normalized read (issue #162):
+   * `thinking: "on"/"off"` — legacy `think: true` still maps to on; an
+   * explicit off requests `think: false` (overrides a thinking-by-default
+   * model), absence sends nothing at all.
+   */
   private thinkFragment(): { think?: boolean } {
-    const cfg = loadConfig();
-    if (cfg.providers["ollama"]?.["think"] !== true) return {};
-    return { think: true };
+    const mode = getThinkingConfig("ollama").mode;
+    if (mode === "on") return { think: true };
+    if (mode === "off") return { think: false };
+    return {};
   }
 }
 

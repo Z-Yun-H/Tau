@@ -38,7 +38,18 @@ Conversation threads persist in browser localStorage (key `tau-webui-threads-v1`
 
 ## Provider setup (v0.6.1)
 
-The settings panel gains a **provider setup** block — the ONE writable config slice:
+## Model & thinking selection (v0.6.2)
+
+The settings panel's **provider** section is now selectable: the model row
+is a catalog-backed dropdown (`GET /api/models`, refresh button included)
+writing through `POST /api/config/model`, and a **thinking** row renders
+mode (on/off) and effort (low/medium/high) mini-pickers straight from the
+server's capability table — providers without a knob render the honest
+"no thinking knobs" note instead of dead controls. Both writes go through
+the same `setConfigValue` channel the CLI uses; the gate and risk policy
+stay immutable from the browser.
+
+The settings panel still carries a **provider setup** block — the credential slice:
 
 - **Model link lookup**: picking a provider prefills the endpoint (from a server-sent catalog that is parity-checked against the live provider registry) — no URL typing; an advanced disclosure allows a custom endpoint (OpenAI-shaped providers write `providers.<name>.baseUrl`, Ollama writes `host`).
 - **Paste-only key**: follow the per-provider console link, paste the key, save — through `POST /api/config/provider`, the same `setConfigValue` channel `tau provider set-key` uses (chmod-0600 config file). Saving also refreshes the model catalog and can activate the provider in one step (keyless mock/ollama/zai need no key).
