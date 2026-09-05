@@ -90,10 +90,6 @@ export interface CommandInfo {
   argsKind?: "none" | "file" | "free";
 }
 
-export interface CommandsPayload {
-  commands: CommandInfo[];
-}
-
 /**
  * One prior conversation turn sent WITH a new request (conversation mode) —
  * the server sanitizes and folds it into the planning context. Mirrors

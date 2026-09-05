@@ -5,6 +5,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 
 ## Unreleased
 
+### Changed
+
+- **WebUI internal cleanup (no behavior change).** Removed four unused
+  global CSS classes from the client theme (`.tau-chrome-text`,
+  `.tau-chrome-text-hover`, `.tau-surface-raised`,
+  `.tau-surface-floating` — the brand mark and elevated surfaces style
+  themselves locally) and one unused client payload type
+  (`CommandsPayload`). DESIGN.md now matches what the client actually
+  ships.
+
 ## 0.6.0 — 2026-09-04
 
 Slash commands in both front doors, conversation continuity, image

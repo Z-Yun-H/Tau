@@ -280,9 +280,9 @@ body {
  * .tau-surface — the standard raised panel: gradient edge via the
  * padding-box/border-box trick + elevation-1 shadow. Replaces the old
  * `border border-tau-line` flat treatment on major surfaces (cards,
- * sidebar dock, modal, composer shell). Elements that need to sit above
- * the page use .tau-surface-raised (elev-2) and .tau-surface-floating
- * (elev-3, modals/menus).
+ * sidebar dock, modal, composer shell). Elements needing more height
+ * above the page apply `--tau-elev-2` / `--tau-elev-3` directly (the
+ * elevation tokens), as the composer and its menus do.
  */
 .tau-surface {
   border: 1px solid transparent;
@@ -290,22 +290,6 @@ body {
     linear-gradient(var(--tau-panel), var(--tau-panel)) padding-box,
     var(--tau-edge-gradient) border-box;
   box-shadow: var(--tau-elev-1);
-}
-
-.tau-surface-raised {
-  border: 1px solid transparent;
-  background:
-    linear-gradient(var(--tau-panel), var(--tau-panel)) padding-box,
-    var(--tau-edge-gradient) border-box;
-  box-shadow: var(--tau-elev-2);
-}
-
-.tau-surface-floating {
-  border: 1px solid transparent;
-  background:
-    linear-gradient(var(--tau-raised), var(--tau-raised)) padding-box,
-    var(--tau-edge-gradient) border-box;
-  box-shadow: var(--tau-elev-3);
 }
 
 /* Gradient divider — a soft fade, not a bare 1px line. */
@@ -337,30 +321,11 @@ body {
   line-height: 1.5;
 }
 
-/* ---- Chrome sweep text + bg ----------------------------------------- */
+/* ---- Chrome sweep bg ------------------------------------------------- */
 
-/* The brand mark `τ` and the Run plan primary action share this sweep.
-   Text via background-clip:text; buttons via plain background-image. */
-.tau-chrome-text {
-  background-image: linear-gradient(
-    90deg,
-    var(--tau-chrome-1) 0%,
-    var(--tau-chrome-3) 30%,
-    var(--tau-chrome-5) 50%,
-    var(--tau-chrome-3) 70%,
-    var(--tau-chrome-1) 100%
-  );
-  background-size: 200% 100%;
-  background-position: 0% 50%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  transition: background-position var(--t-slow) var(--ease);
-}
-
-.tau-chrome-text-hover:hover {
-  background-position: 100% 50%;
-}
+/* The Run plan primary action carries this sweep (plain background-image;
+   the brand mark's smaller τ uses StatusHeader's own metallic fill with a
+   vertical sheen, so no global chrome text class is needed). */
 
 .tau-chrome-bg {
   background-image: linear-gradient(

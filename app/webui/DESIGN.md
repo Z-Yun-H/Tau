@@ -101,8 +101,8 @@ bright canvas:
 
 A bare 1px hairline on a flat background is a **design bug** in both
 themes. Every major surface (cards, sidebar dock, composer shell,
-modal) carries the `.tau-surface` / `.tau-surface-raised` /
-`.tau-surface-floating` treatment from `theme.css`:
+modal) carries the `.tau-surface` treatment from `theme.css`; surfaces
+that must sit higher apply the elevation tokens directly:
 
 - **Elevation shadows** — `--tau-elev-1` (resting card), `--tau-elev-2`
   (composer), `--tau-elev-3` (focused composer, modal). Soft, wide,
@@ -266,7 +266,8 @@ zones:
  chrome brand  info accent       meta (md+)              meta     meta (sm+)  theme btn
 ```
 
-- Brand: `τ` in chrome-text (background-clip), `tau` in `tau.text` 18px
+- Brand: `τ` in a metallic fill (`brand-chrome`, background-clip with a
+  vertical sheen), `tau` in `tau.text` 18px
   mono 500. Hovering the brand does nothing — it is identity, not a
   control.
 - Provider chip: `tau-chip` with provider name in `tau.info` and model
