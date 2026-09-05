@@ -10,9 +10,20 @@
  */
 
 import { createRequire } from "node:module";
-import { loadConfig, readHistory, tauHome } from "@tau/core";
+import { loadConfig, readHistory, setConfigValue, tauHome } from "@tau/core";
 import type { HistoryEntry, ProviderStreamHandler, RiskLevel, SafetyReview } from "@tau/core";
-import { getProvider, providerNames, resolveProvider } from "@tau/ai";
+import {
+  cachedModels,
+  describeThinking,
+  getProvider,
+  getThinkingConfig,
+  providerNames,
+  refreshProviderModels,
+  resolveProvider,
+  setThinkingConfig,
+  thinkingCapability,
+} from "@tau/ai";
+import type { ModelCatalog, ThinkingConfig, ThinkingPatch } from "@tau/ai";
 import { reviewPlan } from "@tau/engine";
 import { scanSkills } from "@tau/skills";
 import { allTools } from "@tau/tools";
@@ -152,6 +163,83 @@ export function listToolSummaries(): ToolSummary[] {
 /** Recent history entries (newest first), shared by both UIs. */
 export function readRecentHistory(limit: number): HistoryEntry[] {
   return readHistory(limit);
+}
+
+/** ---------------- model & thinking selection (issue #163) ---------------- */
+
+/**
+ * Selection services shared by the interactive front doors — the model
+ * catalog and thinking knobs are exactly the kind of cross-UI fact that
+ * lives here (session.ts is the single source both front doors read);
+ * wrapping @tau/ai keeps TUI/WebUI free of new dependency edges.
+ */
+
+/**
+ * Model catalog for one provider (default: the active one).
+ * - offline → the cached catalog only, zero network;
+ * - otherwise the catalog service's own precedence (fresh cache → live
+ *   fetch → cached + warning), so callers render ONE shape for all paths.
+ * Unknown providers throw with the registered names.
+ */
+export async function listModelCatalog(
+  provider?: string,
+  options: { refresh?: boolean; offline?: boolean } = {},
+): Promise<ModelCatalog> {
+  const name = provider ?? getActiveProvider().name;
+  if (!getProvider(name)) {
+    throw new Error(`Unknown provider "${name}". Registered: ${providerNames().join(", ")}`);
+  }
+  if (options.offline) {
+    const cache = cachedModels(name);
+    return {
+      provider: name,
+      models: cache.models,
+      source: "cache",
+      ...(cache.refreshedAt ? { refreshedAt: cache.refreshedAt } : {}),
+    };
+  }
+  return refreshProviderModels(name, { force: options.refresh === true });
+}
+
+/** Persist the model choice for one provider (the `tau provider use` channel). */
+export function setProviderModel(provider: string, model: string): void {
+  if (!getProvider(provider)) {
+    throw new Error(`Unknown provider "${provider}". Registered: ${providerNames().join(", ")}`);
+  }
+  const trimmed = model.trim();
+  if (!trimmed) throw new Error("model id must not be empty");
+  setConfigValue(`providers.${provider}.model`, trimmed);
+}
+
+/** Normalized thinking state + capability of one provider (default: active). */
+export interface ThinkingState {
+  provider: string;
+  capability: ReturnType<typeof thinkingCapability>;
+  config: ThinkingConfig;
+  /** One-line human summary of the config (e.g. "on (high)", "off"). */
+  summary: string;
+}
+
+export function thinkingState(provider?: string): ThinkingState {
+  const name = provider ?? getActiveProvider().name;
+  if (!getProvider(name)) {
+    throw new Error(`Unknown provider "${name}". Registered: ${providerNames().join(", ")}`);
+  }
+  return {
+    provider: name,
+    capability: thinkingCapability(name),
+    config: getThinkingConfig(name),
+    summary: describeThinking(name),
+  };
+}
+
+/** Validated thinking write (capability refusals bubble up as actionable errors). */
+export function updateThinking(provider: string, patch: ThinkingPatch): ThinkingState {
+  if (!getProvider(provider)) {
+    throw new Error(`Unknown provider "${provider}". Registered: ${providerNames().join(", ")}`);
+  }
+  setThinkingConfig(provider, patch);
+  return thinkingState(provider);
 }
 
 /** One async snapshot of the facts both UIs show on their status surface. */

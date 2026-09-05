@@ -29,17 +29,19 @@ metadata-card fallback), `slash-palette-filter.svg` / `slash-palette-select.svg`
 
 ## Slash commands
 
-| Command        | Effect                                           |
-| -------------- | ------------------------------------------------ |
-| `/help`        | command overview (generated from the catalog)    |
-| `/provider`    | show the active provider, source, and model      |
-| `/skills`      | list loaded skills                               |
-| `/history`     | recent executed plans                            |
-| `/status`      | session summary (home, provider, catalogs)       |
-| `/md <file>`   | preview a markdown file (ANSI-rendered)          |
-| `/view <file>` | preview an image (inline image or metadata card) |
-| `/clear`       | clear the screen                                 |
-| `/exit`        | leave the session (alias `/quit`, or Ctrl+D)     |
+| Command                                   | Effect                                                                                                       |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `/help`                                   | command overview (generated from the catalog)                                                                |
+| `/provider`                               | show the active provider, source, model, thinking                                                            |
+| `/model [id]`                             | pick the provider's model from its catalog (or set one directly); degrades to a listing outside TTY sessions |
+| `/thinking [on\|off] [low\|medium\|high]` | show or set thinking mode and effort — only what the provider supports is accepted                           |
+| `/skills`                                 | list loaded skills                                                                                           |
+| `/history`                                | recent executed plans                                                                                        |
+| `/status`                                 | session summary (home, provider, catalogs)                                                                   |
+| `/md <file>`                              | preview a markdown file (ANSI-rendered)                                                                      |
+| `/view <file>`                            | preview an image (inline image or metadata card)                                                             |
+| `/clear`                                  | clear the screen                                                                                             |
+| `/exit`                                   | leave the session (alias `/quit`, or Ctrl+D)                                                                 |
 
 ### The `/` suggestion palette
 

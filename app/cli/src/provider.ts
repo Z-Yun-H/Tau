@@ -380,12 +380,11 @@ async function printModels(
  */
 async function thinking(name: string, mode: string | undefined, effort: string | undefined) {
   await requireProvider(name);
-  const { getThinkingConfig, setThinkingConfig, thinkingCapability } = await ai();
+  const { setThinkingConfig, thinkingCapability, describeThinking } = await ai();
 
   if (mode === undefined) {
-    const state = getThinkingConfig(name);
     const capability = thinkingCapability(name);
-    console.log(`Provider "${name}" thinking: ${describeState(state)}.`);
+    console.log(`Provider "${name}" thinking: ${describeThinking(name)}.`);
     const knobs = [
       capability.mode ? "mode (on|off)" : null,
       capability.effort ? "effort (low|medium|high)" : null,
@@ -408,26 +407,11 @@ async function thinking(name: string, mode: string | undefined, effort: string |
   if (effort !== undefined && !allowedEfforts.has(effort)) {
     throw new Error(`thinking effort must be low, medium or high (got "${effort}")`);
   }
-  const next = setThinkingConfig(name, {
+  setThinkingConfig(name, {
     mode,
     ...(effort !== undefined ? { effort: effort as "low" | "medium" | "high" } : {}),
   });
-  console.log(theme.ok(`Thinking for "${name}" set: ${describeState(next)}.`));
-}
-
-function describeState(state: {
-  mode?: "on" | "off";
-  effort?: "low" | "medium" | "high";
-  budget?: number;
-}): string {
-  if (state.mode === "on") {
-    const intensity = state.budget !== undefined ? `${state.budget} tokens` : state.effort;
-    return intensity ? `on (${intensity})` : "on";
-  }
-  if (state.mode === "off") return "off";
-  if (state.effort !== undefined) return `effort ${state.effort}`;
-  if (state.budget !== undefined) return `budget ${state.budget} tokens`;
-  return "provider default";
+  console.log(theme.ok(`Thinking for "${name}" set: ${describeThinking(name)}.`));
 }
 
 async function use(name: string, model: string | undefined): Promise<void> {

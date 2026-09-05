@@ -18,6 +18,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versioning: [S
 [low|medium|high]`), the TUI (`/thinking`) or the WebUI settings —
   each surface renders only what the active provider actually
   supports. Every knob is opt-in: unset means byte-identical requests.
+- **TUI model & thinking selection (issue #163).** `/model` picks the
+  active provider's model from its live/cached catalog — an interactive
+  picker on a TTY that never hangs outside one — and `/thinking` shows
+  or sets thinking mode and effort; `/provider` now also reports the
+  thinking state. Both commands enter the shared slash catalog (so
+  `/help`, the palette and Tab completion list them automatically) and
+  go through new UI-agnostic session services in `@tau/agent`.
 
 ## 0.6.1 — 2026-09-05
 
