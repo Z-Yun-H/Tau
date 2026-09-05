@@ -59,9 +59,29 @@ viewers for generated PDF/image files stream through `GET /api/file`**
 
 ![webui html preview](./docs/screenshots/html-preview.png)
 
+**provider setup (v0.6.1) — pick a provider, the endpoint is looked up
+from the server catalog, the key console is one link away; paste only
+the key and save**
+
+![webui provider setup](./docs/screenshots/provider-setup.png)
+
+**privacy masking (v0.6.1) — the key input is a password field; an
+explicit peek re-masks itself after 8s, and saved keys render only as
+the server's `sk-***last4` mask**
+
+![webui provider setup saved](./docs/screenshots/provider-setup-saved.png)
+
+**viewport lock (v0.6.1) — the page is exactly one viewport tall at
+every breakpoint: a long thread scrolls inside the stream column while
+the composer stays pinned**
+
+![webui viewport lock](./docs/screenshots/viewport-lock.png)
+
 More: `command-menu-filter.png` (typed filter), `attachments-sent.png`
 (chips on the sent card + plan review), `image-view.png` /
-`image-viewer-card.png` (native image view).
+`image-viewer-card.png` (native image view), `provider-setup-key.png`
+(masked paste) / `provider-setup-reveal.png` (explicit peek) /
+`provider-setup-card.png` (the setup section, element-cropped).
 
 ## Observability (v0.4.0)
 
